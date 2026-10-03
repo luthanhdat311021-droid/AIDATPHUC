@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, Clock, Check, Sparkles, Award, Plus, X, RotateCcw } from 'lucide-react';
+import { HelpCircle, Clock, Check, Sparkles, Award, Plus, X, RotateCcw, Network } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { QuizQuestion } from '../../types';
 
@@ -137,7 +137,7 @@ export function QuizView() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-24 md:pb-8">
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Title Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
@@ -357,6 +357,16 @@ export function QuizView() {
                 {scoreResult.feedback}
               </p>
             </div>
+
+            {scoreResult.correctCount < scoreResult.totalQuestions && (
+              <button
+                onClick={() => setActiveTab('gaps')}
+                className="w-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 font-bold text-xs py-2.5 rounded-lg flex items-center justify-center gap-1.5"
+              >
+                <Network className="w-4 h-4" />
+                Tìm lỗ hổng gốc của các câu sai
+              </button>
+            )}
 
             <div className="flex gap-2 pt-2">
               <button

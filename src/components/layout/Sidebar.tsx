@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   LayoutDashboard, 
   UploadCloud, 
@@ -12,13 +12,23 @@ import {
   GitCompare,
   LogIn,
   LogOut,
-  Compass
+  Compass,
+  Network,
+  X
 } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { TabType } from '../../types';
 
-export function Sidebar() {
+// Desktop: fixed column. Mobile: slide-in drawer opened from the header's menu button.
+export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { activeTab, setActiveTab, user, isAuthenticated, openAuthModal, openEditProfileModal, logout } = useStudy();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
   const navItems: Array<{ id: TabType; label: string; icon: any }> = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
@@ -26,15 +36,24 @@ export function Sidebar() {
     { id: 'history', label: 'Lịch sử bài học', icon: History },
     { id: 'workspace', label: 'Không gian tài liệu', icon: BookOpen },
     { id: 'prerequisite', label: 'Kiến thức tiên quyết', icon: Compass },
+    { id: 'gaps', label: 'Bản đồ lỗ hổng', icon: Network },
     { id: 'mindmap', label: 'Sơ đồ tư duy', icon: GitFork },
     { id: 'flashcard', label: 'Thẻ ghi nhớ', icon: Layers },
     { id: 'quiz', label: 'Trắc nghiệm', icon: HelpCircle },
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between h-screen sticky top-0 z-40 hidden md:flex">
+    <>
+    {open && <div className="fixed inset-0 z-40 bg-slate-900/40 md:hidden" onClick={onClose} aria-hidden="true" />}
+    <aside
+      id="app-navigation"
+      aria-label="Điều hướng chính"
+      className={`w-64 bg-white border-r border-slate-200 flex flex-col justify-between h-screen z-50 fixed inset-y-0 left-0 transition-transform duration-200 md:sticky md:top-0 md:z-40 md:translate-x-0 md:shadow-none ${
+        open ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+      }`}
+    >
       {/* Brand Header */}
-      <div>
+      <div className="min-h-0 overflow-y-auto">
         <div className="p-6 flex items-center gap-3 border-b border-slate-100">
           <div className="w-9 h-9 rounded-xl bg-[#0F766E] flex items-center justify-center text-white shadow-md shadow-[#0F766E]/20">
             <BrainCircuit className="w-5 h-5" />
@@ -47,6 +66,9 @@ export function Sidebar() {
               Trợ lý học tập thông minh
             </p>
           </div>
+          <button onClick={onClose} className="ml-auto p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 md:hidden" aria-label="Đóng menu">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation Menu */}
@@ -57,7 +79,8 @@ export function Sidebar() {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => { setActiveTab(item.id); onClose(); }}
+                aria-current={isActive ? 'page' : undefined}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   isActive
                     ? 'bg-[#CCFBF1] text-[#0F766E] font-semibold shadow-xs'
@@ -119,5 +142,6 @@ export function Sidebar() {
         )}
       </div>
     </aside>
+    </>
   );
 }

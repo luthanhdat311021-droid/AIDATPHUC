@@ -137,6 +137,8 @@ export interface Flashcard {
   front: string;
   back: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  conceptId?: string | null;
+  lastRating?: 'easy' | 'medium' | 'hard';
   lastReviewed?: string | null;
   nextReview?: string;
 }
@@ -148,6 +150,7 @@ export interface QuizQuestion {
   options: string[];
   correctIndex: number;
   explanation: string;
+  conceptId?: string | null;
 }
 
 export interface AIQuiz {
@@ -201,9 +204,21 @@ export interface PrerequisiteAnalysis {
     passScore: number;
     questions: DiagnosticQuestion[];
   };
+  lastDiagnostic?: {
+    completedAt: string;
+    results: Array<{ questionId: string; prerequisiteId: string | null; correct: boolean }>;
+  };
+}
+
+// The part of the AI Knowledge Base the frontend reads (Knowledge Gap Map)
+export interface KnowledgeBase {
+  concepts?: Array<{ id: string; name: string; description?: string; importance?: number }>;
+  relationships?: Array<{ source: string; target: string; type: string; description?: string }>;
+  misconceptions?: Array<{ misconception: string; correction?: string; conceptId?: string | null }>;
 }
 
 export interface StudyPack {
+  knowledgeBase?: KnowledgeBase | null;
   notes?: AINotes | null;
   mindmap?: AIMindmap | null;
   flashcards?: Flashcard[];
@@ -214,6 +229,7 @@ export interface StudyPack {
 export interface ActiveDocumentData {
   document: DocumentItem;
   studyPack: StudyPack;
+  quizHistory?: QuizHistoryRecord[];
 }
 
 export interface OutputOptions {
@@ -230,6 +246,7 @@ export interface QuizHistoryRecord {
   totalQuestions: number;
   completedAt: string;
   feedback?: string;
+  results?: Array<{ questionId: string; conceptId: string | null; correct: boolean }>;
 }
 
 export interface LessonHistoryItem {
@@ -279,5 +296,5 @@ export interface KnowledgeFusionResult {
   comparedDocs: { id: string; title: string }[];
 }
 
-export type TabType = 'dashboard' | 'import' | 'workspace' | 'prerequisite' | 'mindmap' | 'flashcard' | 'quiz' | 'history' | 'fusion' | 'auth';
+export type TabType = 'dashboard' | 'import' | 'workspace' | 'prerequisite' | 'gaps' | 'mindmap' | 'flashcard' | 'quiz' | 'history' | 'fusion' | 'auth';
 

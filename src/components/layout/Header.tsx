@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
-import { Search, Bell, Sparkles, LogIn, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
+import { Search, Bell, Sparkles, LogIn, LogOut, User as UserIcon, ChevronDown, Menu } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 
-export function Header() {
+export function Header({ menuOpen, onMenuClick }: { menuOpen: boolean; onMenuClick: () => void }) {
   const { user, isAuthenticated, openAuthModal, openEditProfileModal, logout } = useStudy();
   const [showDropdown, setShowDropdown] = useState(false);
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+      {/* Mobile navigation toggle */}
+      <button
+        onClick={onMenuClick}
+        className="md:hidden -ml-1 mr-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100 shrink-0"
+        aria-label="Mở menu điều hướng"
+        aria-controls="app-navigation"
+        aria-expanded={menuOpen}
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
       {/* Search Bar */}
       <div className="flex-1 max-w-xl relative">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

@@ -8,8 +8,8 @@ export const PROMPT_VERSIONS = {
   DOCUMENT_ANALYSIS: "DOCUMENT_ANALYSIS_V2_DEPTH",
   NOTES_GENERATION: "NOTES_GENERATION_V2_DEPTH",
   MINDMAP_GENERATION: "MINDMAP_GENERATION_V3_TIERED",
-  FLASHCARD_GENERATION: "FLASHCARD_GENERATION_V2_DEPTH",
-  QUIZ_GENERATION: "QUIZ_GENERATION_V2_DEPTH",
+  FLASHCARD_GENERATION: "FLASHCARD_GENERATION_V3_CONCEPT_IDS",
+  QUIZ_GENERATION: "QUIZ_GENERATION_V3_CONCEPT_IDS",
   PREREQUISITE_ANALYSIS: "PREREQUISITE_ANALYSIS_V1",
   CHAT_ASSISTANT: "CHAT_ASSISTANT_V1",
   KNOWLEDGE_FUSION: "KNOWLEDGE_FUSION_V2"
@@ -260,7 +260,7 @@ Cognitive focus: ${f.cognitive}
 CRITICAL RULES (SOURCE-GROUNDED GENERATION):
 1. Use ONLY facts, definitions, formulas, and concepts present in the provided Knowledge Base JSON.
 2. DO NOT hallucinate, invent, or bring in outside information not supported by the document.
-3. Every flashcard MUST link to a specific conceptId and topicId from the knowledge base, with source references (page, section).
+3. Every flashcard MUST link to a concept: "conceptId" is copied EXACTLY from the "id" of a concept in the Knowledge Base (never invent ids). Add source references (page, section).
 4. Do NOT create duplicate flashcards testing the same concept in the same way. Cover the most important concepts first (importance 5 -> 1).
 5. Preferred flashcard types for this depth: ${f.types}. Allowed values: "definition", "concept", "comparison", "process", "formula", "example", "application", "cause_effect", "cloze", "true_false".
 6. ${difficultyRule} Allowed values: "easy", "medium", "hard", "expert".
@@ -279,7 +279,7 @@ Output MUST be a valid JSON object matching this exact schema:
       "id": "fc_001",
       "type": "definition",
       "topicId": "topic_001",
-      "conceptId": "concept_001",
+      "conceptId": "${knowledgeJson.concepts?.[0]?.id || 'concept-1'}",
       "front": "Primary Key là gì?",
       "back": "Primary Key là trường hoặc tập hợp trường dùng để xác định duy nhất mỗi bản ghi trong bảng.",
       "hint": "Gợi ý về đặc tính duy nhất",
@@ -315,7 +315,7 @@ Cognitive focus: ${q.cognitive}
 
 CRITICAL RULES (SOURCE-GROUNDED GENERATION):
 1. AI MUST ONLY use information present in the provided Knowledge Base JSON. No outside facts or unsupported claims.
-2. Every quiz question MUST test real concepts from the document and link to a specific conceptId & topicId. Cover different concepts — do not test the same fact twice.
+2. Every quiz question MUST test real concepts from the document: "conceptId" is copied EXACTLY from the "id" of the concept it tests in the Knowledge Base (never invent ids). Cover different concepts — do not test the same fact twice.
 3. Every question MUST have:
    - Exactly 1 clear, unambiguous question text
    - Exactly 4 options (labelled A, B, C, D) — for true_false use "A. Đúng", "B. Sai" plus 2 options that qualify the statement
@@ -341,7 +341,7 @@ Output MUST be a valid JSON object matching this exact schema:
       "id": "q_001",
       "type": "multiple_choice",
       "topicId": "topic_001",
-      "conceptId": "concept_001",
+      "conceptId": "${knowledgeJson.concepts?.[0]?.id || 'concept-1'}",
       "questionNumber": 1,
       "questionText": "Mục đích chính của Primary Key trong cơ sở dữ liệu là gì?",
       "options": [

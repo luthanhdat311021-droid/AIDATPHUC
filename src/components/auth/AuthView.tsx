@@ -65,24 +65,6 @@ export function AuthView() {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setErrorMessage(null);
-    try {
-      await login("demo@studymind.ai", "demo123456");
-      closeAuthModal();
-    } catch (err) {
-      setErrorMessage("Không thể đăng nhập tài khoản mẫu.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBackToApp = () => {
-    closeAuthModal();
-    setActiveTab('dashboard');
-  };
-
   return (
     <div 
       className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 font-sans relative overflow-hidden"
@@ -168,15 +150,7 @@ export function AuthView() {
           </div>
 
           {/* Bottom Back Button & Stats */}
-          <div className="pt-6 border-t border-white/20 flex items-center justify-between relative z-10">
-            <button
-              onClick={handleBackToApp}
-              className="inline-flex items-center gap-2 text-xs font-bold text-teal-100 hover:text-white hover:underline transition-all"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Quay lại ứng dụng</span>
-            </button>
-
+          <div className="pt-6 border-t border-white/20 flex items-center justify-end relative z-10">
             <div className="flex items-center gap-1.5 text-[11px] text-teal-200/95 font-semibold">
               <Users className="w-3.5 h-3.5" />
               <span>10.000+ Học viên</span>
@@ -195,13 +169,6 @@ export function AuthView() {
                 <h3 className="text-xl font-extrabold text-slate-900">
                   {activeTabMode === 'login' ? 'Chào mừng bạn trở lại' : 'Tạo tài khoản mới'}
                 </h3>
-                <button
-                  onClick={handleBackToApp}
-                  className="lg:hidden text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Trở về</span>
-                </button>
               </div>
               <p className="text-xs text-slate-500">
                 {activeTabMode === 'login' 
@@ -244,32 +211,6 @@ export function AuthView() {
                   Đăng ký tài khoản
                 </button>
               </div>
-            </div>
-
-            {/* Quick Demo Login Button */}
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200/90 rounded-2xl text-xs font-bold text-amber-900 shadow-xs transition-all flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 bg-amber-500/10 rounded-lg text-amber-600 group-hover:scale-110 transition-transform">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <p className="font-extrabold text-amber-950">Đăng nhập nhanh tài khoản mẫu</p>
-                  <p className="text-[10px] text-amber-700/80 font-normal">Trải nghiệm ngay 1-Click không cần tạo mật khẩu</p>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-amber-700 group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 text-xs text-slate-400">
-              <div className="flex-1 h-px bg-slate-200" />
-              <span className="font-medium text-[11px]">HOẶC DÙNG EMAIL TÀI KHOẢN</span>
-              <div className="flex-1 h-px bg-slate-200" />
             </div>
 
             {/* Error Message Alert */}

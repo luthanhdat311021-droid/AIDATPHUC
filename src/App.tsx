@@ -2,12 +2,12 @@ import React from 'react';
 import { StudyProvider, useStudy } from './context/StudyContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
-import { MobileBottomBar } from './components/layout/MobileBottomBar';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { ImportView } from './components/import/ImportView';
 import { WorkspaceView } from './components/workspace/WorkspaceView';
 import { MindmapView } from './components/mindmap/MindmapView';
 import { PrerequisiteView } from './components/prerequisite/PrerequisiteView';
+import { KnowledgeGapView } from './components/gaps/KnowledgeGapView';
 import { FlashcardView } from './components/flashcard/FlashcardView';
 import { QuizView } from './components/quiz/QuizView';
 import { HistoryView } from './components/history/HistoryView';
@@ -58,10 +58,13 @@ class ErrorBoundary extends React.Component<
 }
 
 function MainLayout() {
-  const { activeTab, isAuthModalOpen } = useStudy();
+  const { activeTab, isAuthModalOpen, isAuthenticated, authReady } = useStudy();
+  const [navOpen, setNavOpen] = React.useState(false);
 
-  // Standalone Auth Page View
-  if (activeTab === 'auth' || isAuthModalOpen) {
+  if (!authReady) return null;
+
+  // The whole app requires an account; guests only see the sign-in page
+  if (!isAuthenticated || activeTab === 'auth' || isAuthModalOpen) {
     return (
       <div className="min-h-screen bg-slate-100">
         <AuthView />
@@ -72,12 +75,12 @@ function MainLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
-      {/* Desktop Sidebar */}
-      <Sidebar />
+      {/* Sidebar: fixed column on desktop, slide-in drawer on mobile */}
+      <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
 
       {/* Main Right Content Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-y-auto">
-        <Header />
+      <div className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
+        <Header menuOpen={navOpen} onMenuClick={() => setNavOpen(true)} />
         
         <main className="flex-1">
           <ErrorBoundary>
@@ -87,15 +90,13 @@ function MainLayout() {
             {activeTab === 'fusion' && <KnowledgeFusionView />}
             {activeTab === 'workspace' && <WorkspaceView />}
             {activeTab === 'prerequisite' && <PrerequisiteView />}
+            {activeTab === 'gaps' && <KnowledgeGapView />}
             {activeTab === 'mindmap' && <MindmapView />}
             {activeTab === 'flashcard' && <FlashcardView />}
             {activeTab === 'quiz' && <QuizView />}
           </ErrorBoundary>
         </main>
       </div>
-
-      {/* Mobile Navigation Bar */}
-      <MobileBottomBar />
 
       {/* Profile Edit Modal */}
       <EditProfileModal />

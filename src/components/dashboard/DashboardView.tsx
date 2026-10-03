@@ -11,7 +11,7 @@ export function DashboardView() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-24 md:pb-8">
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Banner Hero */}
       <div className="bg-gradient-to-r from-[#0B4F48] to-[#0F766E] text-white p-6 md:p-8 rounded-2xl shadow-md relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none" />

@@ -12,7 +12,8 @@ import {
   GitBranch,
   ClipboardCheck,
   BookOpen,
-  Target
+  Target,
+  Network
 } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { PrerequisiteAnalysis, PrerequisiteDependency } from '../../types';
@@ -43,15 +44,17 @@ function SectionTitle({ icon: Icon, children }: { icon: any; children: React.Rea
 
 // Interactive readiness test: scores against passScore and points wrong answers to the matching bridge item
 function DiagnosticTest({ data, onReview }: { data: PrerequisiteAnalysis; onReview: (prerequisiteId: string | null) => void }) {
-  const { setActiveTab } = useStudy();
+  const { setActiveTab, submitDiagnostic } = useStudy();
   const test = data.diagnosticPreTest;
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
 
+  // Reset only when the questions change (re-analysis), not when the saved result updates `data`
+  const testKey = test.questions.map(q => q.id + q.question).join('|');
   useEffect(() => {
     setAnswers({});
     setSubmitted(false);
-  }, [data]);
+  }, [testKey]);
 
   const conceptOf = (id: string | null) => data.prerequisites.find(p => p.id === id)?.concept;
 
@@ -126,7 +129,7 @@ function DiagnosticTest({ data, onReview }: { data: PrerequisiteAnalysis; onRevi
       {!submitted ? (
         <button
           disabled={!allAnswered}
-          onClick={() => setSubmitted(true)}
+          onClick={() => { setSubmitted(true); submitDiagnostic(answers); }}
           className="w-full bg-[#0F766E] hover:bg-[#0D5C53] text-white text-xs font-bold py-2.5 rounded-xl disabled:opacity-40 transition-colors"
         >
           {allAnswered ? 'Chấm điểm' : `Trả lời đủ ${test.questions.length} câu để chấm điểm`}
@@ -168,6 +171,14 @@ function DiagnosticTest({ data, onReview }: { data: PrerequisiteAnalysis; onRevi
               </button>
             )}
           </div>
+          {!passed && (
+            <button
+              onClick={() => setActiveTab('gaps')}
+              className="w-full bg-white border border-rose-200 hover:bg-rose-50 text-rose-800 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5"
+            >
+              <Network className="w-3.5 h-3.5" /> Xem bản đồ lỗ hổng kiến thức
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -259,7 +270,7 @@ export function PrerequisiteView() {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto p-4 sm:p-6 pb-24 md:pb-6 space-y-5">
+    <div className="max-w-[1400px] mx-auto p-4 sm:p-6 space-y-5">
       {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">

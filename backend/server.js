@@ -4,9 +4,10 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 
-import { processFileAndGenerate, answerStudyQuery, generateStudyPackFromText } from './services/aiEngine.js';
+import { processFileAndGenerate, generateStudyPackFromText } from './services/aiEngine.js';
 import { aiRouter } from './services/ai/AIRouter.js';
 import { aiLogger } from './services/ai/AILogger.js';
 import { extractFromVideoUrlOrFile, extractFromWebUrl } from './services/textExtractor.js';
@@ -48,127 +49,9 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }
 });
 
-// Jobs Progress Memory Store
-const jobs = new Map();
-
-// File Persistence Path for User Accounts
-const USERS_FILE_PATH = process.env.VERCEL ? path.join('/tmp', 'users_db.json') : path.join(__dirname, 'users_db.json');
-
-function loadUsersFromDisk() {
-  const defaultMap = new Map([
-    ["demo@studymind.ai", {
-      id: "usr-demo",
-      fullName: "Nguyễn Minh Trí",
-      email: "demo@studymind.ai",
-      membershipTier: "Premium",
-      avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      studyGoalHours: 5.0,
-      currentStudyHours: 3.5,
-      quizTargetCount: 50,
-      currentQuizCount: 45
-    }]
-  ]);
-
-  try {
-    if (fs.existsSync(USERS_FILE_PATH)) {
-      const raw = fs.readFileSync(USERS_FILE_PATH, 'utf-8');
-      const list = JSON.parse(raw);
-      if (Array.isArray(list)) {
-        list.forEach(u => {
-          if (u && u.email) {
-            defaultMap.set(u.email.toLowerCase(), u);
-          }
-        });
-      }
-    }
-  } catch (err) {
-    console.error("Failed to load users_db.json:", err.message);
-  }
-  return defaultMap;
-}
-
-function saveUsersToDisk() {
-  try {
-    const list = Array.from(db.users.values());
-    fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(list, null, 2), 'utf-8');
-  } catch (err) {
-    console.error("Failed to save users_db.json:", err.message);
-  }
-}
-
-const defaultDoc1 = {
-  id: "doc-1",
-  title: "Sinh học Tế bào - Ty thể và Chu trình chuyển hóa",
-  fileType: "PDF",
-  fileSize: "2.4 MB",
-  pageCount: 15,
-  updatedAt: "Hôm nay",
-  status: "COMPLETED",
-  tags: ["Sinh học", "Tế bào", "Ty thể"],
-  rawText: "Ty thể (Mitochondria) là bào quan chuyển hóa năng lượng chính của tế bào nhân thực. Ty thể gồm 2 lớp màng: màng ngoài trơn nhẵn chứa protein porin, màng trong gấp nếp sâu tạo các mào (cristae) chứa phức hợp ATP Synthase và chuỗi truyền electron. Chất nền (matrix) của ty thể chứa ADN vòng kép trần và Ribosome 70S nhân sơ, chứng minh nguồn gốc nội cộng sinh."
-};
-
-// Database Store
-const db = {
-  users: loadUsersFromDisk(),
-  currentUser: null,
-  user: {
-    id: "usr-demo",
-    fullName: "Nguyễn Minh Trí",
-    email: "demo@studymind.ai",
-    membershipTier: "Premium",
-    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    studyGoalHours: 5.0,
-    currentStudyHours: 3.5,
-    quizTargetCount: 50,
-    currentQuizCount: 45
-  },
-  documents: [defaultDoc1],
-  spacedRepetition: [],
-  activities: [],
-  studyPacks: {}
-};
-
-// Pre-populate default StudyPack synchronously to prevent cold-start timeout in serverless environments (e.g. Vercel)
-const defaultKnowledgeBase = {
-  title: defaultDoc1.title,
-  summary: "Ty thể là bào quan chuyển hóa năng lượng chính của tế bào nhân thực với màng kép và chuỗi truyền electron.",
-  topics: ["Cấu trúc mào ty thể", "Chu trình Krebs & Hô hấp", "ADN ty thể & Nguồn gốc"],
-  concepts: [
-    { name: "Ty thể (Mitochondria)", description: "Bào quan sản xuất năng lượng ATP chính của tế bào.", type: "core", importance: 5 },
-    { name: "Cristae (Mào)", description: "Nếp gấp màng trong chứa phức hợp ATP Synthase.", type: "structure", importance: 4 },
-    { name: "Chu trình Krebs", description: "Chuỗi phản ứng sinh hóa chuyển hóa pyruvate thành năng lượng.", type: "process", importance: 4 }
-  ]
-};
-
-try {
-  db.studyPacks[defaultDoc1.id] = {
-    knowledgeBase: defaultKnowledgeBase,
-    notes: {
-      title: defaultDoc1.title,
-      summary: defaultKnowledgeBase.summary,
-      sections: [
-        { heading: "I. Cấu trúc Ty thể", content: "Màng ngoài trơn nhẵn, màng trong gấp nếp tạo các cristae nâng cao diện tích bề mặt." },
-        { heading: "II. Chức năng Sinh học", content: "Tổng hợp ATP qua hô hấp tế bào và chuỗi truyền electron." }
-      ]
-    },
-    mindmap: aiRouter.generateDomainFallbackMindmap(defaultKnowledgeBase),
-    flashcards: [
-      { id: "fc_001", front: "Ty thể có bao nhiêu lớp màng?", back: "Ty thể có 2 lớp màng (màng ngoài và màng trong gấp nếp).", difficulty: "easy", importance: 5 },
-      { id: "fc_002", front: "Bào quan nào tổng hợp ATP chính?", back: "Ty thể (Mitochondria).", difficulty: "easy", importance: 5 }
-    ],
-    quiz: [
-      { id: "q_001", question: "Màng trong ty thể gấp nếp tạo thành cấu trúc gì?", options: ["Cristae (Mào)", "Ribosome", "Porin", "Lưới nội chất"], correctAnswer: 0, explanation: "Màng trong gấp nếp tạo cristae chứa ATP Synthase." }
-    ]
-  };
-} catch (err) {
-  console.warn("Synchronous initial StudyPack assignment warning:", err.message);
-}
-
-
 // ==================== REST API ENDPOINTS ==================== //
 
-// Healthcheck
+// Healthcheck (public)
 app.get('/api/v1/health', (req, res) => {
   res.json({
     status: 'online',
@@ -180,172 +63,58 @@ app.get('/api/v1/health', (req, res) => {
   });
 });
 
-// Serve uploaded files statically
+// Serve uploaded avatars statically (public)
 app.use('/uploads', express.static(uploadDir));
 
-app.post('/api/v1/auth/signup', (req, res) => {
-  try {
-    const { fullName, email } = req.body;
-    if (!email) {
-      return res.status(400).json({ success: false, error: "Vui lòng nhập địa chỉ Email." });
-    }
-    const cleanEmail = email.trim().toLowerCase();
-
-    db.users = loadUsersFromDisk();
-
-    // Check if user already exists
-    if (db.users.has(cleanEmail)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Email này đã được đăng ký. Vui lòng chuyển sang tab 'Đăng nhập'!" 
-      });
-    }
-
-    const displayName = (fullName && fullName.trim() !== '') ? fullName.trim() : cleanEmail.split('@')[0];
-    
-    const newUser = {
-      id: `usr-${Date.now()}`,
-      fullName: displayName,
-      email: cleanEmail,
-      membershipTier: "Tài khoản Mới",
-      avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-      studyGoalHours: 5.0,
-      currentStudyHours: 0,
-      quizTargetCount: 50,
-      currentQuizCount: 0
-    };
-
-    db.users.set(cleanEmail, newUser);
-    db.currentUser = newUser;
-    saveUsersToDisk();
-
-    res.json({ success: true, token: `jwt-${Date.now()}`, user: newUser });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+// Every other API route requires a signed-in Supabase user. req.db acts as that user,
+// so Row Level Security limits every read and write to their own lessons.
+app.use('/api', async (req, res, next) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  const user = token ? await supabaseService.getUserFromToken(token) : null;
+  if (!user) return res.status(401).json({ success: false, error: 'Vui lòng đăng nhập để tiếp tục.' });
+  req.user = user;
+  req.db = supabaseService.clientFor(token);
+  next();
 });
 
-app.post('/api/v1/auth/login', (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ success: false, error: "Vui lòng nhập địa chỉ Email." });
-    }
-    const cleanEmail = email.trim().toLowerCase();
+const newLessonId = () => `doc-${randomUUID()}`;
 
-    db.users = loadUsersFromDisk();
-    let user = db.users.get(cleanEmail);
-
-    if (!user) {
-      user = {
-        id: `usr-${Date.now()}`,
-        fullName: cleanEmail.split('@')[0],
-        email: cleanEmail,
-        membershipTier: "Basic",
-        avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-        studyGoalHours: 5.0,
-        currentStudyHours: 0,
-        quizTargetCount: 50,
-        currentQuizCount: 0
-      };
-      db.users.set(cleanEmail, user);
-      saveUsersToDisk();
-    }
-
-    db.currentUser = user;
-    res.json({ success: true, token: `jwt-${Date.now()}`, user });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-function getActiveUser(req) {
-  const reqEmail = req?.headers?.['x-user-email'] || req?.body?.email || req?.query?.email;
-  if (reqEmail && typeof reqEmail === 'string') {
-    const cleanEmail = reqEmail.trim().toLowerCase();
-    if (db.users.has(cleanEmail)) {
-      db.currentUser = db.users.get(cleanEmail);
-      return db.currentUser;
-    }
-  }
-  if (db.currentUser) return db.currentUser;
-  const allUsers = Array.from(db.users.values());
-  if (allUsers.length > 0) {
-    db.currentUser = allUsers[allUsers.length - 1];
-    return db.currentUser;
-  }
-  return db.user;
+// The caller's lesson, or a 404 response (RLS already hides other users' lessons)
+async function loadLesson(req, res, id = req.params.id) {
+  const lesson = await supabaseService.getLessonHistoryById(id, req.db);
+  if (!lesson) res.status(404).json({ success: false, error: 'Không tìm thấy bài học.' });
+  return lesson;
 }
 
-// Profile Update Endpoint
-app.post('/api/v1/user/profile', (req, res) => {
-  try {
-    const { fullName, avatarUrl } = req.body;
-    const targetUser = getActiveUser(req);
+const saveLesson = (req, lesson) => supabaseService.saveLessonHistory(lesson, lesson.studyPack, req.db);
 
-    if (fullName && fullName.trim() !== '') {
-      targetUser.fullName = fullName.trim();
-    }
-    if (avatarUrl && avatarUrl.trim() !== '') {
-      targetUser.avatarUrl = avatarUrl.trim();
-    }
+// Knowledge base of a lesson; re-analyzes the raw text for lessons saved without one
+async function knowledgeOf(lesson) {
+  return lesson.studyPack.knowledgeBase
+    || (lesson.studyPack.knowledgeBase = await aiRouter.analyzeDocument(lesson.rawText, { title: lesson.title }));
+}
 
-    if (targetUser.email) {
-      db.users.set(targetUser.email.toLowerCase(), targetUser);
-    }
-    db.currentUser = targetUser;
-    saveUsersToDisk();
-
-    res.json({ success: true, message: "Đã cập nhật hồ sơ cá nhân thành công!", user: targetUser });
-  } catch (err) {
-    console.error("Update profile error:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+const toDocumentItem = (l) => ({
+  id: l.id,
+  title: l.title,
+  fileType: l.fileType,
+  fileSize: l.fileSize,
+  pageCount: l.pageCount,
+  updatedAt: l.updatedAt,
+  status: l.status,
+  tags: l.tags
 });
 
-// Upload Avatar File Endpoint
+// Upload Avatar File Endpoint (the URL is stored in the user's Supabase profile by the client)
 app.post('/api/v1/user/upload-avatar', upload.single('avatar'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: "Không tìm thấy tệp ảnh tải lên." });
-    }
-    const avatarUrl = `/uploads/${req.file.filename}`;
-    const targetUser = getActiveUser(req);
-
-    if (targetUser) {
-      targetUser.avatarUrl = avatarUrl;
-      if (targetUser.email) {
-        db.users.set(targetUser.email.toLowerCase(), targetUser);
-      }
-      db.currentUser = targetUser;
-      saveUsersToDisk();
-    }
-
-    res.json({ success: true, avatarUrl, user: targetUser });
-  } catch (err) {
-    console.error("Upload avatar error:", err);
-    res.status(500).json({ success: false, error: err.message });
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: "Không tìm thấy tệp ảnh tải lên." });
   }
-});
-
-app.get('/api/v1/auth/me', (req, res) => {
-  const activeUser = getActiveUser(req);
-  res.json({ success: true, user: activeUser });
+  res.json({ success: true, avatarUrl: `/uploads/${req.file.filename}` });
 });
 
 app.get('/api/v1/user/stats', async (req, res) => {
-  const activeUser = getActiveUser(req);
-  const lessons = await supabaseService.getAllLessonHistory();
-  const docList = lessons.map(l => ({
-    id: l.id,
-    title: l.title,
-    fileType: l.fileType,
-    fileSize: l.fileSize,
-    pageCount: l.pageCount,
-    updatedAt: l.updatedAt,
-    status: l.status,
-    tags: l.tags
-  }));
+  const docList = (await supabaseService.getAllLessonHistory(req.db)).map(toDocumentItem);
   res.json({
     success: true,
     data: {
@@ -355,88 +124,23 @@ app.get('/api/v1/user/stats', async (req, res) => {
       retentionRatePercentage: 78,
       averageQuizScore: "8.5/10",
       quizScoreDiff: "+0.4 điểm so với tháng trước",
-      weeklyHours: { current: activeUser.currentStudyHours || 0, target: activeUser.studyGoalHours || 5.0 },
-      weeklyQuizCount: { current: activeUser.currentQuizCount || 0, target: activeUser.quizTargetCount || 50 },
-      recentDocuments: docList.length > 0 ? docList : db.documents,
-      spacedRepetitionItems: db.spacedRepetition,
-      recentActivities: db.activities
+      weeklyHours: { current: 0, target: 5 },
+      weeklyQuizCount: { current: 0, target: 50 },
+      recentDocuments: docList,
+      spacedRepetitionItems: [],
+      recentActivities: []
     }
   });
 });
 
 app.get('/api/v1/documents', async (req, res) => {
-  const lessons = await supabaseService.getAllLessonHistory();
-  const docList = lessons.map(l => ({
-    id: l.id,
-    title: l.title,
-    fileType: l.fileType,
-    fileSize: l.fileSize,
-    pageCount: l.pageCount,
-    updatedAt: l.updatedAt,
-    status: l.status,
-    tags: l.tags
-  }));
-  res.json({ success: true, documents: docList.length > 0 ? docList : db.documents });
+  const lessons = await supabaseService.getAllLessonHistory(req.db);
+  res.json({ success: true, documents: lessons.map(toDocumentItem) });
 });
 
 app.get('/api/v1/documents/:id', async (req, res) => {
-  let doc = db.documents.find(d => d.id === req.params.id);
-  let studyPack = doc ? (db.studyPacks[doc.id] || null) : null;
-
-  if (!doc || !studyPack) {
-    const lesson = await supabaseService.getLessonHistoryById(req.params.id);
-    if (lesson) {
-      doc = {
-        id: lesson.id,
-        title: lesson.title,
-        fileType: lesson.fileType,
-        fileSize: lesson.fileSize,
-        pageCount: lesson.pageCount,
-        updatedAt: lesson.updatedAt,
-        status: lesson.status,
-        tags: lesson.tags,
-        rawText: lesson.rawText
-      };
-      studyPack = lesson.studyPack;
-    }
-  }
-
-  doc = doc || db.documents[0] || null;
-  studyPack = studyPack || (doc ? db.studyPacks[doc.id] : null);
-  res.json({ success: true, document: doc, studyPack });
-});
-
-// Specified Standard AI Endpoints:
-app.get('/api/documents/:id/analysis', (req, res) => {
-  const pack = db.studyPacks[req.params.id] || null;
-  res.json({ success: true, knowledgeBase: pack ? pack.knowledgeBase : null });
-});
-
-app.get('/api/documents/:id/notes', (req, res) => {
-  const pack = db.studyPacks[req.params.id] || null;
-  res.json({ success: true, notes: pack ? pack.notes : null });
-});
-
-app.get('/api/documents/:id/mindmap', (req, res) => {
-  const pack = db.studyPacks[req.params.id] || null;
-  res.json({ success: true, mindmap: pack ? pack.mindmap : null });
-});
-
-app.get('/api/documents/:id/flashcards', (req, res) => {
-  const pack = db.studyPacks[req.params.id] || null;
-  res.json({ success: true, flashcards: pack ? pack.flashcards : [] });
-});
-
-app.get('/api/documents/:id/quiz', (req, res) => {
-  const pack = db.studyPacks[req.params.id] || null;
-  res.json({ success: true, quiz: pack ? pack.quiz : null });
-});
-
-// Async Job Status Progress endpoint
-app.get('/api/ai/job-status/:jobId', (req, res) => {
-  const job = jobs.get(req.params.jobId);
-  if (!job) return res.status(404).json({ success: false, error: "Job not found" });
-  res.json({ success: true, job });
+  const lesson = await loadLesson(req, res);
+  if (lesson) res.json({ success: true, document: { ...toDocumentItem(lesson), rawText: lesson.rawText }, studyPack: lesson.studyPack, quizHistory: lesson.quizHistory });
 });
 
 // Direct AI Endpoints
@@ -471,118 +175,87 @@ app.post('/api/ai/quiz', async (req, res) => {
 });
 
 app.post('/api/v1/documents/:id/regenerate-quiz', async (req, res) => {
-  try {
-    const docId = req.params.id;
-    const { userSettings = {} } = req.body || {};
-    const pack = db.studyPacks[docId] || db.studyPacks["doc-1"];
-    let knowledgeBase = pack?.knowledgeBase;
-    if (!knowledgeBase) {
-      const doc = db.documents.find(d => d.id === docId) || db.documents[0] || defaultDoc1;
-      const docTitle = doc?.title || defaultDoc1.title;
-      const docText = doc?.rawText || defaultDoc1.rawText;
-      knowledgeBase = await aiRouter.analyzeDocument(docText, { title: docTitle });
-    }
-    const quiz = await aiRouter.generateQuiz(knowledgeBase, userSettings);
-    if (!db.studyPacks[docId]) db.studyPacks[docId] = {};
-    db.studyPacks[docId].quiz = quiz;
-    db.studyPacks[docId].knowledgeBase = knowledgeBase;
-    res.json({ success: true, quiz });
-  } catch (err) {
-    console.error("Regenerate quiz error:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
+  lesson.studyPack.quiz = await aiRouter.generateQuiz(await knowledgeOf(lesson), req.body?.userSettings || {});
+  await saveLesson(req, lesson);
+  res.json({ success: true, quiz: lesson.studyPack.quiz });
 });
 
 app.post('/api/v1/documents/:id/regenerate-flashcards', async (req, res) => {
-  try {
-    const docId = req.params.id;
-    const { userSettings = {} } = req.body || {};
-    const pack = db.studyPacks[docId] || db.studyPacks["doc-1"];
-    let knowledgeBase = pack?.knowledgeBase;
-    if (!knowledgeBase) {
-      const doc = db.documents.find(d => d.id === docId) || db.documents[0] || defaultDoc1;
-      const docTitle = doc?.title || defaultDoc1.title;
-      const docText = doc?.rawText || defaultDoc1.rawText;
-      knowledgeBase = await aiRouter.analyzeDocument(docText, { title: docTitle });
-    }
-    const flashcards = await aiRouter.generateFlashcards(knowledgeBase, userSettings);
-    if (!db.studyPacks[docId]) db.studyPacks[docId] = {};
-    db.studyPacks[docId].flashcards = flashcards;
-    db.studyPacks[docId].knowledgeBase = knowledgeBase;
-    res.json({ success: true, flashcards });
-  } catch (err) {
-    console.error("Regenerate flashcards error:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
+  lesson.studyPack.flashcards = await aiRouter.generateFlashcards(await knowledgeOf(lesson), req.body?.userSettings || {});
+  await saveLesson(req, lesson);
+  res.json({ success: true, flashcards: lesson.studyPack.flashcards });
 });
 
 // Prerequisite analysis ("Kiến thức Tiên quyết") on demand — for older lessons or to re-run at another depth
 app.post('/api/v1/documents/:id/prerequisites', async (req, res) => {
-  try {
-    const docId = req.params.id;
-    const { depth } = req.body || {};
-    const history = await supabaseService.getLessonHistoryById(docId);
-    const doc = db.documents.find(d => d.id === docId) || history;
-    if (!doc) return res.status(404).json({ success: false, error: "Không tìm thấy tài liệu" });
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
+  const kb = lesson.studyPack.knowledgeBase;
+  lesson.studyPack.prerequisites = await aiRouter.generatePrerequisites(
+    lesson.title, lesson.rawText || kb?.summary || '', req.body?.depth || kb?.analysisDepth, kb
+  );
+  await saveLesson(req, lesson);
+  res.json({ success: true, prerequisites: lesson.studyPack.prerequisites });
+});
 
-    const pack = db.studyPacks[docId] || history?.studyPack || {};
-    const knowledgeBase = pack.knowledgeBase || null;
-    const text = doc.rawText || knowledgeBase?.summary || '';
-    const prerequisites = await aiRouter.generatePrerequisites(doc.title, text, depth || knowledgeBase?.analysisDepth, knowledgeBase);
+// Diagnostic pre-test is graded server-side and kept on the lesson as Knowledge Gap Map evidence
+app.post('/api/v1/documents/:id/prerequisites/diagnostic', async (req, res) => {
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
+  const prerequisites = lesson.studyPack.prerequisites;
+  const questions = prerequisites?.diagnosticPreTest?.questions || [];
+  if (questions.length === 0) return res.status(400).json({ success: false, error: 'Bài học chưa có bài test chẩn đoán.' });
 
-    db.studyPacks[docId] = { ...pack, prerequisites };
-    await supabaseService.saveLessonHistory({ ...(history || {}), ...doc }, db.studyPacks[docId]);
-    res.json({ success: true, prerequisites });
-  } catch (err) {
-    console.error("Prerequisite analysis error:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+  const answers = req.body?.answers || {};
+  prerequisites.lastDiagnostic = {
+    completedAt: new Date().toISOString(),
+    results: questions
+      .filter(q => answers[q.id] !== undefined)
+      .map(q => ({ questionId: q.id, prerequisiteId: q.testedPrerequisiteId, correct: answers[q.id] === q.correctIndex }))
+  };
+  await saveLesson(req, lesson);
+  res.json({ success: true, prerequisites });
 });
 
 app.post('/api/ai/chat', async (req, res) => {
   const { documentId, question, chatHistory = [] } = req.body;
-  const doc = db.documents.find(d => d.id === documentId) || db.documents[0];
-  const reply = await aiRouter.chat(doc.title, doc.rawText || '', question, chatHistory);
+  const lesson = await loadLesson(req, res, documentId);
+  if (!lesson) return;
+  const reply = await aiRouter.chat(lesson.title, lesson.rawText || '', question, chatHistory);
   res.json({ success: true, answer: reply });
 });
 
-// Upload Document with Async Job & Progress Streaming Support
+// Upload Document
 app.post('/api/v1/documents/upload', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
     const { options, rawText, fileName, depth } = req.body;
     const parsedOptions = { ...(options ? JSON.parse(options) : {}), depth };
-    
-    const newDocId = `doc-${Date.now()}`;
-    const docTitle = file 
-      ? file.originalname.replace(/\.[^/.]+$/, "") 
-      : (fileName 
-          ? fileName.replace(/\.[^/.]+$/, "") 
+
+    const docTitle = file
+      ? file.originalname.replace(/\.[^/.]+$/, "")
+      : (fileName
+          ? fileName.replace(/\.[^/.]+$/, "")
           : (rawText ? (rawText.trim().slice(0, 30) + '...') : "Tài liệu mới"));
-    const jobId = `job-${Date.now()}`;
-
-    // Create Job entry
-    jobs.set(jobId, { status: 'PROCESSING', progressPct: 10, step: 'Extracting content' });
-
-    const updateJob = (pct, step) => {
-      jobs.set(jobId, { status: pct === 100 ? 'COMPLETED' : 'PROCESSING', progressPct: pct, step });
-    };
 
     let result;
     if (file) {
-      result = await processFileAndGenerate(file.path, file.originalname, file.mimetype, parsedOptions, updateJob);
+      result = await processFileAndGenerate(file.path, file.originalname, file.mimetype, parsedOptions);
     } else {
       const defaultText = rawText && rawText.trim() ? rawText.trim() : "Tài liệu học tập tổng hợp từ người dùng.";
       result = {
         extractedText: defaultText,
         studyPack: await generateStudyPackFromText(defaultText, docTitle, depth)
       };
-      updateJob(100, 'Completed');
     }
 
     const extFromFileName = fileName ? fileName.split('.').pop().toUpperCase() : 'DOCX';
     const newDoc = {
-      id: newDocId,
+      id: newLessonId(),
       title: docTitle,
       fileType: file ? file.originalname.split('.').pop().toUpperCase() : extFromFileName,
       fileSize: file ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` : '1.5 MB',
@@ -593,15 +266,10 @@ app.post('/api/v1/documents/upload', upload.single('file'), async (req, res) => 
       rawText: result.extractedText
     };
 
-    db.documents.unshift(newDoc);
-    db.studyPacks[newDocId] = result.studyPack;
-
-    // Sync to Supabase Lesson History
-    await supabaseService.saveLessonHistory(newDoc, result.studyPack);
+    await supabaseService.saveLessonHistory(newDoc, result.studyPack, req.db);
 
     res.json({
       success: true,
-      jobId,
       message: "Chuyển hóa tài liệu thành công!",
       document: newDoc,
       studyPack: result.studyPack
@@ -617,71 +285,47 @@ app.post('/api/v1/documents/upload', upload.single('file'), async (req, res) => 
 
 // Process Video
 app.post('/api/v1/documents/process-video', async (req, res) => {
-  try {
-    const { videoUrl } = req.body;
-    const extracted = await extractFromVideoUrlOrFile(videoUrl);
-    const rawText = typeof extracted === 'object' ? extracted.text : extracted;
-    const docTitle = typeof extracted === 'object' ? extracted.title : (videoUrl ? `Video (${videoUrl.slice(0, 25)}...)` : "Video học tập");
-    
-    const newDocId = `doc-${Date.now()}`;
-    const studyPack = await generateStudyPackFromText(rawText, docTitle, req.body.depth);
+  const { videoUrl } = req.body;
+  const extracted = await extractFromVideoUrlOrFile(videoUrl);
+  const rawText = typeof extracted === 'object' ? extracted.text : extracted;
+  const docTitle = typeof extracted === 'object' ? extracted.title : (videoUrl ? `Video (${videoUrl.slice(0, 25)}...)` : "Video học tập");
 
-    const newDoc = {
-      id: newDocId,
-      title: docTitle,
-      fileType: 'VIDEO',
-      duration: 'Phân tích tự động',
-      updatedAt: 'Vừa xong',
-      status: 'COMPLETED',
-      tags: ['YouTube Speech-to-Text'],
-      rawText: rawText
-    };
+  const studyPack = await generateStudyPackFromText(rawText, docTitle, req.body.depth);
+  const newDoc = {
+    id: newLessonId(),
+    title: docTitle,
+    fileType: 'VIDEO',
+    duration: 'Phân tích tự động',
+    updatedAt: 'Vừa xong',
+    status: 'COMPLETED',
+    tags: ['YouTube Speech-to-Text'],
+    rawText: rawText
+  };
 
-    db.documents.unshift(newDoc);
-    db.studyPacks[newDocId] = studyPack;
-
-    // Sync to Supabase Lesson History
-    await supabaseService.saveLessonHistory(newDoc, db.studyPacks[newDocId]);
-
-    res.json({ success: true, document: newDoc, studyPack: db.studyPacks[newDocId] });
-  } catch (err) {
-    console.error("Process video error:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+  await supabaseService.saveLessonHistory(newDoc, studyPack, req.db);
+  res.json({ success: true, document: newDoc, studyPack });
 });
 
 // Process Web URL
 app.post('/api/v1/documents/process-url', async (req, res) => {
-  try {
-    const { url } = req.body;
-    const extracted = await extractFromWebUrl(url);
-    const rawText = typeof extracted === 'object' ? extracted.text : extracted;
-    const docTitle = typeof extracted === 'object' ? extracted.title : (url ? `Web (${url.slice(0, 25)}...)` : "Nghiên cứu Web");
-    
-    const newDocId = `doc-${Date.now()}`;
-    const studyPack = await generateStudyPackFromText(rawText, docTitle, req.body.depth);
+  const { url } = req.body;
+  const extracted = await extractFromWebUrl(url);
+  const rawText = typeof extracted === 'object' ? extracted.text : extracted;
+  const docTitle = typeof extracted === 'object' ? extracted.title : (url ? `Web (${url.slice(0, 25)}...)` : "Nghiên cứu Web");
 
-    const newDoc = {
-      id: newDocId,
-      title: docTitle,
-      fileType: 'URL',
-      updatedAt: 'Vừa xong',
-      status: 'COMPLETED',
-      tags: ['Web Article Extractor'],
-      rawText: rawText
-    };
+  const studyPack = await generateStudyPackFromText(rawText, docTitle, req.body.depth);
+  const newDoc = {
+    id: newLessonId(),
+    title: docTitle,
+    fileType: 'URL',
+    updatedAt: 'Vừa xong',
+    status: 'COMPLETED',
+    tags: ['Web Article Extractor'],
+    rawText: rawText
+  };
 
-    db.documents.unshift(newDoc);
-    db.studyPacks[newDocId] = studyPack;
-
-    // Sync to Supabase Lesson History
-    await supabaseService.saveLessonHistory(newDoc, db.studyPacks[newDocId]);
-
-    res.json({ success: true, document: newDoc, studyPack: db.studyPacks[newDocId] });
-  } catch (err) {
-    console.error("Process URL error:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+  await supabaseService.saveLessonHistory(newDoc, studyPack, req.db);
+  res.json({ success: true, document: newDoc, studyPack });
 });
 
 // Admin AI Logs & Metrics Dashboard Endpoints
@@ -696,39 +340,25 @@ app.get('/api/ai/stats', (req, res) => {
 // ==================== MINDMAP / FLASHCARD / QUIZ CRUD ==================== //
 
 app.post('/api/v1/documents/:id/mindmap/expand', async (req, res) => {
-  const docId = req.params.id;
-  const doc = db.documents.find(d => d.id === docId) || db.documents[0];
-  const pack = db.studyPacks[docId] || db.studyPacks["doc-1"];
   const { node } = req.body;
-
   if (!node) {
     return res.status(400).json({ success: false, error: "Missing node parameter" });
   }
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
 
-  try {
-    const expansion = await aiRouter.expandNode(node, doc.rawText || "");
-    const newNodes = expansion.expandedNodes || [];
-    const newEdges = expansion.expandedEdges || [];
+  const expansion = await aiRouter.expandNode(node, lesson.rawText || "");
+  const mindmap = lesson.studyPack.mindmap ||= { rootLabel: lesson.title, nodes: [], edges: [] };
+  (mindmap.nodes ||= []).push(...(expansion.expandedNodes || []));
+  (mindmap.edges ||= []).push(...(expansion.expandedEdges || []));
 
-    if (!pack.mindmap) {
-      pack.mindmap = { rootLabel: doc.title, nodes: [], edges: [] };
-    }
-    if (!Array.isArray(pack.mindmap.nodes)) pack.mindmap.nodes = [];
-    if (!Array.isArray(pack.mindmap.edges)) pack.mindmap.edges = [];
-
-    pack.mindmap.nodes.push(...newNodes);
-    pack.mindmap.edges.push(...newEdges);
-
-    res.json({ success: true, expansion, mindmap: pack.mindmap });
-  } catch (err) {
-    console.error("AI Node Expansion error:", err);
-    res.status(500).json({ success: false, error: "Failed to expand node via AI" });
-  }
+  await saveLesson(req, lesson);
+  res.json({ success: true, expansion, mindmap });
 });
 
-app.post('/api/v1/documents/:id/mindmap/nodes', (req, res) => {
-  const docId = req.params.id;
-  const pack = db.studyPacks[docId] || db.studyPacks["doc-1"];
+app.post('/api/v1/documents/:id/mindmap/nodes', async (req, res) => {
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
   const { label, detail, subDetails = [], parentId } = req.body;
 
   const newNode = {
@@ -739,45 +369,45 @@ app.post('/api/v1/documents/:id/mindmap/nodes', (req, res) => {
     parentId: parentId || 'root'
   };
 
-  if (!pack.mindmap) {
-    pack.mindmap = { rootLabel: 'NÚT GỐC TRUNG TÂM', nodes: [] };
-  }
-  pack.mindmap.nodes.push(newNode);
+  const mindmap = lesson.studyPack.mindmap ||= { rootLabel: 'NÚT GỐC TRUNG TÂM', nodes: [] };
+  (mindmap.nodes ||= []).push(newNode);
 
-  res.json({ success: true, node: newNode, mindmap: pack.mindmap });
+  await saveLesson(req, lesson);
+  res.json({ success: true, node: newNode, mindmap });
 });
 
-app.put('/api/v1/documents/:id/mindmap/nodes/:nodeId', (req, res) => {
-  const { id: docId, nodeId } = req.params;
-  const pack = db.studyPacks[docId] || db.studyPacks["doc-1"];
+app.put('/api/v1/documents/:id/mindmap/nodes/:nodeId', async (req, res) => {
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
   const { label, detail, subDetails } = req.body;
 
-  if (pack.mindmap && pack.mindmap.nodes) {
-    const node = pack.mindmap.nodes.find(n => n.id === nodeId);
-    if (node) {
-      if (label !== undefined) node.label = label;
-      if (detail !== undefined) node.detail = detail;
-      if (subDetails !== undefined) node.subDetails = subDetails;
-    }
+  const node = lesson.studyPack.mindmap?.nodes?.find(n => n.id === req.params.nodeId);
+  if (node) {
+    if (label !== undefined) node.label = label;
+    if (detail !== undefined) node.detail = detail;
+    if (subDetails !== undefined) node.subDetails = subDetails;
+    await saveLesson(req, lesson);
   }
 
-  res.json({ success: true, mindmap: pack.mindmap });
+  res.json({ success: true, mindmap: lesson.studyPack.mindmap });
 });
 
-app.delete('/api/v1/documents/:id/mindmap/nodes/:nodeId', (req, res) => {
-  const { id: docId, nodeId } = req.params;
-  const pack = db.studyPacks[docId] || db.studyPacks["doc-1"];
+app.delete('/api/v1/documents/:id/mindmap/nodes/:nodeId', async (req, res) => {
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
 
-  if (pack.mindmap && pack.mindmap.nodes) {
-    pack.mindmap.nodes = pack.mindmap.nodes.filter(n => n.id !== nodeId);
+  const mindmap = lesson.studyPack.mindmap;
+  if (mindmap?.nodes) {
+    mindmap.nodes = mindmap.nodes.filter(n => n.id !== req.params.nodeId);
+    await saveLesson(req, lesson);
   }
 
-  res.json({ success: true, mindmap: pack.mindmap });
+  res.json({ success: true, mindmap });
 });
 
-app.post('/api/v1/documents/:id/flashcards', (req, res) => {
-  const docId = req.params.id;
-  const pack = db.studyPacks[docId] || db.studyPacks["doc-1"];
+app.post('/api/v1/documents/:id/flashcards', async (req, res) => {
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
   const { front, back, difficulty = 'medium' } = req.body;
 
   const newCard = {
@@ -789,41 +419,49 @@ app.post('/api/v1/documents/:id/flashcards', (req, res) => {
     nextReview: new Date().toISOString()
   };
 
-  if (!pack.flashcards) pack.flashcards = [];
-  pack.flashcards.push(newCard);
-
-  res.json({ success: true, card: newCard, flashcards: pack.flashcards });
+  (lesson.studyPack.flashcards ||= []).push(newCard);
+  await saveLesson(req, lesson);
+  res.json({ success: true, card: newCard, flashcards: lesson.studyPack.flashcards });
 });
 
-app.post('/api/v1/flashcards/:id/review', (req, res) => {
-  const { rating } = req.body;
+app.post('/api/v1/documents/:id/flashcards/:cardId/review', async (req, res) => {
   const intervals = { hard: '1 phút', medium: '10 phút', easy: '4 ngày' };
+  const { rating } = req.body;
+  if (!intervals[rating]) return res.status(400).json({ success: false, error: 'Đánh giá không hợp lệ.' });
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
+
+  const card = (lesson.studyPack.flashcards || []).find(c => c.id === req.params.cardId);
+  if (!card) return res.status(404).json({ success: false, error: 'Không tìm thấy thẻ ghi nhớ.' });
+  card.lastRating = rating;
+  card.lastReviewed = new Date().toISOString();
+  await saveLesson(req, lesson);
+
   res.json({
     success: true,
-    message: `Đã cập nhật trạng thái thẻ ôn tập: ${rating.toUpperCase()} (Lần ôn tiếp theo: sau ${intervals[rating] || '10 phút'})`
+    card,
+    message: `Đã cập nhật trạng thái thẻ ôn tập: ${rating.toUpperCase()} (Lần ôn tiếp theo: sau ${intervals[rating]})`
   });
 });
 
-app.delete('/api/v1/flashcards/:id', (req, res) => {
-  const cardId = req.params.id;
-  Object.values(db.studyPacks).forEach(pack => {
-    if (pack.flashcards) {
-      pack.flashcards = pack.flashcards.filter(c => c.id !== cardId);
-    }
-  });
+app.delete('/api/v1/documents/:id/flashcards/:cardId', async (req, res) => {
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
+  lesson.studyPack.flashcards = (lesson.studyPack.flashcards || []).filter(c => c.id !== req.params.cardId);
+  await saveLesson(req, lesson);
   res.json({ success: true, message: "Đã xóa thẻ ghi nhớ thành công" });
 });
 
-app.post('/api/v1/documents/:id/quiz/questions', (req, res) => {
-  const docId = req.params.id;
-  const pack = db.studyPacks[docId] || db.studyPacks["doc-1"];
+app.post('/api/v1/documents/:id/quiz/questions', async (req, res) => {
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
   const { questionText, options, correctIndex, explanation } = req.body;
 
-  if (!pack.quiz) {
-    pack.quiz = { title: "Đề trắc nghiệm AI", subject: "Tổng hợp", timeLimitMinutes: 15, questions: [] };
-  }
+  const quiz = lesson.studyPack.quiz?.questions
+    ? lesson.studyPack.quiz
+    : (lesson.studyPack.quiz = { title: "Đề trắc nghiệm AI", subject: "Tổng hợp", timeLimitMinutes: 15, questions: [] });
 
-  const qNumber = pack.quiz.questions.length + 1;
+  const qNumber = quiz.questions.length + 1;
   const newQ = {
     id: `q-${Date.now()}`,
     questionNumber: qNumber,
@@ -833,32 +471,27 @@ app.post('/api/v1/documents/:id/quiz/questions', (req, res) => {
     explanation: explanation || "Giải thích chi tiết từ AI."
   };
 
-  pack.quiz.questions.push(newQ);
-
-  res.json({ success: true, question: newQ, quiz: pack.quiz });
+  quiz.questions.push(newQ);
+  await saveLesson(req, lesson);
+  res.json({ success: true, question: newQ, quiz });
 });
 
-app.post('/api/v1/quiz/:id/submit', (req, res) => {
-  const { answers } = req.body;
-  const docId = req.params.id;
-  const pack = db.studyPacks[docId] || db.studyPacks["doc-1"];
-  const quiz = pack.quiz;
+app.post('/api/v1/quiz/:id/submit', async (req, res) => {
+  const lesson = await loadLesson(req, res);
+  if (!lesson) return;
+  const answers = req.body.answers || {};
+  const questions = lesson.studyPack.quiz?.questions || [];
 
-  let correctCount = 0;
-  if (quiz && quiz.questions) {
-    quiz.questions.forEach(q => {
-      if (answers[q.id] === q.correctIndex) {
-        correctCount++;
-      }
-    });
-  }
-
-  const total = quiz?.questions?.length || 3;
+  // Per-question outcome is the evidence the Knowledge Gap Map traces back through the concept graph
+  const results = questions
+    .filter(q => answers[q.id] !== undefined)
+    .map(q => ({ questionId: q.id, conceptId: q.conceptId || null, correct: answers[q.id] === q.correctIndex }));
+  const correctCount = results.filter(r => r.correct).length;
+  const total = Math.max(questions.length, 1);
   const scorePct = Math.round((correctCount / total) * 100);
   const feedback = scorePct >= 80 ? "Xuất sắc! Bạn đã nắm rất vững kiến thức bài học." : "Khá tốt! Hãy ôn lại các thẻ ghi nhớ màu đỏ nhé.";
 
-  // Record quiz result into Supabase / History
-  supabaseService.recordQuizResult(docId, scorePct, correctCount, total, feedback);
+  await supabaseService.recordQuizResult(lesson, scorePct, correctCount, total, feedback, results, req.db);
 
   res.json({
     success: true,
@@ -870,143 +503,50 @@ app.post('/api/v1/quiz/:id/submit', (req, res) => {
 });
 
 // ==========================================
-// 📚 LESSON HISTORY & SUPABASE ENDPOINTS
+// 📚 LESSON HISTORY ENDPOINTS
 // ==========================================
 
-// Get all lesson history
 app.get('/api/v1/history', async (req, res) => {
-  try {
-    const historyList = await supabaseService.getAllLessonHistory();
-    res.json({
-      success: true,
-      isSupabaseActive: supabaseService.isConfigured(),
-      data: historyList
-    });
-  } catch (err) {
-    console.error("Fetch history error:", err);
-    res.status(500).json({ success: false, error: "Lỗi tải lịch sử bài học" });
-  }
+  const historyList = await supabaseService.getAllLessonHistory(req.db);
+  res.json({
+    success: true,
+    isSupabaseActive: supabaseService.isConfigured(),
+    data: historyList
+  });
 });
 
-// Get detailed lesson history item
 app.get('/api/v1/history/:id', async (req, res) => {
-  try {
-    const lesson = await supabaseService.getLessonHistoryById(req.params.id);
-    if (!lesson) {
-      return res.status(404).json({ success: false, error: "Không tìm thấy bài học trong lịch sử" });
-    }
-    res.json({ success: true, data: lesson });
-  } catch (err) {
-    console.error("Fetch history detail error:", err);
-    res.status(500).json({ success: false, error: "Lỗi tải chi tiết bài học" });
-  }
+  const lesson = await loadLesson(req, res);
+  if (lesson) res.json({ success: true, data: lesson });
 });
 
-// Delete lesson history item
 app.delete('/api/v1/history/:id', async (req, res) => {
-  try {
-    const docId = req.params.id;
-    await supabaseService.deleteLessonHistory(docId);
-    
-    // Remove from in-memory db as well
-    db.documents = db.documents.filter(d => d.id !== docId);
-    delete db.studyPacks[docId];
-
-    res.json({ success: true, message: "Đã xóa bài học khỏi lịch sử thành công!" });
-  } catch (err) {
-    console.error("Delete history error:", err);
-    res.status(500).json({ success: false, error: "Lỗi xóa bài học" });
-  }
+  await supabaseService.deleteLessonHistory(req.params.id, req.db);
+  res.json({ success: true, message: "Đã xóa bài học khỏi lịch sử thành công!" });
 });
 
 // ==========================================
 // 🧬 MULTI-DOCUMENT KNOWLEDGE FUSION ENDPOINT
 // ==========================================
 app.post('/api/v1/fusion/analyze', async (req, res) => {
-  try {
-    const { documentIds } = req.body;
-    if (!documentIds || !Array.isArray(documentIds) || documentIds.length < 2) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Vui lòng chọn ít nhất 2 tài liệu để thực hiện hợp nhất và so sánh." 
-      });
-    }
-
-    // Fetch selected documents from memory or Supabase history
-    const allHistory = await supabaseService.getAllLessonHistory();
-    const selectedDocs = documentIds.map(id => {
-      const foundMem = db.documents.find(d => d.id === id);
-      if (foundMem) return foundMem;
-      const foundHist = allHistory.find(h => h.id === id);
-      if (foundHist) return foundHist;
-      return { id, title: `Tài liệu ${id}`, rawText: "", tags: ["Tài liệu"] };
+  const { documentIds } = req.body;
+  const allHistory = Array.isArray(documentIds) ? await supabaseService.getAllLessonHistory(req.db) : [];
+  const selectedDocs = allHistory.filter(h => documentIds.includes(h.id));
+  if (selectedDocs.length < 2) {
+    return res.status(400).json({
+      success: false,
+      error: "Vui lòng chọn ít nhất 2 tài liệu để thực hiện hợp nhất và so sánh."
     });
-
-    // Call real AI Knowledge Fusion Engine
-    const fusionResult = await aiRouter.analyzeFusion(selectedDocs);
-
-    res.json({ success: true, data: fusionResult });
-  } catch (err) {
-    console.error("Fusion analysis error:", err);
-    res.status(500).json({ success: false, error: "Lỗi trong quá trình hợp nhất tài liệu." });
   }
+
+  const fusionResult = await aiRouter.analyzeFusion(selectedDocs);
+  res.json({ success: true, data: fusionResult });
 });
 
-// ==========================================
-// 🔑 AUTHENTICATION & USER PROFILE ENDPOINTS
-// ==========================================
-
-// Login Route
-app.post('/api/v1/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: "Vui lòng nhập Email và Mật khẩu" });
-    }
-
-    const authResult = await supabaseService.signInUser(email, password);
-    res.json({
-      success: true,
-      message: "Đăng nhập thành công!",
-      user: authResult.user,
-      session: authResult.session
-    });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(401).json({ success: false, error: err.message || "Đăng nhập thất bại" });
-  }
-});
-
-// Signup Route
-app.post('/api/v1/auth/signup', async (req, res) => {
-  try {
-    const { email, password, fullName } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: "Vui lòng điền đầy đủ Email và Mật khẩu" });
-    }
-
-    const authResult = await supabaseService.signUpUser(email, password, fullName);
-    res.json({
-      success: true,
-      message: "Đăng ký tài khoản thành công!",
-      user: authResult.user,
-      session: authResult.session
-    });
-  } catch (err) {
-    console.error("Signup error:", err);
-    res.status(400).json({ success: false, error: err.message || "Đăng ký không thành công" });
-  }
-});
-
-// Logout Route
-app.post('/api/v1/auth/logout', async (req, res) => {
-  try {
-    await supabaseService.signOutUser();
-    res.json({ success: true, message: "Đã đăng xuất phiên làm việc!" });
-  } catch (err) {
-    console.error("Logout error:", err);
-    res.status(500).json({ success: false, error: "Lỗi đăng xuất" });
-  }
+// Errors thrown in any route (Express 5 forwards async errors here) come back as JSON instead of an HTML page
+app.use((err, req, res, next) => {
+  console.error(`[API Error] ${req.method} ${req.path}:`, err);
+  res.status(err.status || 500).json({ success: false, error: err.message || 'Lỗi máy chủ' });
 });
 
 if (!process.env.VERCEL) {

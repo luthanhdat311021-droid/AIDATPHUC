@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import { 
   TabType, 
   User, 
@@ -17,6 +19,7 @@ interface StudyContextType {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
   user: User;
+  authReady: boolean;
   stats: UserStats | null;
   documents: DocumentItem[];
   activeDocId: string;
@@ -55,6 +58,7 @@ interface StudyContextType {
 
   // Prerequisite Analysis ("Kiến thức Tiên quyết")
   analyzePrerequisitesAI: (depth?: string) => Promise<void>;
+  submitDiagnostic: (answers: Record<string, number>) => Promise<void>;
 
   // Lesson History Operations (Supabase Integration)
   historyList: LessonHistoryItem[];
@@ -81,25 +85,46 @@ interface StudyContextType {
 
 const StudyContext = createContext<StudyContextType | null>(null);
 
+const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80";
+const GUEST_USER: User = { fullName: "Khách ghé thăm", membershipTier: "Basic", avatarUrl: DEFAULT_AVATAR };
+
+const toAppUser = (u: SupabaseUser): User => ({
+  id: u.id,
+  email: u.email,
+  fullName: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Học viên',
+  avatarUrl: u.user_metadata?.avatar_url || DEFAULT_AVATAR,
+  membershipTier: "Basic",
+  createdAt: u.created_at
+});
+
+// Supabase Auth messages are English; show the common ones in Vietnamese
+const AUTH_ERRORS: Record<string, string> = {
+  'Invalid login credentials': 'Email hoặc mật khẩu không đúng.',
+  'Email not confirmed': 'Email chưa được xác nhận. Hãy mở email và bấm vào liên kết xác nhận trước khi đăng nhập.',
+  'User already registered': 'Email này đã được đăng ký. Hãy chuyển sang Đăng nhập.',
+  'Password should be at least 6 characters.': 'Mật khẩu phải có ít nhất 6 ký tự.'
+};
+const authError = (message: string) => AUTH_ERRORS[message] || message;
+
 export function StudyProvider({ children }: { children: ReactNode }) {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   
-  const [user, setUser] = useState<User>(() => {
-    const saved = localStorage.getItem('studymind_user_session');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return {
-      fullName: "Học viên StudyMind",
-      email: "student@studymind.ai",
-      membershipTier: "Basic",
-      avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
-    };
-  });
+  const [user, setUser] = useState<User>(GUEST_USER);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  // False until Supabase has restored any saved session, so a signed-in user never flashes the login page
+  const [authReady, setAuthReady] = useState<boolean>(false);
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return Boolean(localStorage.getItem('studymind_user_session'));
-  });
+  // Supabase owns the session (stored, refreshed and expired by the SDK); the UI just mirrors it
+  useEffect(() => {
+    const applySession = (session: Session | null) => {
+      setIsAuthenticated(Boolean(session));
+      setUser(session ? toAppUser(session.user) : GUEST_USER);
+      setAuthReady(true);
+    };
+    supabase.auth.getSession().then(({ data }) => applySession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => applySession(session));
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
@@ -130,6 +155,16 @@ const getApiUrl = (endpoint: string): string => {
   return endpoint;
 };
 
+// Every backend call goes through here so it always carries the signed-in user's access token
+const apiFetch = async (endpoint: string, init: RequestInit = {}): Promise<Response> => {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return fetch(getApiUrl(endpoint), {
+    ...init,
+    headers: { ...(init.headers || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+  });
+};
+
 const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; errorMsg?: string }> => {
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
@@ -156,127 +191,54 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
   }
 };
 
+  // Session changes (sign in / out) update user state via onAuthStateChange
   const login = async (email?: string, password?: string) => {
-    const cleanEmail = email?.trim() || 'demo@studymind.ai';
-    const fallbackUser: User = {
-      fullName: cleanEmail.split('@')[0] || 'Học viên StudyMind',
-      email: cleanEmail,
-      membershipTier: "Basic",
-      avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
-    };
-
-    try {
-      const res = await fetch(getApiUrl('/api/v1/auth/login'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, password })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          setUser(data.user);
-          setIsAuthenticated(true);
-          localStorage.setItem('studymind_user_session', JSON.stringify(data.user));
-          showToast(`Chào mừng trở lại, ${data.user.fullName}!`);
-          await fetchHistory().catch(() => {});
-          return data;
-        }
-      }
-    } catch (err: any) {
-      console.warn("API Login failed, using local session login fallback:", err);
-    }
-
-    setUser(fallbackUser);
-    setIsAuthenticated(true);
-    localStorage.setItem('studymind_user_session', JSON.stringify(fallbackUser));
-    showToast(`Đăng nhập thành công với ${cleanEmail}!`);
-    closeAuthModal();
-    return { success: true, user: fallbackUser };
+    const { error } = await supabase.auth.signInWithPassword({ email: (email || '').trim(), password: password || '' });
+    if (error) return { success: false, error: authError(error.message) };
+    showToast("Đăng nhập thành công!");
+    return { success: true };
   };
 
   const signup = async (fullName: string, email: string, password?: string) => {
     const cleanEmail = email.trim().toLowerCase();
-    const displayName = (fullName && fullName.trim() !== '') ? fullName.trim() : cleanEmail.split('@')[0];
-    const fallbackUser: User = {
-      fullName: displayName,
+    const displayName = fullName.trim() || cleanEmail.split('@')[0];
+    const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
-      membershipTier: "Tài khoản Mới",
-      avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
-    };
-
-    try {
-      const res = await fetch(getApiUrl('/api/v1/auth/signup'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: displayName, email: cleanEmail, password })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          setUser(data.user);
-          setIsAuthenticated(true);
-          localStorage.setItem('studymind_user_session', JSON.stringify(data.user));
-          showToast(`Tạo tài khoản thành công! Chào mừng ${data.user.fullName}!`);
-          await fetchHistory().catch(() => {});
-          return data;
-        }
-      }
-    } catch (err: any) {
-      console.warn("API Signup failed, using local session fallback:", err);
+      password: password || '',
+      options: { data: { full_name: displayName, avatar_url: DEFAULT_AVATAR }, emailRedirectTo: window.location.origin }
+    });
+    if (error) return { success: false, error: authError(error.message) };
+    // With "Confirm email" on, Supabase returns no session until the link in the email is clicked
+    if (!data.session) {
+      return { success: false, error: `Đã gửi email xác nhận tới ${cleanEmail}. Hãy bấm vào liên kết trong email rồi quay lại đăng nhập.` };
     }
-
-    setUser(fallbackUser);
-    setIsAuthenticated(true);
-    localStorage.setItem('studymind_user_session', JSON.stringify(fallbackUser));
-    showToast(`Tạo tài khoản thành công! Chào mừng ${fallbackUser.fullName}!`);
-    closeAuthModal();
-    return { success: true, user: fallbackUser };
+    showToast(`Tạo tài khoản thành công! Chào mừng ${displayName}!`);
+    return { success: true };
   };
 
   const updateUserProfile = async (fullName: string, avatarUrl: string) => {
-    try {
-      const res = await fetch(getApiUrl('/api/v1/user/profile'), {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-user-email': user?.email || ''
-        },
-        body: JSON.stringify({ fullName, avatarUrl, email: user?.email })
-      });
-      const data = await res.json();
-      if (data.success && data.user) {
-        setUser(data.user);
-        localStorage.setItem('studymind_user_session', JSON.stringify(data.user));
-        showToast("Đã cập nhật hồ sơ cá nhân thành công!");
-      }
-      return data;
-    } catch (err: any) {
-      console.error("Update profile error:", err);
+    const { data, error } = await supabase.auth.updateUser({ data: { full_name: fullName.trim(), avatar_url: avatarUrl.trim() || DEFAULT_AVATAR } });
+    if (error) {
       showToast("Lỗi cập nhật hồ sơ!");
-      return { success: false, error: err.message };
+      return { success: false, error: error.message };
     }
+    setUser(toAppUser(data.user));
+    showToast("Đã cập nhật hồ sơ cá nhân thành công!");
+    return { success: true, user: toAppUser(data.user) };
   };
 
   const uploadAvatarFile = async (file: File) => {
     try {
       const formData = new FormData();
       formData.append('avatar', file);
-
-      const res = await fetch(getApiUrl('/api/v1/user/upload-avatar'), {
-        method: 'POST',
-        headers: {
-          'x-user-email': user?.email || ''
-        },
-        body: formData
-      });
+      const res = await apiFetch('/api/v1/user/upload-avatar', { method: 'POST', body: formData });
       const data = await res.json();
-      if (data.success && data.avatarUrl) {
-        const updatedUser = data.user || { ...user, avatarUrl: data.avatarUrl };
-        setUser(updatedUser);
-        localStorage.setItem('studymind_user_session', JSON.stringify(updatedUser));
-        showToast("Tải ảnh đại diện thành công!");
-      }
-      return data;
+      if (!data.success) throw new Error(data.error);
+      const { data: updated, error } = await supabase.auth.updateUser({ data: { avatar_url: data.avatarUrl } });
+      if (error) throw error;
+      setUser(toAppUser(updated.user));
+      showToast("Tải ảnh đại diện thành công!");
+      return { success: true, avatarUrl: data.avatarUrl, user: toAppUser(updated.user) };
     } catch (err: any) {
       console.error("Upload avatar error:", err);
       showToast("Lỗi tải ảnh đại diện!");
@@ -285,19 +247,15 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
   };
 
   const logout = async () => {
-    try {
-      await fetch(getApiUrl('/api/v1/auth/logout'), { method: 'POST' });
-    } catch (err) {}
-    localStorage.removeItem('studymind_user_session');
-    setIsAuthenticated(false);
-    setUser({
-      fullName: "Khách ghé thăm",
-      membershipTier: "Basic",
-      avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
-    });
+    await supabase.auth.signOut();
+    // Nothing from this account may linger for the next person on this device
+    localStorage.removeItem('studymind_cached_history');
+    setHistoryList([]);
+    setStats(null);
+    setDocuments([]);
+    setActiveDocData(null);
+    setActiveTab('dashboard');
     showToast("👋 Đã đăng xuất tài khoản!");
-    await fetchHistory();
-    await fetchDashboardStats();
   };
 
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -323,7 +281,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
   const performKnowledgeFusion = async (docIds: string[]) => {
     setFusionLoading(true);
     try {
-      const res = await fetch(getApiUrl('/api/v1/fusion/analyze'), {
+      const res = await apiFetch('/api/v1/fusion/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentIds: docIds })
@@ -347,7 +305,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const fetchDashboardStats = async () => {
     try {
-      const res = await fetch(getApiUrl('/api/v1/user/stats'));
+      const res = await apiFetch('/api/v1/user/stats');
       const data = await res.json();
       if (data.success) {
         setStats(data.data);
@@ -360,7 +318,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch(getApiUrl('/api/v1/history'));
+      const res = await apiFetch('/api/v1/history');
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setHistoryList(data.data);
@@ -382,7 +340,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const deleteHistoryItem = async (id: string) => {
     try {
-      const res = await fetch(getApiUrl(`/api/v1/history/${id}`), { method: 'DELETE' });
+      const res = await apiFetch(`/api/v1/history/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         showToast("Đã xóa bài học khỏi lịch sử!");
@@ -402,7 +360,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
   const fetchDocumentDetail = async (docId: string) => {
     try {
       setLoading(true);
-      const res = await fetch(getApiUrl(`/api/v1/documents/${docId}`));
+      const res = await apiFetch(`/api/v1/documents/${docId}`);
       const data = await res.json();
       if (data.success) {
         setActiveDocData(data);
@@ -415,11 +373,12 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     }
   };
 
+  // Load the signed-in user's data once their session is known (and again after switching accounts)
   useEffect(() => {
+    if (!user.id) return;
     fetchDashboardStats();
     fetchHistory();
-    fetchDocumentDetail('doc-1');
-  }, []);
+  }, [user.id]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -436,7 +395,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       formData.append('depth', depth);
       formData.append('options', JSON.stringify(options));
 
-      const res = await fetch(getApiUrl('/api/v1/documents/upload'), {
+      const res = await apiFetch('/api/v1/documents/upload', {
         method: 'POST',
         body: formData
       });
@@ -463,7 +422,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const processVideo = async (videoUrl: string) => {
     try {
-      const res = await fetch(getApiUrl('/api/v1/documents/process-video'), {
+      const res = await apiFetch('/api/v1/documents/process-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoUrl })
@@ -487,7 +446,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const processUrl = async (url: string) => {
     try {
-      const res = await fetch(getApiUrl('/api/v1/documents/process-url'), {
+      const res = await apiFetch('/api/v1/documents/process-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
@@ -512,7 +471,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
   // Mindmap Operations
   const addMindmapNode = async (nodeData: Partial<MindmapNode>) => {
     try {
-      const res = await fetch(getApiUrl(`/api/v1/documents/${activeDocId}/mindmap/nodes`), {
+      const res = await apiFetch(`/api/v1/documents/${activeDocId}/mindmap/nodes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nodeData)
@@ -529,7 +488,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const updateMindmapNode = async (nodeId: string, nodeData: Partial<MindmapNode>) => {
     try {
-      const res = await fetch(getApiUrl(`/api/v1/documents/${activeDocId}/mindmap/nodes/${nodeId}`), {
+      const res = await apiFetch(`/api/v1/documents/${activeDocId}/mindmap/nodes/${nodeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nodeData)
@@ -546,7 +505,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const deleteMindmapNode = async (nodeId: string) => {
     try {
-      const res = await fetch(getApiUrl(`/api/v1/documents/${activeDocId}/mindmap/nodes/${nodeId}`), {
+      const res = await apiFetch(`/api/v1/documents/${activeDocId}/mindmap/nodes/${nodeId}`, {
         method: 'DELETE'
       });
       const data = await res.json();
@@ -562,7 +521,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
   // Flashcard Operations
   const addFlashcard = async (cardData: Partial<Flashcard>) => {
     try {
-      const res = await fetch(getApiUrl(`/api/v1/documents/${activeDocId}/flashcards`), {
+      const res = await apiFetch(`/api/v1/documents/${activeDocId}/flashcards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cardData)
@@ -579,7 +538,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const reviewFlashcard = async (cardId: string, rating: string) => {
     try {
-      const res = await fetch(getApiUrl(`/api/v1/flashcards/${cardId}/review`), {
+      const res = await apiFetch(`/api/v1/documents/${activeDocId}/flashcards/${cardId}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating })
@@ -587,6 +546,11 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const data = await res.json();
       if (data.success) {
         showToast(data.message);
+        // Keep the saved rating in state (no refetch per card); the Knowledge Gap Map reads it
+        setActiveDocData(prev => prev && {
+          ...prev,
+          studyPack: { ...prev.studyPack, flashcards: (prev.studyPack.flashcards || []).map(c => c.id === cardId ? data.card : c) }
+        });
       }
     } catch (err) {
       console.error("Review flashcard failed:", err);
@@ -595,7 +559,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const deleteFlashcard = async (cardId: string) => {
     try {
-      const res = await fetch(getApiUrl(`/api/v1/flashcards/${cardId}`), {
+      const res = await apiFetch(`/api/v1/documents/${activeDocId}/flashcards/${cardId}`, {
         method: 'DELETE'
       });
       const data = await res.json();
@@ -611,7 +575,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
   // Quiz Operations
   const addQuizQuestion = async (questionData: Partial<QuizQuestion>) => {
     try {
-      const res = await fetch(getApiUrl(`/api/v1/documents/${activeDocId}/quiz/questions`), {
+      const res = await apiFetch(`/api/v1/documents/${activeDocId}/quiz/questions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(questionData)
@@ -628,7 +592,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const submitQuiz = async (quizId: string, answers: Record<string, number>) => {
     try {
-      const res = await fetch(getApiUrl(`/api/v1/quiz/${quizId}/submit`), {
+      const res = await apiFetch(`/api/v1/quiz/${quizId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answers })
@@ -637,6 +601,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       if (data.success) {
         fetchDashboardStats();
         fetchHistory();
+        fetchDocumentDetail(quizId); // fresh quizHistory for the Knowledge Gap Map
       }
       return data;
     } catch (err) {
@@ -646,7 +611,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
 
   const sendChatMessage = async (documentId: string, question: string, history: any[]) => {
     try {
-      const res = await fetch(getApiUrl('/api/v1/chat/message'), {
+      const res = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentId, question, chatHistory: history })
@@ -662,7 +627,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
   const expandMindmapNodeAI = async (node: MindmapNode) => {
     try {
       showToast(`Đang mở rộng và phân tích sâu nút "${node.label}"...`);
-      const res = await fetch(getApiUrl(`/api/v1/documents/${activeDocId}/mindmap/expand`), {
+      const res = await apiFetch(`/api/v1/documents/${activeDocId}/mindmap/expand`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ node })
@@ -682,7 +647,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     const targetId = docId || activeDocId;
     try {
       showToast("Đang biên soạn 10-12 câu hỏi trắc nghiệm mới...");
-      const res = await fetch(getApiUrl(`/api/v1/documents/${targetId}/regenerate-quiz`), {
+      const res = await apiFetch(`/api/v1/documents/${targetId}/regenerate-quiz`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -710,7 +675,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     const doc = activeDocData?.document;
     if (!doc) return;
     try {
-      const res = await fetch(getApiUrl(`/api/v1/documents/${doc.id}/prerequisites`), {
+      const res = await apiFetch(`/api/v1/documents/${doc.id}/prerequisites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ depth })
@@ -732,11 +697,35 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     }
   };
 
+  // Graded and stored server-side as evidence for the Knowledge Gap Map
+  const submitDiagnostic = async (answers: Record<string, number>) => {
+    const doc = activeDocData?.document;
+    if (!doc) return;
+    try {
+      const res = await apiFetch(`/api/v1/documents/${doc.id}/prerequisites/diagnostic`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers })
+      });
+      const parsed = await safeFetchJson(res);
+      if (parsed.ok && parsed.data?.prerequisites) {
+        setActiveDocData(prev => prev && prev.document.id === doc.id
+          ? { ...prev, studyPack: { ...prev.studyPack, prerequisites: parsed.data.prerequisites } }
+          : prev);
+      } else {
+        showToast(parsed.errorMsg || "Không lưu được kết quả bài test chẩn đoán.");
+      }
+    } catch (err) {
+      console.error("Submit diagnostic failed:", err);
+      showToast("Không lưu được kết quả bài test chẩn đoán.");
+    }
+  };
+
   const regenerateFlashcardsAI = async (docId?: string) => {
     const targetId = docId || activeDocId;
     try {
       showToast("Đang khởi tạo 10-12 Thẻ ghi nhớ mới...");
-      const res = await fetch(getApiUrl(`/api/v1/documents/${targetId}/regenerate-flashcards`), {
+      const res = await apiFetch(`/api/v1/documents/${targetId}/regenerate-flashcards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -765,6 +754,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       activeTab,
       setActiveTab,
       user,
+      authReady,
       stats,
       documents,
       activeDocId,
@@ -790,6 +780,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       addQuizQuestion,
       regenerateQuizAI,
       analyzePrerequisitesAI,
+      submitDiagnostic,
       historyList,
       isSupabaseActive,
       fetchHistory,

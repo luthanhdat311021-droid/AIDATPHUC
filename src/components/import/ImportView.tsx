@@ -314,7 +314,7 @@ export function ImportView() {
   const showStatusCard = (isFileTab && selectedFile) || status.state !== 'idle';
 
   return (
-    <div className="relative p-4 md:p-8 space-y-6 max-w-6xl mx-auto pb-24 md:pb-8">
+    <div className="relative p-4 md:p-8 space-y-6 max-w-6xl mx-auto">
       {/* Full-screen drop overlay while dragging a file anywhere over the page */}
       {isDragging && (
         <div className="fixed inset-0 z-[60] bg-teal-900/40 backdrop-blur-xs flex items-center justify-center pointer-events-none">
