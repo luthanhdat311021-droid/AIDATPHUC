@@ -1,16 +1,27 @@
-import React from 'react';
-import { Plus, FileText, Layers, Award, ArrowRight, CheckCircle2, Flame, Folder } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, FileText, Layers, Award, ArrowRight, CheckCircle2, Flame, Folder, Timer, Bell, Sparkles } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
+import { PomodoroModal } from '../common/PomodoroModal';
+import { StreakModal } from '../common/StreakModal';
+import { loadGamificationData, ALL_BADGES } from '../../utils/gamification';
 
 export function DashboardView() {
   const { stats, setActiveTab, fetchDocumentDetail } = useStudy();
+  const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
+  const [isStreakOpen, setIsStreakOpen] = useState(false);
+  const [gamification, setGamification] = useState(loadGamificationData);
 
   const handleOpenDoc = (docId: string) => {
     fetchDocumentDetail(docId);
     setActiveTab('workspace');
   };
 
+  const refreshGamification = () => {
+    setGamification(loadGamificationData());
+  };
+
   return (
+    <>
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Banner Hero */}
       <div className="bg-gradient-to-r from-[#0B4F48] to-[#0F766E] text-white p-6 md:p-8 rounded-2xl shadow-md relative overflow-hidden">
@@ -23,13 +34,29 @@ export function DashboardView() {
           <p className="text-xs md:text-sm text-teal-100/90 leading-relaxed">
             Tải lên tài liệu của bạn (PDF, PPT, link video...) để StudyMind tự động tạo ghi chú, sơ đồ tư duy, flashcard và bộ câu hỏi trắc nghiệm ngay lập tức.
           </p>
-          <div className="pt-2">
+          <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => setActiveTab('import')}
-              className="bg-white hover:bg-teal-50 text-[#0F766E] font-bold text-xs md:text-sm px-5 py-2.5 rounded-lg shadow-sm transition-all hover:scale-102 flex items-center gap-2"
+              className="bg-white hover:bg-teal-50 text-[#0F766E] font-bold text-xs md:text-sm px-5 py-2.5 rounded-lg shadow-sm transition-all hover:scale-102 flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Tạo bộ học liệu mới</span>
+            </button>
+
+            <button
+              onClick={() => setIsPomodoroOpen(true)}
+              className="bg-teal-800/80 hover:bg-teal-800 text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-lg border border-teal-600/50 shadow-sm transition-all hover:scale-102 flex items-center gap-2 cursor-pointer"
+            >
+              <Timer className="w-4 h-4 text-teal-200" />
+              <span>Bật Pomodoro Focus (25p)</span>
+            </button>
+
+            <button
+              onClick={() => { refreshGamification(); setIsStreakOpen(true); }}
+              className="bg-orange-500/80 hover:bg-orange-500 text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-lg border border-orange-400/50 shadow-sm transition-all hover:scale-102 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Flame className="w-4 h-4 fill-white" />
+              <span>Chuỗi {gamification.streak} ngày</span>
             </button>
           </div>
         </div>
@@ -83,6 +110,54 @@ export function DashboardView() {
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#10B981] flex items-center justify-center">
             <Award className="w-5 h-5" />
           </div>
+        </div>
+      </div>
+
+      {/* Gamification & Daily Focus Highlights Bar */}
+      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center text-2xl shadow-inner shrink-0">
+            🔥
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                Chuỗi ngày học liên tục: <span className="text-orange-500">{gamification.streak} ngày</span>
+              </h4>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+                Đang kích hoạt
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Đã hoàn thành {gamification.pomodoroSessions} phiên Pomodoro • Ôn tập {gamification.cardsReviewed} lượt thẻ ghi nhớ
+            </p>
+          </div>
+        </div>
+
+        {/* Badges preview */}
+        <div className="flex items-center gap-2">
+          <div className="flex -space-x-1.5 overflow-hidden">
+            {ALL_BADGES.map(b => {
+              const isUnlocked = (gamification.unlockedBadgeIds || []).includes(b.id);
+              return (
+                <div
+                  key={b.id}
+                  title={`${b.name}: ${b.description}`}
+                  className={`w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center text-sm shadow-xs ${
+                    isUnlocked ? 'bg-amber-100 dark:bg-amber-900/60' : 'bg-slate-200 dark:bg-slate-700 grayscale opacity-40'
+                  }`}
+                >
+                  {b.icon}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => { refreshGamification(); setIsStreakOpen(true); }}
+            className="text-xs font-bold text-[#0F766E] dark:text-teal-400 hover:underline ml-2 cursor-pointer"
+          >
+            Xem tất cả huy hiệu →
+          </button>
         </div>
       </div>
 
@@ -256,5 +331,20 @@ export function DashboardView() {
         </div>
       </div>
     </div>
+
+    {/* Pomodoro Focus Timer Modal */}
+    <PomodoroModal
+      isOpen={isPomodoroOpen}
+      onClose={() => setIsPomodoroOpen(false)}
+      onSessionComplete={refreshGamification}
+    />
+
+    {/* Daily Streak & Badges Modal */}
+    <StreakModal
+      isOpen={isStreakOpen}
+      onClose={() => setIsStreakOpen(false)}
+      gamificationData={gamification}
+    />
+    </>
   );
 }

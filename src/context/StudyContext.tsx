@@ -17,6 +17,8 @@ import {
   LessonHistoryItem,
   KnowledgeFusionResult
 } from '../types';
+import { notificationService } from '../utils/notificationService';
+import { recordCardReviewed, recordQuizCompleted } from '../utils/gamification';
 
 interface StudyContextType {
   activeTab: TabType;
@@ -165,6 +167,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           if (accessToken && refreshToken) await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
         })
       : null;
+
+    // Initialize notification service & schedule daily study reminder
+    notificationService.init();
+    notificationService.scheduleDailyReminder(20, 0);
 
     return () => {
       sub.subscription.unsubscribe();
@@ -593,6 +599,13 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const data = await res.json();
       if (data.success) {
         showToast(data.message);
+        // Track gamification & schedule smart spaced repetition notification
+        const { newBadges } = recordCardReviewed();
+        if (newBadges.length > 0) {
+          newBadges.forEach(b => showToast(`🎉 Mở khóa Huy hiệu mới: [${b.name}] ${b.icon}`));
+        }
+        notificationService.scheduleFlashcardReview(activeDocData?.document.title || 'Bài học', rating as any);
+
         // Keep the saved rating in state (no refetch per card); the Knowledge Gap Map reads it
         setActiveDocData(prev => prev && {
           ...prev,
@@ -649,6 +662,12 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
         fetchDashboardStats();
         fetchHistory();
         fetchDocumentDetail(quizId); // fresh quizHistory for the Knowledge Gap Map
+
+        // Track gamification for quiz completion
+        const { newBadges } = recordQuizCompleted(data.score || 0);
+        if (newBadges && newBadges.length > 0) {
+          newBadges.forEach(b => showToast(`🎉 Mở khóa Huy hiệu mới: [${b.name}] ${b.icon}`));
+        }
       }
       return data;
     } catch (err) {
