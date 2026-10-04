@@ -69,10 +69,10 @@ export function DashboardView() {
           <div className="space-y-1">
             <p className="text-xs font-medium text-[#4B5563]">Tài liệu đã tải</p>
             <h3 className="text-2xl font-bold text-[#111827]">
-              {stats?.totalDocuments || 24}
+              {stats?.totalDocuments ?? 0}
             </h3>
             <p className="text-[11px] font-semibold text-[#10B981]">
-              +{stats?.weeklyDocAdded || 3} tài liệu tuần này
+              +{stats?.weeklyDocAdded ?? 0} tài liệu tuần này
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#0F766E] flex items-center justify-center">
@@ -85,10 +85,13 @@ export function DashboardView() {
           <div className="space-y-1">
             <p className="text-xs font-medium text-[#4B5563]">Flashcard đã học</p>
             <h3 className="text-2xl font-bold text-[#111827]">
-              {stats?.flashcardProgress || '152/240'}
+              {stats?.flashcardProgress ?? '0/0'}
             </h3>
             <p className="text-[11px] font-medium text-slate-500">
-              Tỷ lệ ghi nhớ: <span className="font-bold text-[#F59E0B]">{stats?.retentionRatePercentage || 78}%</span>
+              Tỷ lệ ghi nhớ:{' '}
+              {stats?.retentionRatePercentage != null
+                ? <span className="font-bold text-[#F59E0B]">{stats.retentionRatePercentage}%</span>
+                : <span className="text-slate-400">chưa có dữ liệu</span>}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-[#F59E0B] flex items-center justify-center">
@@ -101,10 +104,10 @@ export function DashboardView() {
           <div className="space-y-1">
             <p className="text-xs font-medium text-[#4B5563]">Điểm trắc nghiệm TB</p>
             <h3 className="text-2xl font-bold text-[#111827]">
-              {stats?.averageQuizScore || '8.5/10'}
+              {stats?.averageQuizScore ?? '—'}
             </h3>
             <p className="text-[11px] font-semibold text-[#10B981]">
-              {stats?.quizScoreDiff || '+0.4 điểm so với tháng trước'}
+              {stats?.quizScoreDiff ?? (stats?.quizAttempts ? `${stats.quizAttempts} lượt làm bài` : 'Chưa làm bài trắc nghiệm nào')}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#10B981] flex items-center justify-center">
@@ -225,34 +228,18 @@ export function DashboardView() {
           </h3>
 
           <div className="space-y-4">
-            {/* Goal 1 */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-semibold">
-                <span className="text-slate-600">Thời gian tự học</span>
-                <span className="text-[#0F766E] font-bold">
-                  {stats?.weeklyHours?.current || 3.5} / {stats?.weeklyHours?.target || 5} giờ
-                </span>
-              </div>
-              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-[#0F766E] h-full rounded-full transition-all duration-500"
-                  style={{ width: `${((stats?.weeklyHours?.current || 3.5) / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Goal 2 */}
+            {/* Weekly quiz goal (study time is not tracked, so there is no hours bar) */}
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-semibold">
                 <span className="text-slate-600">Số câu trắc nghiệm</span>
                 <span className="text-[#10B981] font-bold">
-                  {stats?.weeklyQuizCount?.current || 45} / {stats?.weeklyQuizCount?.target || 50} câu
+                  {stats?.weeklyQuizCount?.current ?? 0} / {stats?.weeklyQuizCount?.target ?? 50} câu
                 </span>
               </div>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                 <div
                   className="bg-[#10B981] h-full rounded-full transition-all duration-500"
-                  style={{ width: `${((stats?.weeklyQuizCount?.current || 45) / 50) * 100}%` }}
+                  style={{ width: `${Math.min(100, ((stats?.weeklyQuizCount?.current ?? 0) / (stats?.weeklyQuizCount?.target || 50)) * 100)}%` }}
                 />
               </div>
             </div>
@@ -260,9 +247,11 @@ export function DashboardView() {
 
           <div className="pt-2">
             <div className="p-3 rounded-lg bg-teal-50/60 border border-teal-100 flex items-center gap-3">
-              <Flame className="w-5 h-5 text-amber-500 shrink-0 animate-bounce" />
+              <Flame className="w-5 h-5 text-amber-500 shrink-0" />
               <p className="text-xs text-teal-900 font-medium leading-snug">
-                Bạn đã duy trì chuỗi học <span className="font-bold text-[#0F766E]">5 ngày liên tục!</span> Cố lên nào!
+                {stats?.streakDays
+                  ? <>Bạn đã duy trì chuỗi học <span className="font-bold text-[#0F766E]">{stats.streakDays} ngày liên tục!</span> Cố lên nào!</>
+                  : 'Học hoặc làm trắc nghiệm hôm nay để bắt đầu chuỗi ngày học liên tục.'}
               </p>
             </div>
           </div>

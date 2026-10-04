@@ -44,11 +44,12 @@ export interface UserStats {
   totalDocuments: number;
   weeklyDocAdded: number;
   flashcardProgress: string;
-  retentionRatePercentage: number;
-  averageQuizScore: string;
-  quizScoreDiff: string;
-  weeklyHours: { current: number; target: number };
+  retentionRatePercentage: number | null;
+  averageQuizScore: string | null;
+  quizScoreDiff: string | null;
+  quizAttempts: number;
   weeklyQuizCount: { current: number; target: number };
+  streakDays: number;
   recentDocuments: DocumentItem[];
   spacedRepetitionItems: SpacedRepetitionItem[];
   recentActivities: Activity[];
