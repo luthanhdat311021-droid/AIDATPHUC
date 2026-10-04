@@ -1,4 +1,30 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY, NATIVE_AUTH_REDIRECT } from '../../lib/supabase';
+
+type OAuthProvider = 'google' | 'facebook';
+
+// Official brand marks (sign-in buttons should use the provider's own logo)
+const GoogleLogo = () => (
+  <svg viewBox="0 0 48 48" className="w-4 h-4" aria-hidden="true">
+    <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
+    <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
+    <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
+    <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
+  </svg>
+);
+
+const FacebookLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
+    <path fill="#1877F2" d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
+  </svg>
+);
+
+const OAUTH_BUTTONS: Array<{ provider: OAuthProvider; label: string; Logo: () => React.ReactElement }> = [
+  { provider: 'google', label: 'Google', Logo: GoogleLogo },
+  { provider: 'facebook', label: 'Facebook', Logo: FacebookLogo }
+];
 import { 
   Mail, 
   Lock, 
@@ -36,6 +62,46 @@ export function AuthView() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Only providers switched on in Supabase get a button, so none is ever a dead end
+  const [enabledProviders, setEnabledProviders] = useState<OAuthProvider[]>([]);
+
+  useEffect(() => {
+    fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_ANON_KEY } })
+      .then(res => res.json())
+      .then(settings => setEnabledProviders(OAUTH_BUTTONS.map(b => b.provider).filter(p => settings?.external?.[p])))
+      .catch(() => setEnabledProviders([]));
+
+    // Returning from Google/Facebook with an error (e.g. the user cancelled): show it, then clean the URL
+    const params = new URLSearchParams(window.location.hash.slice(1) || window.location.search);
+    if (params.get('error')) {
+      setErrorMessage(params.get('error') === 'access_denied'
+        ? 'Bạn đã hủy đăng nhập. Hãy thử lại hoặc dùng email.'
+        : `Đăng nhập thất bại: ${params.get('error_description') || params.get('error')}`);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
+
+  const handleOAuth = async (provider: OAuthProvider) => {
+    setErrorMessage(null);
+    setLoading(true);
+    // Web: the page leaves for the provider and comes back signed in (Supabase reads the session from the URL).
+    // Android: Google refuses OAuth inside a WebView, so use the system browser and return via the
+    // com.studymind.app://auth/callback deep link (handled in StudyContext).
+    const native = Capacitor.isNativePlatform();
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: native ? NATIVE_AUTH_REDIRECT : window.location.origin, skipBrowserRedirect: native }
+    });
+    if (!error && native && data.url) {
+      await Browser.open({ url: data.url });
+      setLoading(false);
+      return;
+    }
+    if (error) {
+      setErrorMessage(`Không thể kết nối ${provider === 'google' ? 'Google' : 'Facebook'}: ${error.message}`);
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,6 +287,31 @@ export function AuthView() {
               </div>
             )}
 
+            {/* Social sign-in */}
+            {enabledProviders.length > 0 && (
+              <div className="space-y-4">
+                <div className={`grid gap-2 ${enabledProviders.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  {OAUTH_BUTTONS.filter(b => enabledProviders.includes(b.provider)).map(({ provider, label, Logo }) => (
+                    <button
+                      key={provider}
+                      type="button"
+                      onClick={() => handleOAuth(provider)}
+                      disabled={loading}
+                      className="w-full py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-xs font-bold text-slate-700 shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                      <Logo />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-slate-400">
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="font-medium text-[11px]">HOẶC DÙNG EMAIL</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+              </div>
+            )}
+
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               
@@ -308,7 +399,11 @@ export function AuthView() {
             {/* Footer Notice */}
             <div className="pt-4 border-t border-slate-100 text-center">
               <p className="text-[11px] text-slate-400">
-                Bằng cách đăng nhập, bạn đồng ý với Điều khoản dịch vụ & Chính sách bảo mật của StudyMind AI.
+                Bằng cách đăng nhập, bạn đồng ý với{' '}
+                <a href="/privacy.html" target="_blank" rel="noopener" className="text-[#0F766E] font-semibold hover:underline">
+                  Chính sách quyền riêng tư
+                </a>{' '}
+                của StudyMind AI.
               </p>
             </div>
 

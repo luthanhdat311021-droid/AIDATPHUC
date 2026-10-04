@@ -154,9 +154,9 @@ export class GeminiProvider extends AIProvider {
     return val.data;
   }
 
-  async chat(docTitle, docContext, userQuestion, chatHistory = []) {
+  async chat(docTitle, docContext, userQuestion, chatHistory = [], instructions = null) {
     const startTime = Date.now();
-    const prompt = `[Tài liệu]: ${docTitle}\n[Ngữ cảnh]: ${docContext.slice(0, 4000)}\n[Lịch sử]: ${JSON.stringify(chatHistory.slice(-4))}\n[Câu hỏi]: ${userQuestion}\nHãy trả lời bằng Tiếng Việt súc tích, chính xác.`;
+    const prompt = `${instructions ? `${instructions}\n\n` : ''}[Tài liệu]: ${docTitle}\n[Ngữ cảnh]: ${docContext.slice(0, 4000)}\n[Lịch sử]: ${JSON.stringify(chatHistory.slice(-4))}\n[Câu hỏi]: ${userQuestion}\nHãy trả lời bằng Tiếng Việt súc tích, chính xác.`;
     const { text, modelName } = await this.executeGeminiCall(prompt, null, false);
     aiLogger.log({ task: 'chat', provider: this.name, model: modelName, latencyMs: Date.now() - startTime, status: 'SUCCESS' });
     return text;

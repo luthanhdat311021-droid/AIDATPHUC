@@ -695,8 +695,8 @@ export class AIRouter {
   /**
    * Chat assistant query
    */
-  async chat(docTitle, docContext, userQuestion, chatHistory = []) {
-    return await this.executeWithFallback('chat', (provider) => provider.chat(docTitle, docContext, userQuestion, chatHistory));
+  async chat(docTitle, docContext, userQuestion, chatHistory = [], instructions = null) {
+    return await this.executeWithFallback('chat', (provider) => provider.chat(docTitle, docContext, userQuestion, chatHistory, instructions));
   }
 
   /**

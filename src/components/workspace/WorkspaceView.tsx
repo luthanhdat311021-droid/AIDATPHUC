@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -11,6 +11,9 @@ import {
   Compass
 } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
+import { analyzeKnowledgeGaps } from '../../utils/knowledgeGaps';
+
+type ChatMode = 'qa' | 'socratic';
 
 interface ChatMessage {
   sender: 'user' | 'ai';
@@ -34,16 +37,41 @@ export function WorkspaceView() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputQuery, setInputQuery] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
+  const [chatMode, setChatMode] = useState<ChatMode>('qa');
+
+  // Root gaps from the Knowledge Gap Map steer the Socratic tutor's questions
+  const gapRoots = useMemo(
+    () => (pack ? analyzeKnowledgeGaps(pack, activeDocData?.quizHistory || []).roots.slice(0, 3) : []),
+    [pack, activeDocData?.quizHistory]
+  );
+  const gapFocus = gapRoots.map(r => {
+    const causes = r.explains.filter(n => n.id !== r.node.id).map(n => n.label);
+    const wrongIdeas = r.misconceptions.map(m => `"${m.misconception}"`);
+    return `- ${r.node.label}${r.node.level ? ` (${r.node.level})` : ''}`
+      + (causes.length ? `: gây lỗi ở ${causes.join(', ')}` : '')
+      + (wrongIdeas.length ? `; hiểu sai: ${wrongIdeas.join(', ')}` : '');
+  }).join('\n');
+
+  const greeting = (mode: ChatMode): ChatMessage => ({
+    sender: 'ai',
+    text: mode === 'socratic'
+      ? `Chế độ Gia sư Socrates: mình sẽ không đưa đáp án, mà đặt câu hỏi để bạn tự suy luận ra. ${
+          gapRoots[0] ? `Kết quả luyện tập cho thấy bạn nên củng cố "${gapRoots[0].node.label}". Theo bạn, phần này nói về điều gì?` : 'Bạn đang thắc mắc phần nào trong tài liệu?'
+        }`
+      : `Chào ${user.fullName}, tôi là trợ lý StudyMind AI. Tôi đã sẵn sàng hỗ trợ giải đáp thắc mắc và ôn luyện cùng bạn về tài liệu "${doc?.title}".`
+  });
+
+  // Each mode starts its own conversation, so Q&A answers never leak into a tutoring session
+  const switchChatMode = (mode: ChatMode) => {
+    setChatMode(mode);
+    setChatMessages([greeting(mode)]);
+  };
 
   // Sync welcome chat message when document changes
   useEffect(() => {
     if (doc) {
-      setChatMessages([
-        {
-          sender: 'ai',
-          text: `Chào ${user.fullName}, tôi là trợ lý StudyMind AI. Tôi đã sẵn sàng hỗ trợ giải đáp thắc mắc và ôn luyện cùng bạn về tài liệu "${doc.title}".`
-        }
-      ]);
+      setChatMode('qa');
+      setChatMessages([greeting('qa')]);
     }
   }, [doc, user.fullName]);
 
@@ -56,7 +84,10 @@ export function WorkspaceView() {
     setInputQuery('');
     setIsSending(true);
 
-    const aiReply = await sendChatMessage(doc?.id || 'doc-1', textToSend, chatMessages);
+    const aiReply = await sendChatMessage(
+      doc?.id || 'doc-1', textToSend, chatMessages,
+      chatMode === 'socratic' ? { mode: 'socratic', focus: gapFocus } : undefined
+    );
     
     setChatMessages((prev) => [...prev, { sender: 'ai', text: aiReply }]);
     setIsSending(false);
@@ -263,10 +294,28 @@ export function WorkspaceView() {
         {/* Column 3: AI Assistant Chat (4 cols) */}
         <div className="lg:col-span-4 bg-white flex flex-col justify-between p-5 h-full overflow-hidden">
           <div className="space-y-4 flex-1 overflow-y-auto pr-1">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-sm text-[#111827]">
-                <span>Hỏi đáp học tập</span>
-              </h3>
+            <div className="border-b border-slate-100 pb-3 space-y-2">
+              <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-lg" role="tablist" aria-label="Chế độ trò chuyện">
+                {([['qa', 'Hỏi đáp'], ['socratic', 'Gia sư Socrates']] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    role="tab"
+                    aria-selected={chatMode === mode}
+                    onClick={() => chatMode !== mode && switchChatMode(mode)}
+                    className={`text-xs font-bold py-1.5 rounded-md transition-colors ${
+                      chatMode === mode ? 'bg-white text-[#0F766E] shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {chatMode === 'socratic' && (
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Gia sư không đưa đáp án, chỉ đặt câu hỏi gợi mở để bạn tự suy luận.
+                  {gapRoots.length > 0 && <> Đang tập trung vào: <strong className="text-rose-700">{gapRoots.map(r => r.node.label).join(', ')}</strong>.</>}
+                </p>
+              )}
             </div>
 
             {/* Messages */}
@@ -300,8 +349,8 @@ export function WorkspaceView() {
               )}
             </div>
 
-            {/* Quick Suggestion Pill */}
-            <div className="pt-2">
+            {/* Quick Suggestion Pill (asks for a direct summary, so Q&A mode only) */}
+            <div className={`pt-2 ${chatMode === 'socratic' ? 'hidden' : ''}`}>
               <button
                 onClick={() => handleSendChat(`Hãy tóm tắt ngắn gọn các công thức và khái niệm trọng tâm trong ${doc?.title}`)}
                 className="w-full text-left bg-teal-50 hover:bg-teal-100/70 border border-teal-200/60 p-2.5 rounded-xl text-[11px] text-[#0F766E] font-medium transition-colors"

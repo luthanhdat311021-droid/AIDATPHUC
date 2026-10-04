@@ -13,12 +13,11 @@ export class GroqProvider extends AIProvider {
     super('Groq');
     const apiKey = process.env.GROQ_API_KEY;
     this.groq = apiKey && apiKey.trim() !== '' ? new Groq({ apiKey }) : null;
+    // The Llama/Mixtral/Gemma models were retired by Groq (404 model_not_found); tried in order
     this.models = [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant',
-      'mixtral-8x7b-32768',
-      'gemma2-9b-it',
-      'deepseek-r1-distill-llama-70b'
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'openai/gpt-oss-20b'
     ];
     this.model = this.models[0];
   }
@@ -148,28 +147,35 @@ export class GroqProvider extends AIProvider {
     return val.data;
   }
 
-  async chat(docTitle, docContext, userQuestion, chatHistory = []) {
+  async chat(docTitle, docContext, userQuestion, chatHistory = [], instructions = null) {
     const startTime = Date.now();
     const messages = [
-      { role: 'system', content: `Bạn là trợ lý học tập StudyMind AI cho tài liệu "${docTitle}". Trả lời ngắn gọn, dễ hiểu bằng Tiếng Việt.` },
+      { role: 'system', content: instructions || `Bạn là trợ lý học tập StudyMind AI cho tài liệu "${docTitle}". Trả lời ngắn gọn, dễ hiểu bằng Tiếng Việt.` },
       ...chatHistory.slice(-6).map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })),
       { role: 'user', content: `[Ngữ cảnh]: ${docContext.slice(0, 4000)}\n\n[Câu hỏi]: ${userQuestion}` }
     ];
 
-    try {
-      const completion = await this.groq.chat.completions.create({
-        messages,
-        model: this.model,
-        temperature: 0.5,
-        max_tokens: 500
-      });
-      const reply = completion.choices[0]?.message?.content || "Không thể phản hồi.";
-      aiLogger.log({ task: 'chat', provider: this.name, model: this.model, latencyMs: Date.now() - startTime, status: 'SUCCESS' });
-      return reply;
-    } catch (err) {
-      console.warn(`[Groq Chat] Error: ${err.message}`);
-      return `Dựa trên tài liệu "${docTitle}", câu hỏi "${userQuestion}" liên quan đến các kiến thức trọng tâm. Bạn có muốn tạo thêm bài tập luyện tập không?`;
+    if (!this.groq) throw new Error("GROQ_API_KEY not configured or invalid.");
+    // Throw when every model fails so the router falls back to Gemini instead of returning canned text
+    let lastError = null;
+    for (const model of this.models) {
+      try {
+        const completion = await this.groq.chat.completions.create({
+          messages,
+          model,
+          temperature: 0.5,
+          max_tokens: 2000 // reasoning models spend part of the budget thinking before the visible reply
+        });
+        const reply = completion.choices[0]?.message?.content?.trim();
+        if (!reply) throw new Error('empty reply');
+        aiLogger.log({ task: 'chat', provider: this.name, model, latencyMs: Date.now() - startTime, status: 'SUCCESS' });
+        return reply;
+      } catch (err) {
+        lastError = err;
+        console.warn(`[Groq Chat ${model}] ${err.message}`);
+      }
     }
+    throw new Error(`Groq chat failed on all models. Last error: ${lastError?.message}`);
   }
 
   async analyzeFusion(documents) {

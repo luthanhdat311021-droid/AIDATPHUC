@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 
 import { processFileAndGenerate, generateStudyPackFromText } from './services/aiEngine.js';
 import { aiRouter } from './services/ai/AIRouter.js';
+import { PromptManager } from './services/ai/PromptManager.js';
 import { aiLogger } from './services/ai/AILogger.js';
 import { extractFromVideoUrlOrFile, extractFromWebUrl } from './services/textExtractor.js';
 import { supabaseService } from './services/supabaseService.js';
@@ -222,10 +223,14 @@ app.post('/api/v1/documents/:id/prerequisites/diagnostic', async (req, res) => {
 });
 
 app.post('/api/ai/chat', async (req, res) => {
-  const { documentId, question, chatHistory = [] } = req.body;
+  const { documentId, question, chatHistory = [], mode, focus } = req.body;
   const lesson = await loadLesson(req, res, documentId);
   if (!lesson) return;
-  const reply = await aiRouter.chat(lesson.title, lesson.rawText || '', question, chatHistory);
+  // Socratic mode: tutor never gives answers; focus = root gaps summarised by the client's Knowledge Gap Map
+  const instructions = mode === 'socratic'
+    ? PromptManager.getSocraticInstructions(lesson.title, String(focus || '').slice(0, 1200))
+    : null;
+  const reply = await aiRouter.chat(lesson.title, lesson.rawText || '', question, chatHistory, instructions);
   res.json({ success: true, answer: reply });
 });
 

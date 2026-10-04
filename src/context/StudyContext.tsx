@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
+import { supabase, NATIVE_AUTH_REDIRECT } from '../lib/supabase';
 import { 
   TabType, 
   User, 
@@ -34,7 +37,7 @@ interface StudyContextType {
   processUrl: (url: string) => Promise<void>;
   reviewFlashcard: (cardId: string, rating: string) => Promise<void>;
   submitQuiz: (quizId: string, answers: Record<string, number>) => Promise<any>;
-  sendChatMessage: (documentId: string, question: string, history: any[]) => Promise<string>;
+  sendChatMessage: (documentId: string, question: string, history: any[], tutor?: { mode: 'socratic'; focus: string }) => Promise<string>;
   
   // Knowledge Fusion Operations
   fusionResult: KnowledgeFusionResult | null;
@@ -91,8 +94,9 @@ const GUEST_USER: User = { fullName: "Khách ghé thăm", membershipTier: "Basic
 const toAppUser = (u: SupabaseUser): User => ({
   id: u.id,
   email: u.email,
-  fullName: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Học viên',
-  avatarUrl: u.user_metadata?.avatar_url || DEFAULT_AVATAR,
+  // Email sign-up stores full_name/avatar_url; Google and Facebook may send name/picture instead
+  fullName: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || 'Học viên',
+  avatarUrl: u.user_metadata?.avatar_url || u.user_metadata?.picture || DEFAULT_AVATAR,
   membershipTier: "Basic",
   createdAt: u.created_at
 });
@@ -123,7 +127,23 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     };
     supabase.auth.getSession().then(({ data }) => applySession(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => applySession(session));
-    return () => sub.subscription.unsubscribe();
+
+    // Android: the system browser hands the session back through the com.studymind.app://auth/callback deep link
+    const deepLink = Capacitor.isNativePlatform()
+      ? CapApp.addListener('appUrlOpen', async ({ url }) => {
+          if (!url.startsWith(NATIVE_AUTH_REDIRECT)) return;
+          const params = new URLSearchParams(url.split('#')[1] || url.split('?')[1] || '');
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          await Browser.close().catch(() => {});
+          if (accessToken && refreshToken) await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        })
+      : null;
+
+    return () => {
+      sub.subscription.unsubscribe();
+      deepLink?.then(h => h.remove());
+    };
   }, []);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -609,12 +629,12 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     }
   };
 
-  const sendChatMessage = async (documentId: string, question: string, history: any[]) => {
+  const sendChatMessage = async (documentId: string, question: string, history: any[], tutor?: { mode: 'socratic'; focus: string }) => {
     try {
       const res = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId, question, chatHistory: history })
+        body: JSON.stringify({ documentId, question, chatHistory: history, ...tutor })
       });
       const data = await res.json();
       return data.answer;
