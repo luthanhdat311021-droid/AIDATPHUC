@@ -68,7 +68,7 @@ export function AuthView() {
   useEffect(() => {
     fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_ANON_KEY } })
       .then(res => res.json())
-      .then(settings => setEnabledProviders(OAUTH_BUTTONS.map(b => b.provider).filter(p => settings?.external?.[p])))
+      .then(settings => setEnabledProviders(OAUTH_BUTTONS.map(b => b.provider).filter(p => settings?.external?.[p] && !(Capacitor.isNativePlatform() && p === 'facebook'))))
       .catch(() => setEnabledProviders([]));
 
     // Returning from Google/Facebook with an error (e.g. the user cancelled): show it, then clean the URL
