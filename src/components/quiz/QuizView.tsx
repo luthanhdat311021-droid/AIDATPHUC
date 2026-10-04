@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, Clock, Check, Sparkles, Award, Plus, X, RotateCcw, Network } from 'lucide-react';
+import { HelpCircle, Clock, Check, Sparkles, Award, Plus, X, RotateCcw, Network, Printer } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { QuizQuestion } from '../../types';
+import { exportQuizToPrintable } from '../../utils/exportUtils';
 
 export function QuizView() {
   const { activeDocData, submitQuiz, addQuizQuestion, regenerateQuizAI, setActiveTab, showToast } = useStudy();
@@ -151,6 +152,22 @@ export function QuizView() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <button
+            onClick={() => {
+              const title = activeDocData?.document?.title || quizData.title || "Đề thi StudyMind AI";
+              const ok = exportQuizToPrintable(quizData, title);
+              if (ok) {
+                showToast("🖨️ Đang mở trang in đề thi A4 / Lưu file PDF...");
+              } else {
+                showToast("⚠️ Không có câu hỏi nào để xuất đề thi.");
+              }
+            }}
+            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all"
+            title="In đề thi ra giấy A4 hoặc lưu định dạng PDF kèm đáp án"
+          >
+            <Printer className="w-4 h-4 text-[#0F766E]" />
+            <span>In đề thi / PDF</span>
+          </button>
           <button
             onClick={handleGenerateAIQuiz}
             disabled={isGenerating}

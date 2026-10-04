@@ -8,10 +8,18 @@ import {
   Sparkles,
   RefreshCw,
   FileText,
-  Compass
+  Compass,
+  Volume2,
+  VolumeX,
+  Play,
+  Pause,
+  Square,
+  FileDown
 } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { analyzeKnowledgeGaps } from '../../utils/knowledgeGaps';
+import { ttsService } from '../../utils/ttsService';
+import { exportNotesToMarkdown } from '../../utils/exportUtils';
 
 type ChatMode = 'qa' | 'socratic';
 
@@ -38,6 +46,69 @@ export function WorkspaceView() {
   const [inputQuery, setInputQuery] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
   const [chatMode, setChatMode] = useState<ChatMode>('qa');
+
+  // TTS Narration state
+  const [ttsState, setTtsState] = useState<{ speaking: boolean; paused: boolean; currentText: string }>({
+    speaking: false,
+    paused: false,
+    currentText: ''
+  });
+  const [ttsRate, setTtsRate] = useState<number>(1.0);
+
+  useEffect(() => {
+    const unsub = ttsService.subscribe((s) => setTtsState(s));
+    return () => {
+      unsub();
+      ttsService.stop();
+    };
+  }, []);
+
+  const handleToggleTTSNotes = () => {
+    if (ttsState.speaking) {
+      if (ttsState.paused) {
+        ttsService.resume();
+      } else {
+        ttsService.pause();
+      }
+      return;
+    }
+
+    const title = pack?.notes?.summaryTitle || doc?.title || 'Tóm tắt bài học';
+    let speech = `${title}. `;
+    if (pack?.notes?.sections && pack.notes.sections.length > 0) {
+      pack.notes.sections.forEach((sec) => {
+        speech += `${sec.heading}. `;
+        sec.items?.forEach((item) => {
+          speech += `${item.label}: ${item.text}. `;
+        });
+      });
+    } else if (doc?.rawText) {
+      speech += doc.rawText.slice(0, 1000);
+    }
+
+    ttsService.setRate(ttsRate);
+    ttsService.speak(speech, 'vi-VN');
+    showToast("🔊 Đang phát giọng đọc AI cho bài tóm tắt...");
+  };
+
+  const handleStopTTS = () => {
+    ttsService.stop();
+  };
+
+  const handleChangeTtsRate = (newRate: number) => {
+    setTtsRate(newRate);
+    ttsService.setRate(newRate);
+    showToast(`Tốc độ đọc giọng nói: ${newRate}x`);
+  };
+
+  const handleExportMarkdown = () => {
+    const success = exportNotesToMarkdown(pack?.notes, doc?.title || 'StudyMind_Tai_lieu');
+    if (success) {
+      showToast("📄 Đã xuất toàn bộ ghi chú ra file Markdown (.md)!");
+    } else {
+      showToast("⚠️ Không có nội dung ghi chú để xuất.");
+    }
+  };
 
   // Root gaps from the Knowledge Gap Map steer the Socratic tutor's questions
   const gapRoots = useMemo(
@@ -152,6 +223,14 @@ export function WorkspaceView() {
 
         <div className="flex items-center gap-2 shrink-0">
           <button 
+            onClick={handleExportMarkdown}
+            className="p-1.5 hover:bg-slate-100 rounded text-slate-600 flex items-center gap-1 text-[11px] font-semibold" 
+            title="Xuất file Markdown (.md)"
+          >
+            <FileDown className="w-4 h-4 text-[#0F766E]" />
+            <span className="hidden sm:inline">Xuất .md</span>
+          </button>
+          <button 
             onClick={() => showToast("🔗 Đã sao chép liên kết tài liệu vào bộ nhớ tạm!")} 
             className="p-1.5 hover:bg-slate-100 rounded text-slate-600" 
             title="Chia sẻ"
@@ -159,9 +238,9 @@ export function WorkspaceView() {
             <Share2 className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => showToast("📥 Đã tải file tài liệu về máy!")} 
+            onClick={handleExportMarkdown} 
             className="p-1.5 hover:bg-slate-100 rounded text-slate-600" 
-            title="Tải về"
+            title="Tải về Markdown"
           >
             <Download className="w-4 h-4" />
           </button>
@@ -246,6 +325,71 @@ export function WorkspaceView() {
               <Sparkles className="w-4 h-4" />
               <span>Ghi chú Tóm tắt AI</span>
             </h3>
+          </div>
+
+          {/* TTS Audio Narration Bar */}
+          <div className="bg-teal-50/80 border border-teal-200/80 rounded-xl p-3 flex flex-col gap-2.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`w-2.5 h-2.5 rounded-full ${ttsState.speaking && !ttsState.paused ? 'bg-emerald-500 animate-ping' : 'bg-slate-300'}`} />
+                <span className="text-xs font-bold text-teal-900">
+                  {ttsState.speaking ? (ttsState.paused ? '⏸️ Tạm dừng đọc' : '🔊 Đang đọc giọng nói...') : '🎧 Nghe đọc bài tóm tắt'}
+                </span>
+              </div>
+
+              {/* Playback speed selector */}
+              <div className="flex items-center gap-1 bg-white/80 rounded-md p-0.5 border border-teal-200 text-[10px] font-bold text-teal-800">
+                {[1.0, 1.25, 1.5].map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => handleChangeTtsRate(r)}
+                    className={`px-1.5 py-0.5 rounded transition-all ${
+                      ttsRate === r ? 'bg-[#0F766E] text-white shadow-2xs' : 'hover:bg-teal-50'
+                    }`}
+                  >
+                    {r}x
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleToggleTTSNotes}
+                className="flex-1 bg-[#0F766E] hover:bg-[#0D5C53] text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 shadow-2xs transition-all"
+              >
+                {ttsState.speaking && !ttsState.paused ? (
+                  <>
+                    <Pause className="w-3.5 h-3.5 fill-current" />
+                    <span>Tạm dừng</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>{ttsState.paused ? 'Tiếp tục nghe' : 'Nghe tóm tắt'}</span>
+                  </>
+                )}
+              </button>
+
+              {ttsState.speaking && (
+                <button
+                  onClick={handleStopTTS}
+                  className="bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold py-1.5 px-2.5 rounded-lg flex items-center justify-center transition-all"
+                  title="Dừng đọc"
+                >
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                </button>
+              )}
+
+              <button
+                onClick={handleExportMarkdown}
+                className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 transition-all"
+                title="Xuất nội dung tóm tắt ra file .md"
+              >
+                <FileDown className="w-3.5 h-3.5 text-[#0F766E]" />
+                <span>Xuất .md</span>
+              </button>
+            </div>
           </div>
 
           {/* Notes Content */}

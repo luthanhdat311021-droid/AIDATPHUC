@@ -1,11 +1,47 @@
-import React, { useState } from 'react';
-import { Layers, RotateCw, Play, Plus, Trash2, X, Check, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Layers, RotateCw, Play, Plus, Trash2, X, Check, Sparkles, Volume2, Download } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { Flashcard } from '../../types';
+import { ttsService } from '../../utils/ttsService';
+import { exportFlashcardsToAnki } from '../../utils/exportUtils';
 
 export function FlashcardView() {
-  const { activeDocData, reviewFlashcard, addFlashcard, deleteFlashcard, regenerateFlashcardsAI } = useStudy();
+  const { activeDocData, reviewFlashcard, addFlashcard, deleteFlashcard, regenerateFlashcardsAI, showToast } = useStudy();
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+
+  // TTS audio state
+  const [ttsState, setTtsState] = useState<{ speaking: boolean; paused: boolean; currentText: string }>({
+    speaking: false,
+    paused: false,
+    currentText: ''
+  });
+
+  useEffect(() => {
+    const unsub = ttsService.subscribe((s) => setTtsState(s));
+    return () => {
+      unsub();
+      ttsService.stop();
+    };
+  }, []);
+
+  const handleSpeakCardText = (text: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (ttsState.speaking) {
+      ttsService.stop();
+      return;
+    }
+    ttsService.speak(text, 'vi-VN');
+  };
+
+  const handleExportToAnki = () => {
+    const title = activeDocData?.document?.title || "StudyMind_Flashcards";
+    const ok = exportFlashcardsToAnki(flashcards, title);
+    if (ok) {
+      showToast("🗂️ Đã xuất file bộ thẻ (.txt) chuẩn Anki & Quizlet!");
+    } else {
+      showToast("⚠️ Không có thẻ ghi nhớ nào để xuất.");
+    }
+  };
 
   const handleGenerateAIFlashcards = async () => {
     setIsGenerating(true);
@@ -88,6 +124,14 @@ export function FlashcardView() {
 
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <button
+            onClick={handleExportToAnki}
+            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-2xs transition-all flex items-center gap-1.5 justify-center"
+            title="Xuất danh sách thẻ ra file tương thích Anki / Quizlet"
+          >
+            <Download className="w-4 h-4 text-[#0F766E]" />
+            <span>Xuất Anki / CSV</span>
+          </button>
+          <button
             onClick={handleGenerateAIFlashcards}
             disabled={isGenerating}
             className="bg-[#0F766E] hover:bg-[#0D5C53] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center disabled:opacity-50"
@@ -137,9 +181,20 @@ export function FlashcardView() {
               {!isFlipped ? (
                 /* FRONT SIDE */
                 <div className="space-y-4 my-auto">
-                  <span className="text-[11px] font-bold tracking-wider uppercase text-[#0F766E] bg-[#CCFBF1] px-3 py-1 rounded-full">
-                    CÂU HỎI (MẶT TRƯỚC)
-                  </span>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-[#0F766E] bg-[#CCFBF1] px-3 py-1 rounded-full">
+                      CÂU HỎI (MẶT TRƯỚC)
+                    </span>
+                    <button
+                      onClick={(e) => handleSpeakCardText(currentCard ? currentCard.front : '', e)}
+                      className={`p-1.5 rounded-full transition-all ${
+                        ttsState.speaking ? 'text-emerald-700 bg-emerald-100 animate-pulse' : 'text-slate-400 hover:text-[#0F766E] hover:bg-teal-50'
+                      }`}
+                      title={ttsState.speaking ? "Dừng đọc giọng nói" : "Đọc to câu hỏi"}
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  </div>
                   <h3 className="text-lg md:text-xl font-bold text-[#111827] leading-relaxed">
                     {currentCard ? currentCard.front : 'Chưa có thẻ nào'}
                   </h3>
@@ -147,9 +202,20 @@ export function FlashcardView() {
               ) : (
                 /* BACK SIDE */
                 <div className="space-y-4 my-auto">
-                  <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
-                    ĐÁP ÁN (MẶT SAU)
-                  </span>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+                      ĐÁP ÁN (MẶT SAU)
+                    </span>
+                    <button
+                      onClick={(e) => handleSpeakCardText(currentCard ? currentCard.back : '', e)}
+                      className={`p-1.5 rounded-full transition-all ${
+                        ttsState.speaking ? 'text-emerald-700 bg-emerald-100 animate-pulse' : 'text-slate-400 hover:text-emerald-700 hover:bg-emerald-50'
+                      }`}
+                      title={ttsState.speaking ? "Dừng đọc giọng nói" : "Đọc to đáp án"}
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  </div>
                   <p className="text-sm md:text-base font-semibold text-[#111827] leading-relaxed">
                     {currentCard ? currentCard.back : 'Nội dung đáp án'}
                   </p>
