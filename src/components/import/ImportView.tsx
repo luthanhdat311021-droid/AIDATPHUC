@@ -9,8 +9,11 @@ import {
   Loader2,
   X,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Camera as CameraIcon,
+  Folder
 } from 'lucide-react';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 import { useStudy } from '../../context/StudyContext';
 import { OutputOptions } from '../../types';
@@ -42,6 +45,9 @@ export function ImportView() {
 
   const [language, setLanguage] = useState<string>('Tiếng Việt (Mặc định)');
   const [depth, setDepth] = useState<string>('Tiêu chuẩn');
+  const [selectedSubject, setSelectedSubject] = useState<string>('Chung');
+  const [customSubject, setCustomSubject] = useState<string>('');
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [outputOptions, setOutputOptions] = useState<OutputOptions>({
     notes: true,
@@ -118,6 +124,55 @@ export function ImportView() {
     { id: 'url', label: 'Liên kết Web / Bài báo', icon: LinkIcon },
     { id: 'text', label: 'Nhập Văn bản thô', icon: Edit3 },
   ];
+
+  // Predefined subjects for organizing materials
+  const PRESET_SUBJECTS = [
+    'Chung',
+    'Toán học',
+    'Vật lý',
+    'Hóa học',
+    'Sinh học',
+    'Công nghệ thông tin',
+    'Tiếng Anh',
+    'Lịch sử & Địa lý',
+    'Kinh tế & Quản trị',
+    'Y Dược & Sức khỏe'
+  ];
+
+  // Camera capture via @capacitor/camera with fallback
+  const handleCaptureCamera = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    try {
+      const photo = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera
+      });
+
+      if (photo.webPath) {
+        const response = await fetch(photo.webPath);
+        const blob = await response.blob();
+        const fileName = `chup-tai-lieu-${Date.now().toString().slice(-6)}.jpg`;
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
+        setSelectedFile(file);
+        setActiveSourceTab('image');
+        setStatus({ state: 'idle', message: '' });
+        setProgressPercent(0);
+        showToast('📸 Đã chụp ảnh tài liệu thành công!');
+      }
+    } catch (err: any) {
+      console.warn("Camera trigger:", err);
+      if (err?.message?.includes('cancelled') || err?.message?.includes('User cancelled')) {
+        return;
+      }
+      if (cameraInputRef.current) {
+        cameraInputRef.current.click();
+      } else {
+        showToast('Không thể mở Camera: ' + (err?.message || 'Vui lòng cấp quyền truy cập camera'));
+      }
+    }
+  };
 
   // Single entry point for picked, dropped and pasted files: validate, then switch to the matching tab
   const acceptFiles = useCallback((files: FileList | File[] | null | undefined) => {
@@ -274,20 +329,21 @@ export function ImportView() {
     }, 700);
 
     try {
+      const effectiveSubject = selectedSubject === '__custom__' ? (customSubject.trim() || 'Chung') : selectedSubject;
       let result: any;
       if (activeSourceTab === 'video') {
-        result = await processVideo(videoUrlInput);
+        result = await processVideo(videoUrlInput, effectiveSubject);
       } else if (activeSourceTab === 'url') {
-        result = await processUrl(webUrlInput);
+        result = await processUrl(webUrlInput, effectiveSubject);
       } else if (activeSourceTab === 'text') {
         setStatus({ state: 'working', message: 'AI đang phân tích & trích xuất kiến thức...' });
-        result = await uploadDocument(null, language, depth, outputOptions, rawTextInput);
+        result = await uploadDocument(null, language, depth, outputOptions, rawTextInput, undefined, effectiveSubject);
       } else if (selectedFile) {
         const prepared = await prepareFile(selectedFile);
         setStatus({ state: 'working', message: 'AI đang phân tích & trích xuất kiến thức...' });
         result = prepared.text
-          ? await uploadDocument(null, language, depth, outputOptions, prepared.text, selectedFile.name)
-          : await uploadDocument(prepared.binary!, language, depth, outputOptions);
+          ? await uploadDocument(null, language, depth, outputOptions, prepared.text, selectedFile.name, effectiveSubject)
+          : await uploadDocument(prepared.binary!, language, depth, outputOptions, undefined, undefined, effectiveSubject);
       }
 
       // uploadDocument shows its own toast and returns { success: false } / undefined on failure
@@ -404,16 +460,36 @@ export function ImportView() {
                 </p>
               </div>
 
-              <div>
-                <span className="inline-block bg-[#0F766E] hover:bg-[#0D5C53] text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-all">
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); openFilePicker(); }}
+                  className="bg-[#0F766E] hover:bg-[#0D5C53] text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-all"
+                >
                   {selectedFile ? 'Đổi tệp khác' : fileButtonText}
-                </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCaptureCamera}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
+                >
+                  <CameraIcon className="w-4 h-4" />
+                  <span>Chụp ảnh từ Camera</span>
+                </button>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
                 onChange={handleFileChange}
                 accept={ACCEPT_BY_KIND[fileKind]}
+                className="hidden"
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => acceptFiles(e.target.files)}
                 className="hidden"
               />
             </div>
@@ -579,6 +655,36 @@ export function ImportView() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Subject / Folder Category Selector */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Folder className="w-3.5 h-3.5 text-[#0F766E]" />
+                  <span>Môn học / Thư mục</span>
+                </label>
+                <span className="text-[10px] text-teal-600 font-medium">Phân loại tài liệu</span>
+              </div>
+              <select
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs md:text-sm text-[#111827] focus:outline-none focus:border-[#0F766E]"
+              >
+                {PRESET_SUBJECTS.map((sub) => (
+                  <option key={sub} value={sub}>{sub}</option>
+                ))}
+                <option value="__custom__">+ Thêm môn học khác...</option>
+              </select>
+              {selectedSubject === '__custom__' && (
+                <input
+                  type="text"
+                  placeholder="Nhập tên môn học (vd: Lập trình Python, Triết học...)"
+                  value={customSubject}
+                  onChange={(e) => setCustomSubject(e.target.value)}
+                  className="w-full bg-white border border-[#0F766E] rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none ring-1 ring-[#0F766E] animate-in fade-in"
+                />
+              )}
             </div>
           </div>
 

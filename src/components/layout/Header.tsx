@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Search, Bell, Sparkles, LogIn, LogOut, User as UserIcon, ChevronDown, Menu } from 'lucide-react';
+import { Search, Bell, Sparkles, LogIn, LogOut, User as UserIcon, ChevronDown, Menu, Sun, Moon } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 
 export function Header({ menuOpen, onMenuClick }: { menuOpen: boolean; onMenuClick: () => void }) {
-  const { user, isAuthenticated, openAuthModal, openEditProfileModal, logout } = useStudy();
+  const { user, isAuthenticated, openAuthModal, openEditProfileModal, logout, isDarkMode, toggleDarkMode } = useStudy();
   const [showDropdown, setShowDropdown] = useState(false);
 
   return (
@@ -30,7 +30,17 @@ export function Header({ menuOpen, onMenuClick }: { menuOpen: boolean; onMenuCli
       </div>
 
       {/* Right User Controls */}
-      <div className="flex items-center gap-3 md:gap-4 ml-4">
+      <div className="flex items-center gap-2 md:gap-3 ml-4">
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          title={isDarkMode ? "Chuyển sang Giao diện Sáng" : "Chuyển sang Giao diện Tối"}
+          aria-label="Chuyển đổi giao diện Sáng / Tối"
+          className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+        >
+          {isDarkMode ? <Sun className="w-5 h-5 text-amber-400 animate-in spin-in-90" /> : <Moon className="w-5 h-5 text-slate-600" />}
+        </button>
+
         {/* Notification Icon */}
         <button className="relative p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors">
           <Bell className="w-5 h-5" />

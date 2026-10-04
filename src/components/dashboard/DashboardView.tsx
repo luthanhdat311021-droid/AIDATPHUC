@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, FileText, Layers, Award, ArrowRight, CheckCircle2, Flame } from 'lucide-react';
+import { Plus, FileText, Layers, Award, ArrowRight, CheckCircle2, Flame, Folder } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 
 export function DashboardView() {
@@ -116,20 +116,26 @@ export function DashboardView() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {doc.tags?.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className={`text-[11px] px-2.5 py-1 rounded-full font-semibold ${
-                        tag.includes('Mindmap')
-                          ? 'bg-teal-50 text-[#0F766E]'
-                          : tag.includes('Quiz')
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-amber-50 text-amber-700'
-                      }`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {doc.tags?.map((tag, idx) => {
+                    const isSubject = !['AI Analysis Engine', 'YouTube Speech-to-Text', 'Web Article Extractor'].includes(tag);
+                    return (
+                      <span
+                        key={idx}
+                        className={`text-[11px] px-2.5 py-1 rounded-full font-semibold flex items-center gap-1 ${
+                          isSubject
+                            ? 'bg-emerald-100 text-emerald-800 font-bold'
+                            : tag.includes('Mindmap')
+                            ? 'bg-teal-50 text-[#0F766E]'
+                            : tag.includes('Quiz')
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        {isSubject && <Folder className="w-2.5 h-2.5" />}
+                        <span>{tag}</span>
+                      </span>
+                    );
+                  })}
                   <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#0F766E] group-hover:translate-x-1 transition-all" />
                 </div>
               </div>

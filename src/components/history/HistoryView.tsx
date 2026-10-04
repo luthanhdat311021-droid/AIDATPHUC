@@ -21,8 +21,8 @@ import {
   Brain,
   GitCompare,
   CheckSquare,
-  Square,
-  Loader2
+  Loader2,
+  Folder
 } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { LessonHistoryItem, QuizHistoryRecord } from '../../types';
@@ -63,6 +63,16 @@ export function HistoryView() {
 
   // Filtered History List
   const safeHistoryList = Array.isArray(historyList) ? historyList : [];
+
+  // Extract all unique custom subjects/folders
+  const availableSubjects = Array.from(
+    new Set(
+      safeHistoryList
+        .flatMap(item => Array.isArray(item.tags) ? item.tags : [])
+        .filter(t => typeof t === 'string' && !['AI Analysis Engine', 'YouTube Speech-to-Text', 'Web Article Extractor'].includes(t))
+    )
+  );
+
   const filteredList = safeHistoryList.filter(item => {
     if (!item || !item.title) return false;
     const titleMatch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -281,6 +291,7 @@ export function HistoryView() {
             { id: 'PDF', label: 'Tài liệu PDF' },
             { id: 'VIDEO', label: 'Video' },
             { id: 'URL', label: 'Web' },
+            ...availableSubjects.map(sub => ({ id: sub, label: `📁 ${sub}` }))
           ].map(tag => (
             <button
               key={tag.id}
@@ -288,7 +299,7 @@ export function HistoryView() {
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                 selectedTag === tag.id
                   ? 'bg-[#0F766E] text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 hover:bg-slate-200/70'
               }`}
             >
               {tag.label}
@@ -365,14 +376,25 @@ export function HistoryView() {
                     {item.title}
                   </h3>
 
-                  {/* Tags */}
+                  {/* Tags & Subject Badges */}
                   {item.tags && item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
-                      {item.tags.map((t, idx) => (
-                        <span key={idx} className="text-[10px] font-medium bg-teal-50 text-[#0F766E] px-2 py-0.5 rounded-md">
-                          #{t}
-                        </span>
-                      ))}
+                      {item.tags.map((t, idx) => {
+                        const isSubject = !['AI Analysis Engine', 'YouTube Speech-to-Text', 'Web Article Extractor'].includes(t);
+                        return (
+                          <span
+                            key={idx}
+                            className={`text-[10px] font-medium px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                              isSubject
+                                ? 'bg-emerald-100 text-emerald-800 font-bold'
+                                : 'bg-teal-50 text-[#0F766E]'
+                            }`}
+                          >
+                            {isSubject && <Folder className="w-2.5 h-2.5" />}
+                            <span>{t}</span>
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

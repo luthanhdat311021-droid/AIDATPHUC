@@ -32,9 +32,11 @@ interface StudyContextType {
   loading: boolean;
   toastMessage: string | null;
   showToast: (msg: string) => void;
-  uploadDocument: (file: File | null, language: string, depth: string, options: OutputOptions, rawText?: string, fileName?: string) => Promise<any>;
-  processVideo: (videoUrl: string) => Promise<void>;
-  processUrl: (url: string) => Promise<void>;
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
+  uploadDocument: (file: File | null, language: string, depth: string, options: OutputOptions, rawText?: string, fileName?: string, subject?: string) => Promise<any>;
+  processVideo: (videoUrl: string, subject?: string) => Promise<void>;
+  processUrl: (url: string, subject?: string) => Promise<void>;
   reviewFlashcard: (cardId: string, rating: string) => Promise<void>;
   submitQuiz: (quizId: string, answers: Record<string, number>) => Promise<any>;
   sendChatMessage: (documentId: string, question: string, history: any[], tutor?: { mode: 'socratic'; focus: string }) => Promise<string>;
@@ -117,6 +119,30 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   // False until Supabase has restored any saved session, so a signed-in user never flashes the login page
   const [authReady, setAuthReady] = useState<boolean>(false);
+
+  // Theme Management (Dark / Light Mode)
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('studymind-theme');
+      if (saved) return saved === 'dark';
+      return window.matchMedia?.('(prefers-color-scheme: dark)')?.matches || false;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('studymind-theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('studymind-theme', 'light');
+      }
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => setIsDarkMode(prev => !prev);
 
   // Supabase owns the session (stored, refreshed and expired by the SDK); the UI just mirrors it
   useEffect(() => {
@@ -405,7 +431,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const uploadDocument = async (file: File | null, language: string, depth: string, options: OutputOptions, rawText?: string, fileName?: string) => {
+  const uploadDocument = async (file: File | null, language: string, depth: string, options: OutputOptions, rawText?: string, fileName?: string, subject?: string) => {
     try {
       const formData = new FormData();
       if (file) formData.append('file', file);
@@ -413,7 +439,8 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       if (fileName) formData.append('fileName', fileName);
       formData.append('language', language);
       formData.append('depth', depth);
-      formData.append('options', JSON.stringify(options));
+      if (subject) formData.append('subject', subject);
+      formData.append('options', JSON.stringify({ ...options, subject }));
 
       const res = await apiFetch('/api/v1/documents/upload', {
         method: 'POST',
@@ -440,12 +467,12 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     }
   };
 
-  const processVideo = async (videoUrl: string) => {
+  const processVideo = async (videoUrl: string, subject?: string) => {
     try {
       const res = await apiFetch('/api/v1/documents/process-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoUrl })
+        body: JSON.stringify({ videoUrl, subject, options: { subject } })
       });
       const parsed = await safeFetchJson(res);
       if (parsed.ok && parsed.data) {
@@ -464,12 +491,12 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     }
   };
 
-  const processUrl = async (url: string) => {
+  const processUrl = async (url: string, subject?: string) => {
     try {
       const res = await apiFetch('/api/v1/documents/process-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url, subject, options: { subject } })
       });
       const parsed = await safeFetchJson(res);
       if (parsed.ok && parsed.data) {
@@ -784,6 +811,8 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       loading,
       toastMessage,
       showToast,
+      isDarkMode,
+      toggleDarkMode,
       uploadDocument,
       processVideo,
       processUrl,

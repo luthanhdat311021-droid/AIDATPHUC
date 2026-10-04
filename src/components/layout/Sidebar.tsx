@@ -14,14 +14,16 @@ import {
   LogOut,
   Compass,
   Network,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { TabType } from '../../types';
 
 // Desktop: fixed column. Mobile: slide-in drawer opened from the header's menu button.
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { activeTab, setActiveTab, user, isAuthenticated, openAuthModal, openEditProfileModal, logout } = useStudy();
+  const { activeTab, setActiveTab, user, isAuthenticated, openAuthModal, openEditProfileModal, logout, isDarkMode, toggleDarkMode } = useStudy();
 
   useEffect(() => {
     if (!open) return;
@@ -97,6 +99,24 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
       {/* User Bottom Widget */}
       <div className="p-4 border-t border-slate-100">
+        {/* Dark Mode Toggle Switch */}
+        <div className="flex items-center justify-between px-3 py-2 mb-2.5 bg-slate-50 rounded-xl border border-slate-200/60">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+            {isDarkMode ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+            <span>{isDarkMode ? 'Giao diện Tối' : 'Giao diện Sáng'}</span>
+          </div>
+          <button
+            onClick={toggleDarkMode}
+            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+              isDarkMode ? 'bg-[#0F766E]' : 'bg-slate-300'
+            }`}
+            aria-label="Chuyển đổi giao diện"
+          >
+            <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${
+              isDarkMode ? 'translate-x-4' : 'translate-x-0'
+            }`} />
+          </button>
+        </div>
         {isAuthenticated ? (
           <div className="bg-slate-50 hover:bg-slate-100/80 transition-colors p-2.5 rounded-xl flex items-center justify-between border border-slate-200/60">
             <button
