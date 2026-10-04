@@ -114,20 +114,43 @@ app.post('/api/v1/user/upload-avatar', upload.single('avatar'), (req, res) => {
   res.json({ success: true, avatarUrl: `/uploads/${req.file.filename}` });
 });
 
+// Dashboard numbers, all derived from the caller's own lessons (a new account shows zeros / "no data yet")
 app.get('/api/v1/user/stats', async (req, res) => {
-  const docList = (await supabaseService.getAllLessonHistory(req.db)).map(toDocumentItem);
+  const lessons = await supabaseService.getAllLessonHistory(req.db);
+  const WEEK = 7 * 24 * 3600 * 1000;
+  const now = Date.now();
+  const attempts = lessons.flatMap(l => l.quizHistory || []);
+  const cards = lessons.flatMap(l => l.studyPack?.flashcards || []);
+  const reviewed = cards.filter(c => c.lastRating);
+  const avg = (list) => (list.length ? list.reduce((s, a) => s + a.score, 0) / list.length : null);
+
+  // Study streak: consecutive days (Vietnam time) with a quiz attempt or a new lesson, ending today or yesterday
+  const dayOf = (iso) => new Date(new Date(iso).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+  const activeDays = new Set([...attempts.map(a => dayOf(a.completedAt)), ...lessons.map(l => dayOf(l.createdAt))]);
+  const DAY = 24 * 3600 * 1000;
+  let streakDays = 0;
+  // Today may still be empty without breaking the streak, so start from yesterday in that case
+  let t = activeDays.has(dayOf(new Date(now).toISOString())) ? now : now - DAY;
+  while (activeDays.has(dayOf(new Date(t).toISOString()))) { streakDays++; t -= DAY; }
+
+  const recent = attempts.filter(a => now - new Date(a.completedAt).getTime() < WEEK);
+  const prior = attempts.filter(a => now - new Date(a.completedAt).getTime() >= WEEK);
+  const avgNow = avg(attempts);
+  const scoreDiff = avg(recent) !== null && avg(prior) !== null ? (avg(recent) - avg(prior)) / 10 : null;
+
   res.json({
     success: true,
     data: {
-      totalDocuments: docList.length,
-      weeklyDocAdded: Math.min(docList.length, 3),
-      flashcardProgress: "152/240",
-      retentionRatePercentage: 78,
-      averageQuizScore: "8.5/10",
-      quizScoreDiff: "+0.4 điểm so với tháng trước",
-      weeklyHours: { current: 0, target: 5 },
-      weeklyQuizCount: { current: 0, target: 50 },
-      recentDocuments: docList,
+      totalDocuments: lessons.length,
+      weeklyDocAdded: lessons.filter(l => now - new Date(l.createdAt).getTime() < WEEK).length,
+      flashcardProgress: `${reviewed.length}/${cards.length}`,
+      retentionRatePercentage: reviewed.length ? Math.round((reviewed.filter(c => c.lastRating === 'easy').length / reviewed.length) * 100) : null,
+      averageQuizScore: avgNow === null ? null : `${(avgNow / 10).toFixed(1)}/10`,
+      quizScoreDiff: scoreDiff === null ? null : `${scoreDiff >= 0 ? '+' : ''}${scoreDiff.toFixed(1)} điểm so với trước tuần này`,
+      quizAttempts: attempts.length,
+      weeklyQuizCount: { current: recent.reduce((s, a) => s + a.totalQuestions, 0), target: 50 },
+      streakDays,
+      recentDocuments: lessons.map(toDocumentItem),
       spacedRepetitionItems: [],
       recentActivities: []
     }
