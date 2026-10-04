@@ -279,6 +279,7 @@ export interface UniqueInsight {
   docId: string;
   docTitle: string;
   insights: string[];
+  domain?: string;
 }
 
 export interface CommonConcept {

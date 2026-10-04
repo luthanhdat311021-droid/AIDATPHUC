@@ -21,6 +21,7 @@ import {
   Brain,
   GitCompare,
   CheckSquare,
+  Square,
   Loader2,
   Folder
 } from 'lucide-react';

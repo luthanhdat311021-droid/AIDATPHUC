@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY, NATIVE_AUTH_REDIRECT } from '../../lib/supabase';
 
-type OAuthProvider = 'google' | 'facebook';
+type OAuthProvider = 'google';
 
 // Official brand marks (sign-in buttons should use the provider's own logo)
 const GoogleLogo = () => (
@@ -15,15 +15,8 @@ const GoogleLogo = () => (
   </svg>
 );
 
-const FacebookLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
-    <path fill="#1877F2" d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
-  </svg>
-);
-
 const OAUTH_BUTTONS: Array<{ provider: OAuthProvider; label: string; Logo: () => React.ReactElement }> = [
-  { provider: 'google', label: 'Google', Logo: GoogleLogo },
-  { provider: 'facebook', label: 'Facebook', Logo: FacebookLogo }
+  { provider: 'google', label: 'Google', Logo: GoogleLogo }
 ];
 import { 
   Mail, 
@@ -68,10 +61,10 @@ export function AuthView() {
   useEffect(() => {
     fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_ANON_KEY } })
       .then(res => res.json())
-      .then(settings => setEnabledProviders(OAUTH_BUTTONS.map(b => b.provider).filter(p => settings?.external?.[p] && !(Capacitor.isNativePlatform() && p === 'facebook'))))
+      .then(settings => setEnabledProviders(OAUTH_BUTTONS.map(b => b.provider).filter(p => settings?.external?.[p])))
       .catch(() => setEnabledProviders([]));
 
-    // Returning from Google/Facebook with an error (e.g. the user cancelled): show it, then clean the URL
+    // Returning from Google with an error (e.g. the user cancelled): show it, then clean the URL
     const params = new URLSearchParams(window.location.hash.slice(1) || window.location.search);
     if (params.get('error')) {
       setErrorMessage(params.get('error') === 'access_denied'
@@ -98,7 +91,7 @@ export function AuthView() {
       return;
     }
     if (error) {
-      setErrorMessage(`Không thể kết nối ${provider === 'google' ? 'Google' : 'Facebook'}: ${error.message}`);
+      setErrorMessage(`Không thể kết nối Google: ${error.message}`);
       setLoading(false);
     }
   };
