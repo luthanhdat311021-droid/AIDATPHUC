@@ -22,6 +22,17 @@ if (typeof globalThis.Path2D === 'undefined') {
  * Universal PDF Text Extractor supporting pdf-parse v2 API safely
  */
 async function extractTextFromPdfBuffer(dataBuffer) {
+  // unpdf runs on edge runtimes (Supabase Edge Functions); it is not installed for the Node server,
+  // where the import fails and pdf-parse below takes over
+  try {
+    const { extractText, getDocumentProxy } = await import('unpdf');
+    const pdf = await getDocumentProxy(new Uint8Array(dataBuffer));
+    const { text } = await extractText(pdf, { mergePages: true });
+    if (text && text.trim().length > 5) return text.trim();
+  } catch (err0) {
+    if (!String(err0?.message).includes('unpdf')) console.warn(`⚠️ [Document Parser] unpdf error: ${err0.message}`);
+  }
+
   try {
     const pdfParseModule = await import('pdf-parse');
     const PDFParse = pdfParseModule.PDFParse || pdfParseModule.default;

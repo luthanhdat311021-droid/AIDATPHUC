@@ -15,6 +15,9 @@ import { KnowledgeFusionView } from './components/fusion/KnowledgeFusionView';
 import { AuthView } from './components/auth/AuthView';
 import { EditProfileModal } from './components/auth/EditProfileModal';
 import { Toast } from './components/common/Toast';
+import { UpgradeModal } from './components/pro/UpgradeModal';
+import { ProView } from './components/pro/ProView';
+import { AdminView } from './components/admin/AdminView';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -94,12 +97,17 @@ function MainLayout() {
             {activeTab === 'mindmap' && <MindmapView />}
             {activeTab === 'flashcard' && <FlashcardView />}
             {activeTab === 'quiz' && <QuizView />}
+            {activeTab === 'pro' && <ProView />}
+            {activeTab === 'admin' && <AdminView />}
           </ErrorBoundary>
         </main>
       </div>
 
       {/* Profile Edit Modal */}
       <EditProfileModal />
+
+      {/* StudyMind Pro checkout (SePay VietQR) */}
+      <UpgradeModal />
 
       {/* Toast Notification */}
       <Toast />

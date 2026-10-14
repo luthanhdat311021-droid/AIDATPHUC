@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same tiled cloud pattern as the web sign-in page (public/clouds-pattern.png) -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android" android:src="@drawable/clouds_pattern" android:tileMode="repeat" />

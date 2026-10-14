@@ -298,5 +298,54 @@ export interface KnowledgeFusionResult {
   comparedDocs: { id: string; title: string }[];
 }
 
-export type TabType = 'dashboard' | 'import' | 'workspace' | 'prerequisite' | 'gaps' | 'mindmap' | 'flashcard' | 'quiz' | 'history' | 'fusion' | 'auth';
+// ---- StudyMind Pro ----
+export interface PlanInfo {
+  id: string;
+  name: string;
+  days: number;
+  amount: number;
+  badge?: string;
+}
+
+export interface AccessInfo {
+  role: 'user' | 'admin';
+  plan: 'free' | 'pro';
+  proUntil: string | null;
+  isPro: boolean;
+  isAdmin: boolean;
+}
+
+export interface BillingInfo extends AccessInfo {
+  enabled: boolean;
+  limits: { generate: number; chat: number };
+  usage: { generate: number; chat: number };
+  plans: PlanInfo[];
+}
+
+export interface PaymentOrder {
+  id: string;
+  code: string;
+  planId: string;
+  planName?: string;
+  days: number;
+  amount: number;
+  status: 'pending' | 'paid' | 'expired' | 'cancelled';
+  createdAt: string;
+  expiresAt: string;
+  paidAt?: string | null;
+  qrUrl?: string;
+  bank?: { accountNumber: string; bankCode: string; accountName: string };
+  email?: string | null;
+}
+
+export interface AdminOverview {
+  revenue: number;
+  paidCount: number;
+  orders: PaymentOrder[];
+  transactions: Array<{ sepay_id: number; order_id: string | null; amount: number; content: string | null; gateway: string | null; result: string; received_at: string }>;
+  members: Array<AccessInfo & { id: string; email: string | null }>;
+  aiStats?: any;
+}
+
+export type TabType = 'dashboard' | 'import' | 'workspace' | 'prerequisite' | 'gaps' | 'mindmap' | 'flashcard' | 'quiz' | 'history' | 'fusion' | 'pro' | 'admin' | 'auth';
 

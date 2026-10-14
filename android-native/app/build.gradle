@@ -1,0 +1,60 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.studymind.nativeapp'
+    compileSdk 36
+
+    defaultConfig {
+        // Different id from the WebView build (com.studymind.app) so both can be installed side by side
+        applicationId 'com.studymind.nativeapp'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+
+        // Same Supabase project as the web / WebView app. The API is the "studymind-api" Edge Function
+        // (supabase/functions/studymind-api), so the app does not depend on the Vercel deploy.
+        buildConfigField 'String', 'SUPABASE_URL', '"https://gwynjmlqymojrdlpzukn.supabase.co"'
+        buildConfigField 'String', 'API_BASE_URL', '"https://gwynjmlqymojrdlpzukn.supabase.co/functions/v1/studymind-api"'
+        // Public web app: privacy page and share links only
+        buildConfigField 'String', 'WEB_URL', '"https://studymind-app-five.vercel.app"'
+        // Public publishable key (already shipped in the web bundle); Row Level Security protects the data
+        buildConfigField 'String', 'SUPABASE_ANON_KEY', '"sb_publishable_HdnEe4-ApmYewkEGVmab_Q_Gc-B1hqc"'
+    }
+
+    buildTypes {
+        debug {
+            // Test against a backend running on this computer without deploying:
+            //   gradlew assembleDebug -PapiBase=http://10.0.2.2:5000   (10.0.2.2 = the host, seen from the emulator)
+            def apiBase = project.findProperty('apiBase')
+            if (apiBase) buildConfigField 'String', 'API_BASE_URL', "\"${apiBase}\""
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.fragment:fragment:1.8.9'
+    implementation 'androidx.drawerlayout:drawerlayout:1.1.1'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'androidx.browser:browser:1.9.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.google.code.gson:gson:2.11.0'
+}

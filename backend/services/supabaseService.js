@@ -18,7 +18,8 @@ const toLesson = (row) => ({
   duration: '15 phút',
   updatedAt: row.updated_at || row.created_at,
   createdAt: row.created_at,
-  status: 'COMPLETED',
+  // Lessons still being built step by step (studymind-api pipeline) carry their progress in `processing`
+  status: row.processing ? 'PROCESSING' : 'COMPLETED',
   tags: [row.input_type ? row.input_type.toUpperCase() : 'TÀI LIỆU'],
   rawText: row.raw_text || row.structured_note?.summary || '',
   studyPack: {

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Brain-circuit mark (web: lucide BrainCircuit) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="48" android:viewportHeight="48">
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3.2" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000"
+        android:pathData="M24,10a6,6 0,0 0,-11.6 -2.2A5,5 0,0 0,6 13a6,6 0,0 0,-1.4 9.8A6,6 0,0 0,10 32a6,6 0,0 0,14 2.4ZM24,10a6,6 0,0 1,11.6 -2.2A5,5 0,0 1,42 13a6,6 0,0 1,1.4 9.8A6,6 0,0 1,38 32a6,6 0,0 1,-14 2.4ZM24,10v24.4" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3.2" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M24,20h7M31,20v-4M24,27h-7M17,27v4" />
+</vector>

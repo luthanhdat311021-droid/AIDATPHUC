@@ -4,15 +4,12 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
-import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 
 import { processFileAndGenerate, generateStudyPackFromText } from './services/aiEngine.js';
-import { aiRouter } from './services/ai/AIRouter.js';
-import { PromptManager } from './services/ai/PromptManager.js';
-import { aiLogger } from './services/ai/AILogger.js';
 import { extractFromVideoUrlOrFile, extractFromWebUrl } from './services/textExtractor.js';
 import { supabaseService } from './services/supabaseService.js';
+import { registerStudyRoutes, jsonErrorHandler, newLessonId } from './routes/studyRoutes.js';
 
 dotenv.config();
 
@@ -52,59 +49,13 @@ const upload = multer({
 
 // ==================== REST API ENDPOINTS ==================== //
 
-// Healthcheck (public)
-app.get('/api/v1/health', (req, res) => {
-  res.json({
-    status: 'online',
-    aiEngines: {
-      providerMode: process.env.AI_PROVIDER || 'auto',
-      geminiMultimodal: process.env.GEMINI_API_KEY ? 'Active (Connected)' : 'Fallback Mode (No Key)',
-      groqFastReasoning: process.env.GROQ_API_KEY ? 'Active (Connected)' : 'Fallback Mode (No Key)'
-    }
-  });
-});
-
 // Serve uploaded avatars statically (public)
 app.use('/uploads', express.static(uploadDir));
 
-// Every other API route requires a signed-in Supabase user. req.db acts as that user,
-// so Row Level Security limits every read and write to their own lessons.
-app.use('/api', async (req, res, next) => {
-  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
-  const user = token ? await supabaseService.getUserFromToken(token) : null;
-  if (!user) return res.status(401).json({ success: false, error: 'Vui lòng đăng nhập để tiếp tục.' });
-  req.user = user;
-  req.db = supabaseService.clientFor(token);
-  next();
-});
+// Health check, SePay webhook, sign-in gate and every route shared with the "studymind-api" Edge Function
+const { assertDepthAllowed, useQuota } = registerStudyRoutes(app);
 
-const newLessonId = () => `doc-${randomUUID()}`;
-
-// The caller's lesson, or a 404 response (RLS already hides other users' lessons)
-async function loadLesson(req, res, id = req.params.id) {
-  const lesson = await supabaseService.getLessonHistoryById(id, req.db);
-  if (!lesson) res.status(404).json({ success: false, error: 'Không tìm thấy bài học.' });
-  return lesson;
-}
-
-const saveLesson = (req, lesson) => supabaseService.saveLessonHistory(lesson, lesson.studyPack, req.db);
-
-// Knowledge base of a lesson; re-analyzes the raw text for lessons saved without one
-async function knowledgeOf(lesson) {
-  return lesson.studyPack.knowledgeBase
-    || (lesson.studyPack.knowledgeBase = await aiRouter.analyzeDocument(lesson.rawText, { title: lesson.title }));
-}
-
-const toDocumentItem = (l) => ({
-  id: l.id,
-  title: l.title,
-  fileType: l.fileType,
-  fileSize: l.fileSize,
-  pageCount: l.pageCount,
-  updatedAt: l.updatedAt,
-  status: l.status,
-  tags: l.tags
-});
+// ---- Routes below are only on this Node server (multipart uploads, one-shot processing for the web app) ----
 
 // Upload Avatar File Endpoint (the URL is stored in the user's Supabase profile by the client)
 app.post('/api/v1/user/upload-avatar', upload.single('avatar'), (req, res) => {
@@ -114,154 +65,13 @@ app.post('/api/v1/user/upload-avatar', upload.single('avatar'), (req, res) => {
   res.json({ success: true, avatarUrl: `/uploads/${req.file.filename}` });
 });
 
-// Dashboard numbers, all derived from the caller's own lessons (a new account shows zeros / "no data yet")
-app.get('/api/v1/user/stats', async (req, res) => {
-  const lessons = await supabaseService.getAllLessonHistory(req.db);
-  const WEEK = 7 * 24 * 3600 * 1000;
-  const now = Date.now();
-  const attempts = lessons.flatMap(l => l.quizHistory || []);
-  const cards = lessons.flatMap(l => l.studyPack?.flashcards || []);
-  const reviewed = cards.filter(c => c.lastRating);
-  const avg = (list) => (list.length ? list.reduce((s, a) => s + a.score, 0) / list.length : null);
-
-  // Study streak: consecutive days (Vietnam time) with a quiz attempt or a new lesson, ending today or yesterday
-  const dayOf = (iso) => new Date(new Date(iso).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
-  const activeDays = new Set([...attempts.map(a => dayOf(a.completedAt)), ...lessons.map(l => dayOf(l.createdAt))]);
-  const DAY = 24 * 3600 * 1000;
-  let streakDays = 0;
-  // Today may still be empty without breaking the streak, so start from yesterday in that case
-  let t = activeDays.has(dayOf(new Date(now).toISOString())) ? now : now - DAY;
-  while (activeDays.has(dayOf(new Date(t).toISOString()))) { streakDays++; t -= DAY; }
-
-  const recent = attempts.filter(a => now - new Date(a.completedAt).getTime() < WEEK);
-  const prior = attempts.filter(a => now - new Date(a.completedAt).getTime() >= WEEK);
-  const avgNow = avg(attempts);
-  const scoreDiff = avg(recent) !== null && avg(prior) !== null ? (avg(recent) - avg(prior)) / 10 : null;
-
-  res.json({
-    success: true,
-    data: {
-      totalDocuments: lessons.length,
-      weeklyDocAdded: lessons.filter(l => now - new Date(l.createdAt).getTime() < WEEK).length,
-      flashcardProgress: `${reviewed.length}/${cards.length}`,
-      retentionRatePercentage: reviewed.length ? Math.round((reviewed.filter(c => c.lastRating === 'easy').length / reviewed.length) * 100) : null,
-      averageQuizScore: avgNow === null ? null : `${(avgNow / 10).toFixed(1)}/10`,
-      quizScoreDiff: scoreDiff === null ? null : `${scoreDiff >= 0 ? '+' : ''}${scoreDiff.toFixed(1)} điểm so với trước tuần này`,
-      quizAttempts: attempts.length,
-      weeklyQuizCount: { current: recent.reduce((s, a) => s + a.totalQuestions, 0), target: 50 },
-      streakDays,
-      recentDocuments: lessons.map(toDocumentItem),
-      spacedRepetitionItems: [],
-      recentActivities: []
-    }
-  });
-});
-
-app.get('/api/v1/documents', async (req, res) => {
-  const lessons = await supabaseService.getAllLessonHistory(req.db);
-  res.json({ success: true, documents: lessons.map(toDocumentItem) });
-});
-
-app.get('/api/v1/documents/:id', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (lesson) res.json({ success: true, document: { ...toDocumentItem(lesson), rawText: lesson.rawText }, studyPack: lesson.studyPack, quizHistory: lesson.quizHistory });
-});
-
-// Direct AI Endpoints
-app.post('/api/ai/analyze', async (req, res) => {
-  const { content, title = "Tài liệu học tập" } = req.body;
-  const knowledgeBase = await aiRouter.analyzeDocument(content, { title });
-  res.json({ success: true, knowledgeBase });
-});
-
-app.post('/api/ai/notes', async (req, res) => {
-  const { knowledgeBase } = req.body;
-  const notes = await aiRouter.generateNotes(knowledgeBase);
-  res.json({ success: true, notes });
-});
-
-app.post('/api/ai/mindmap', async (req, res) => {
-  const { knowledgeBase } = req.body;
-  const mindmap = await aiRouter.generateMindmap(knowledgeBase);
-  res.json({ success: true, mindmap });
-});
-
-app.post('/api/ai/flashcards', async (req, res) => {
-  const { knowledgeBase, userSettings = {} } = req.body;
-  const flashcards = await aiRouter.generateFlashcards(knowledgeBase, userSettings);
-  res.json({ success: true, flashcards });
-});
-
-app.post('/api/ai/quiz', async (req, res) => {
-  const { knowledgeBase, userSettings = {} } = req.body;
-  const quiz = await aiRouter.generateQuiz(knowledgeBase, userSettings);
-  res.json({ success: true, quiz });
-});
-
-app.post('/api/v1/documents/:id/regenerate-quiz', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  lesson.studyPack.quiz = await aiRouter.generateQuiz(await knowledgeOf(lesson), req.body?.userSettings || {});
-  await saveLesson(req, lesson);
-  res.json({ success: true, quiz: lesson.studyPack.quiz });
-});
-
-app.post('/api/v1/documents/:id/regenerate-flashcards', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  lesson.studyPack.flashcards = await aiRouter.generateFlashcards(await knowledgeOf(lesson), req.body?.userSettings || {});
-  await saveLesson(req, lesson);
-  res.json({ success: true, flashcards: lesson.studyPack.flashcards });
-});
-
-// Prerequisite analysis ("Kiến thức Tiên quyết") on demand — for older lessons or to re-run at another depth
-app.post('/api/v1/documents/:id/prerequisites', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  const kb = lesson.studyPack.knowledgeBase;
-  lesson.studyPack.prerequisites = await aiRouter.generatePrerequisites(
-    lesson.title, lesson.rawText || kb?.summary || '', req.body?.depth || kb?.analysisDepth, kb
-  );
-  await saveLesson(req, lesson);
-  res.json({ success: true, prerequisites: lesson.studyPack.prerequisites });
-});
-
-// Diagnostic pre-test is graded server-side and kept on the lesson as Knowledge Gap Map evidence
-app.post('/api/v1/documents/:id/prerequisites/diagnostic', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  const prerequisites = lesson.studyPack.prerequisites;
-  const questions = prerequisites?.diagnosticPreTest?.questions || [];
-  if (questions.length === 0) return res.status(400).json({ success: false, error: 'Bài học chưa có bài test chẩn đoán.' });
-
-  const answers = req.body?.answers || {};
-  prerequisites.lastDiagnostic = {
-    completedAt: new Date().toISOString(),
-    results: questions
-      .filter(q => answers[q.id] !== undefined)
-      .map(q => ({ questionId: q.id, prerequisiteId: q.testedPrerequisiteId, correct: answers[q.id] === q.correctIndex }))
-  };
-  await saveLesson(req, lesson);
-  res.json({ success: true, prerequisites });
-});
-
-app.post('/api/ai/chat', async (req, res) => {
-  const { documentId, question, chatHistory = [], mode, focus } = req.body;
-  const lesson = await loadLesson(req, res, documentId);
-  if (!lesson) return;
-  // Socratic mode: tutor never gives answers; focus = root gaps summarised by the client's Knowledge Gap Map
-  const instructions = mode === 'socratic'
-    ? PromptManager.getSocraticInstructions(lesson.title, String(focus || '').slice(0, 1200))
-    : null;
-  const reply = await aiRouter.chat(lesson.title, lesson.rawText || '', question, chatHistory, instructions);
-  res.json({ success: true, answer: reply });
-});
-
 // Upload Document
 app.post('/api/v1/documents/upload', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
     const { options, rawText, fileName, depth } = req.body;
+    assertDepthAllowed(req, depth);
+    await useQuota(req);
     const parsedOptions = { ...(options ? JSON.parse(options) : {}), depth };
 
     const docTitle = file
@@ -304,7 +114,7 @@ app.post('/api/v1/documents/upload', upload.single('file'), async (req, res) => 
     });
   } catch (err) {
     console.error("Upload error:", err);
-    res.status(500).json({ success: false, error: err?.message || "Lỗi xử lý tài liệu" });
+    res.status(err?.status || 500).json({ success: false, error: err?.message || "Lỗi xử lý tài liệu", code: err?.code });
   } finally {
     // Uploaded binaries are only needed during processing; /tmp on Vercel is small
     if (req.file?.path) fs.promises.unlink(req.file.path).catch(() => {});
@@ -314,6 +124,8 @@ app.post('/api/v1/documents/upload', upload.single('file'), async (req, res) => 
 // Process Video
 app.post('/api/v1/documents/process-video', async (req, res) => {
   const { videoUrl } = req.body;
+  assertDepthAllowed(req, req.body.depth);
+  await useQuota(req);
   const extracted = await extractFromVideoUrlOrFile(videoUrl);
   const rawText = typeof extracted === 'object' ? extracted.text : extracted;
   const docTitle = typeof extracted === 'object' ? extracted.title : (videoUrl ? `Video (${videoUrl.slice(0, 25)}...)` : "Video học tập");
@@ -337,6 +149,8 @@ app.post('/api/v1/documents/process-video', async (req, res) => {
 // Process Web URL
 app.post('/api/v1/documents/process-url', async (req, res) => {
   const { url } = req.body;
+  assertDepthAllowed(req, req.body.depth);
+  await useQuota(req);
   const extracted = await extractFromWebUrl(url);
   const rawText = typeof extracted === 'object' ? extracted.text : extracted;
   const docTitle = typeof extracted === 'object' ? extracted.title : (url ? `Web (${url.slice(0, 25)}...)` : "Nghiên cứu Web");
@@ -356,226 +170,7 @@ app.post('/api/v1/documents/process-url', async (req, res) => {
   res.json({ success: true, document: newDoc, studyPack });
 });
 
-// Admin AI Logs & Metrics Dashboard Endpoints
-app.get('/api/ai/logs', (req, res) => {
-  res.json({ success: true, logs: aiLogger.getLogs(50) });
-});
-
-app.get('/api/ai/stats', (req, res) => {
-  res.json({ success: true, stats: aiLogger.getStats() });
-});
-
-// ==================== MINDMAP / FLASHCARD / QUIZ CRUD ==================== //
-
-app.post('/api/v1/documents/:id/mindmap/expand', async (req, res) => {
-  const { node } = req.body;
-  if (!node) {
-    return res.status(400).json({ success: false, error: "Missing node parameter" });
-  }
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-
-  const expansion = await aiRouter.expandNode(node, lesson.rawText || "");
-  const mindmap = lesson.studyPack.mindmap ||= { rootLabel: lesson.title, nodes: [], edges: [] };
-  (mindmap.nodes ||= []).push(...(expansion.expandedNodes || []));
-  (mindmap.edges ||= []).push(...(expansion.expandedEdges || []));
-
-  await saveLesson(req, lesson);
-  res.json({ success: true, expansion, mindmap });
-});
-
-app.post('/api/v1/documents/:id/mindmap/nodes', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  const { label, detail, subDetails = [], parentId } = req.body;
-
-  const newNode = {
-    id: `node-${Date.now()}`,
-    label: label || 'Nút nhánh mới',
-    detail: detail || 'Chi tiết nút mới tạo',
-    subDetails: subDetails || [],
-    parentId: parentId || 'root'
-  };
-
-  const mindmap = lesson.studyPack.mindmap ||= { rootLabel: 'NÚT GỐC TRUNG TÂM', nodes: [] };
-  (mindmap.nodes ||= []).push(newNode);
-
-  await saveLesson(req, lesson);
-  res.json({ success: true, node: newNode, mindmap });
-});
-
-app.put('/api/v1/documents/:id/mindmap/nodes/:nodeId', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  const { label, detail, subDetails } = req.body;
-
-  const node = lesson.studyPack.mindmap?.nodes?.find(n => n.id === req.params.nodeId);
-  if (node) {
-    if (label !== undefined) node.label = label;
-    if (detail !== undefined) node.detail = detail;
-    if (subDetails !== undefined) node.subDetails = subDetails;
-    await saveLesson(req, lesson);
-  }
-
-  res.json({ success: true, mindmap: lesson.studyPack.mindmap });
-});
-
-app.delete('/api/v1/documents/:id/mindmap/nodes/:nodeId', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-
-  const mindmap = lesson.studyPack.mindmap;
-  if (mindmap?.nodes) {
-    mindmap.nodes = mindmap.nodes.filter(n => n.id !== req.params.nodeId);
-    await saveLesson(req, lesson);
-  }
-
-  res.json({ success: true, mindmap });
-});
-
-app.post('/api/v1/documents/:id/flashcards', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  const { front, back, difficulty = 'medium' } = req.body;
-
-  const newCard = {
-    id: `fc-${Date.now()}`,
-    front: front || 'Câu hỏi ghi nhớ mới?',
-    back: back || 'Đáp án trả lời.',
-    difficulty,
-    lastReviewed: null,
-    nextReview: new Date().toISOString()
-  };
-
-  (lesson.studyPack.flashcards ||= []).push(newCard);
-  await saveLesson(req, lesson);
-  res.json({ success: true, card: newCard, flashcards: lesson.studyPack.flashcards });
-});
-
-app.post('/api/v1/documents/:id/flashcards/:cardId/review', async (req, res) => {
-  const intervals = { hard: '1 phút', medium: '10 phút', easy: '4 ngày' };
-  const { rating } = req.body;
-  if (!intervals[rating]) return res.status(400).json({ success: false, error: 'Đánh giá không hợp lệ.' });
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-
-  const card = (lesson.studyPack.flashcards || []).find(c => c.id === req.params.cardId);
-  if (!card) return res.status(404).json({ success: false, error: 'Không tìm thấy thẻ ghi nhớ.' });
-  card.lastRating = rating;
-  card.lastReviewed = new Date().toISOString();
-  await saveLesson(req, lesson);
-
-  res.json({
-    success: true,
-    card,
-    message: `Đã cập nhật trạng thái thẻ ôn tập: ${rating.toUpperCase()} (Lần ôn tiếp theo: sau ${intervals[rating]})`
-  });
-});
-
-app.delete('/api/v1/documents/:id/flashcards/:cardId', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  lesson.studyPack.flashcards = (lesson.studyPack.flashcards || []).filter(c => c.id !== req.params.cardId);
-  await saveLesson(req, lesson);
-  res.json({ success: true, message: "Đã xóa thẻ ghi nhớ thành công" });
-});
-
-app.post('/api/v1/documents/:id/quiz/questions', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  const { questionText, options, correctIndex, explanation } = req.body;
-
-  const quiz = lesson.studyPack.quiz?.questions
-    ? lesson.studyPack.quiz
-    : (lesson.studyPack.quiz = { title: "Đề trắc nghiệm AI", subject: "Tổng hợp", timeLimitMinutes: 15, questions: [] });
-
-  const qNumber = quiz.questions.length + 1;
-  const newQ = {
-    id: `q-${Date.now()}`,
-    questionNumber: qNumber,
-    questionText: questionText || `Câu hỏi ${qNumber}?`,
-    options: options || ["A. Phương án 1", "B. Phương án 2", "C. Phương án 3", "D. Phương án 4"],
-    correctIndex: correctIndex !== undefined ? correctIndex : 0,
-    explanation: explanation || "Giải thích chi tiết từ AI."
-  };
-
-  quiz.questions.push(newQ);
-  await saveLesson(req, lesson);
-  res.json({ success: true, question: newQ, quiz });
-});
-
-app.post('/api/v1/quiz/:id/submit', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (!lesson) return;
-  const answers = req.body.answers || {};
-  const questions = lesson.studyPack.quiz?.questions || [];
-
-  // Per-question outcome is the evidence the Knowledge Gap Map traces back through the concept graph
-  const results = questions
-    .filter(q => answers[q.id] !== undefined)
-    .map(q => ({ questionId: q.id, conceptId: q.conceptId || null, correct: answers[q.id] === q.correctIndex }));
-  const correctCount = results.filter(r => r.correct).length;
-  const total = Math.max(questions.length, 1);
-  const scorePct = Math.round((correctCount / total) * 100);
-  const feedback = scorePct >= 80 ? "Xuất sắc! Bạn đã nắm rất vững kiến thức bài học." : "Khá tốt! Hãy ôn lại các thẻ ghi nhớ màu đỏ nhé.";
-
-  await supabaseService.recordQuizResult(lesson, scorePct, correctCount, total, feedback, results, req.db);
-
-  res.json({
-    success: true,
-    score: scorePct,
-    correctCount,
-    totalQuestions: total,
-    feedback
-  });
-});
-
-// ==========================================
-// 📚 LESSON HISTORY ENDPOINTS
-// ==========================================
-
-app.get('/api/v1/history', async (req, res) => {
-  const historyList = await supabaseService.getAllLessonHistory(req.db);
-  res.json({
-    success: true,
-    isSupabaseActive: supabaseService.isConfigured(),
-    data: historyList
-  });
-});
-
-app.get('/api/v1/history/:id', async (req, res) => {
-  const lesson = await loadLesson(req, res);
-  if (lesson) res.json({ success: true, data: lesson });
-});
-
-app.delete('/api/v1/history/:id', async (req, res) => {
-  await supabaseService.deleteLessonHistory(req.params.id, req.db);
-  res.json({ success: true, message: "Đã xóa bài học khỏi lịch sử thành công!" });
-});
-
-// ==========================================
-// 🧬 MULTI-DOCUMENT KNOWLEDGE FUSION ENDPOINT
-// ==========================================
-app.post('/api/v1/fusion/analyze', async (req, res) => {
-  const { documentIds } = req.body;
-  const allHistory = Array.isArray(documentIds) ? await supabaseService.getAllLessonHistory(req.db) : [];
-  const selectedDocs = allHistory.filter(h => documentIds.includes(h.id));
-  if (selectedDocs.length < 2) {
-    return res.status(400).json({
-      success: false,
-      error: "Vui lòng chọn ít nhất 2 tài liệu để thực hiện hợp nhất và so sánh."
-    });
-  }
-
-  const fusionResult = await aiRouter.analyzeFusion(selectedDocs);
-  res.json({ success: true, data: fusionResult });
-});
-
-// Errors thrown in any route (Express 5 forwards async errors here) come back as JSON instead of an HTML page
-app.use((err, req, res, next) => {
-  console.error(`[API Error] ${req.method} ${req.path}:`, err);
-  res.status(err.status || 500).json({ success: false, error: err.message || 'Lỗi máy chủ' });
-});
+app.use(jsonErrorHandler);
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {

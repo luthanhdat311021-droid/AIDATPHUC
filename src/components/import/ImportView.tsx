@@ -34,7 +34,7 @@ type SourceTab = 'doc' | 'image' | 'video' | 'url' | 'text';
 type ProcessStatus = { state: 'idle' | 'working' | 'done' | 'error'; message: string };
 
 export function ImportView() {
-  const { uploadDocument, processVideo, processUrl, showToast } = useStudy();
+  const { uploadDocument, processVideo, processUrl, showToast, isPro, openUpgrade } = useStudy();
 
   const [activeSourceTab, setActiveSourceTab] = useState<SourceTab>('doc');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -644,14 +644,16 @@ export function ImportView() {
                   <button
                     key={item}
                     type="button"
-                    onClick={() => setDepth(item)}
+                    onClick={() => item === 'Chuyên sâu' && !isPro
+                      ? openUpgrade('Chế độ "Chuyên sâu" dành cho thành viên StudyMind Pro.')
+                      : setDepth(item)}
                     className={`py-1.5 text-[11px] font-bold rounded-md transition-all ${
                       depth === item
                         ? 'bg-[#CCFBF1] text-[#0F766E] border border-[#0F766E] shadow-2xs'
                         : 'text-slate-600 hover:bg-slate-200/50'
                     }`}
                   >
-                    {item}
+                    {item}{item === 'Chuyên sâu' && !isPro ? ' 🔒' : ''}
                   </button>
                 ))}
               </div>

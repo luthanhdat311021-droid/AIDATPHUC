@@ -15,7 +15,11 @@ import {
   Flashcard,
   QuizQuestion,
   LessonHistoryItem,
-  KnowledgeFusionResult
+  KnowledgeFusionResult,
+  BillingInfo,
+  PaymentOrder,
+  AccessInfo,
+  AdminOverview
 } from '../types';
 import { notificationService } from '../utils/notificationService';
 import { recordCardReviewed, recordQuizCompleted } from '../utils/gamification';
@@ -88,12 +92,30 @@ interface StudyContextType {
   logout: () => Promise<void>;
   updateUserProfile: (fullName: string, avatarUrl: string) => Promise<any>;
   uploadAvatarFile: (file: File) => Promise<any>;
+
+  // StudyMind Pro (plan & role are decided by the server; these only mirror them)
+  billing: BillingInfo | null;
+  isPro: boolean;
+  isAdmin: boolean;
+  refreshBilling: () => Promise<void>;
+  upgradeReason: string | null;
+  isUpgradeOpen: boolean;
+  openUpgrade: (reason?: string) => void;
+  closeUpgrade: () => void;
+  createPaymentOrder: (planId: string) => Promise<{ order?: PaymentOrder; error?: string }>;
+  getPaymentOrder: (orderId: string) => Promise<{ order?: PaymentOrder; access?: AccessInfo; error?: string }>;
+  cancelPaymentOrder: (orderId: string) => Promise<void>;
+  listPaymentOrders: () => Promise<PaymentOrder[]>;
+  fetchAdminOverview: () => Promise<{ data?: AdminOverview; error?: string }>;
+  adminSetPro: (email: string, days: number) => Promise<{ success: boolean; error?: string }>;
 }
 
 const StudyContext = createContext<StudyContextType | null>(null);
 
 const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80";
-const GUEST_USER: User = { fullName: "Khách ghé thăm", membershipTier: "Basic", avatarUrl: DEFAULT_AVATAR };
+const GUEST_USER: User = { fullName: "Khách ghé thăm", membershipTier: "Free", avatarUrl: DEFAULT_AVATAR };
+
+const tierLabel = (b: AccessInfo | null) => (b?.isAdmin ? 'Quản trị viên' : b?.isPro ? 'StudyMind Pro' : 'Gói Miễn phí');
 
 const toAppUser = (u: SupabaseUser): User => ({
   id: u.id,
@@ -101,7 +123,7 @@ const toAppUser = (u: SupabaseUser): User => ({
   // Email sign-up stores full_name/avatar_url; Google and Facebook may send name/picture instead
   fullName: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || 'Học viên',
   avatarUrl: u.user_metadata?.avatar_url || u.user_metadata?.picture || DEFAULT_AVATAR,
-  membershipTier: "Basic",
+  membershipTier: "Gói Miễn phí",
   createdAt: u.created_at
 });
 
@@ -207,14 +229,23 @@ const getApiUrl = (endpoint: string): string => {
   return endpoint;
 };
 
-// Every backend call goes through here so it always carries the signed-in user's access token
+// Every backend call goes through here so it always carries the signed-in user's access token.
+// 402 = the server refused a Pro feature or the daily AI quota is used up → offer the upgrade.
 const apiFetch = async (endpoint: string, init: RequestInit = {}): Promise<Response> => {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  return fetch(getApiUrl(endpoint), {
+  const res = await fetch(getApiUrl(endpoint), {
     ...init,
     headers: { ...(init.headers || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) }
   });
+  if (res.status === 402) {
+    res.clone().json().then(body => openUpgrade(body?.error)).catch(() => openUpgrade());
+  }
+  return res;
+};
+
+const jsonOf = async (res: Response) => {
+  try { return await res.json(); } catch { return { success: false, error: `Lỗi máy chủ (Mã lỗi ${res.status})` }; }
 };
 
 const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; errorMsg?: string }> => {
@@ -302,6 +333,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     await supabase.auth.signOut();
     // Nothing from this account may linger for the next person on this device
     localStorage.removeItem('studymind_cached_history');
+    setBilling(null);
     setHistoryList([]);
     setStats(null);
     setDocuments([]);
@@ -425,12 +457,83 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     }
   };
 
+  // ---- StudyMind Pro ----
+  const [billing, setBilling] = useState<BillingInfo | null>(null);
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<string | null>(null);
+
+  const refreshBilling = async () => {
+    try {
+      const res = await apiFetch('/api/v1/billing/me');
+      const data = await jsonOf(res);
+      if (data.success) setBilling(data.data);
+    } catch (err) {
+      console.error("Failed to fetch billing:", err);
+    }
+  };
+
+  const openUpgrade = (reason?: string) => {
+    setUpgradeReason(reason || null);
+    setIsUpgradeOpen(true);
+  };
+  const closeUpgrade = () => {
+    setIsUpgradeOpen(false);
+    setUpgradeReason(null);
+  };
+
+  const createPaymentOrder = async (planId: string) => {
+    const data = await jsonOf(await apiFetch('/api/v1/billing/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planId })
+    }));
+    return data.success ? { order: data.order } : { error: data.error || 'Không tạo được đơn thanh toán.' };
+  };
+
+  const getPaymentOrder = async (orderId: string) => {
+    const data = await jsonOf(await apiFetch(`/api/v1/billing/orders/${orderId}`));
+    if (!data.success) return { error: data.error };
+    if (data.order?.status === 'paid') await refreshBilling();
+    return { order: data.order, access: data.access };
+  };
+
+  const cancelPaymentOrder = async (orderId: string) => {
+    await apiFetch(`/api/v1/billing/orders/${orderId}/cancel`, { method: 'POST' }).catch(() => {});
+  };
+
+  const listPaymentOrders = async (): Promise<PaymentOrder[]> => {
+    const data = await jsonOf(await apiFetch('/api/v1/billing/orders'));
+    return data.success ? data.orders : [];
+  };
+
+  const fetchAdminOverview = async () => {
+    const data = await jsonOf(await apiFetch('/api/admin/overview'));
+    return data.success ? { data: data.data } : { error: data.error };
+  };
+
+  const adminSetPro = async (email: string, days: number) => {
+    const data = await jsonOf(await apiFetch('/api/admin/members', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, days })
+    }));
+    return data.success ? { success: true } : { success: false, error: data.error };
+  };
+
   // Load the signed-in user's data once their session is known (and again after switching accounts)
   useEffect(() => {
     if (!user.id) return;
     fetchDashboardStats();
     fetchHistory();
+    refreshBilling();
   }, [user.id]);
+
+  // AI usage counters move with every generation; keep the badge honest after each one
+  useEffect(() => {
+    if (user.id && activeDocData?.document?.id) refreshBilling();
+  }, [activeDocData?.document?.id]);
+
+  const userWithTier: User = { ...user, membershipTier: tierLabel(billing) };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -819,7 +922,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     <StudyContext.Provider value={{
       activeTab,
       setActiveTab,
-      user,
+      user: userWithTier,
       authReady,
       stats,
       documents,
@@ -869,7 +972,21 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       uploadAvatarFile,
       fusionResult,
       fusionLoading,
-      performKnowledgeFusion
+      performKnowledgeFusion,
+      billing,
+      isPro: Boolean(billing?.isPro),
+      isAdmin: Boolean(billing?.isAdmin),
+      refreshBilling,
+      upgradeReason,
+      isUpgradeOpen,
+      openUpgrade,
+      closeUpgrade,
+      createPaymentOrder,
+      getPaymentOrder,
+      cancelPaymentOrder,
+      listPaymentOrders,
+      fetchAdminOverview,
+      adminSetPro
     }}>
       {children}
     </StudyContext.Provider>

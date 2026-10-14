@@ -186,7 +186,7 @@ function DiagnosticTest({ data, onReview }: { data: PrerequisiteAnalysis; onRevi
 }
 
 export function PrerequisiteView() {
-  const { activeDocData, analyzePrerequisitesAI, setActiveTab } = useStudy();
+  const { activeDocData, analyzePrerequisitesAI, setActiveTab, isPro, openUpgrade } = useStudy();
   const doc = activeDocData?.document;
   const data = activeDocData?.studyPack?.prerequisites || null;
 
@@ -238,11 +238,13 @@ export function PrerequisiteView() {
     <div className="flex items-center gap-2">
       <select
         value={depth}
-        onChange={(e) => setDepth(e.target.value)}
+        onChange={(e) => e.target.value === 'Chuyên sâu' && !isPro
+          ? openUpgrade('Phân tích tiên quyết "Chuyên sâu" dành cho thành viên StudyMind Pro.')
+          : setDepth(e.target.value)}
         disabled={isLoading}
         className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-[#0F766E]"
       >
-        {DEPTH_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+        {DEPTH_OPTIONS.map(o => <option key={o} value={o}>{o}{o === 'Chuyên sâu' && !isPro ? ' 🔒 Pro' : ''}</option>)}
       </select>
       <button
         onClick={runAnalysis}

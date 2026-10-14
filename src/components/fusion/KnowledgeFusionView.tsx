@@ -19,7 +19,7 @@ import {
 import { useStudy } from '../../context/StudyContext';
 
 export function KnowledgeFusionView() {
-  const { historyList = [], documents = [], fusionResult, fusionLoading, performKnowledgeFusion } = useStudy();
+  const { historyList = [], documents = [], fusionResult, fusionLoading, performKnowledgeFusion, isPro, openUpgrade } = useStudy();
 
   // Combine documents from history and active list safely
   const availableDocs = (Array.isArray(historyList) && historyList.length > 0) 
@@ -45,6 +45,10 @@ export function KnowledgeFusionView() {
   };
 
   const handleStartFusion = () => {
+    if (!isPro) {
+      openUpgrade('Hợp nhất kiến thức đa tài liệu là tính năng của StudyMind Pro.');
+      return;
+    }
     if (selectedIds.length >= 2) {
       performKnowledgeFusion(selectedIds);
     }
@@ -87,7 +91,7 @@ export function KnowledgeFusionView() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 border border-white/30 rounded-full text-teal-100 text-xs font-semibold backdrop-blur-xs">
               <GitCompare className="w-3.5 h-3.5" />
-              <span>Tính năng Nâng cao (AI Fusion)</span>
+              <span>Tính năng Nâng cao (AI Fusion){isPro ? '' : ' · 🔒 Pro'}</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
               Hợp nhất & Đối chiếu Kiến thức Đa Tài liệu

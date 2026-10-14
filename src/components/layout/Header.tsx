@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, Sparkles, LogIn, LogOut, User as UserIcon, ChevronDown, Menu, Sun, Moon, Timer, Flame } from 'lucide-react';
+import { Search, Bell, Sparkles, LogIn, LogOut, User as UserIcon, ChevronDown, Menu, Sun, Moon, Timer, Flame, Crown } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { PomodoroModal } from '../common/PomodoroModal';
 import { StreakModal } from '../common/StreakModal';
 import { loadGamificationData, GamificationData, updateActivityStreak } from '../../utils/gamification';
 
 export function Header({ menuOpen, onMenuClick }: { menuOpen: boolean; onMenuClick: () => void }) {
-  const { user, isAuthenticated, openAuthModal, openEditProfileModal, logout, isDarkMode, toggleDarkMode, showToast } = useStudy();
+  const { user, isAuthenticated, openAuthModal, openEditProfileModal, logout, isDarkMode, toggleDarkMode, showToast, isPro, openUpgrade, setActiveTab } = useStudy();
   const [showDropdown, setShowDropdown] = useState(false);
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
@@ -52,6 +52,15 @@ export function Header({ menuOpen, onMenuClick }: { menuOpen: boolean; onMenuCli
 
       {/* Right User Controls */}
       <div className="flex items-center gap-1.5 md:gap-3 ml-4">
+        {isAuthenticated && !isPro && (
+          <button
+            onClick={() => openUpgrade()}
+            className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold text-xs shadow-2xs"
+          >
+            <Crown className="w-3.5 h-3.5" /> Nâng cấp Pro
+          </button>
+        )}
+
         {/* Daily Streak Badge */}
         <button
           onClick={() => { refreshGamification(); setIsStreakModalOpen(true); }}
@@ -129,6 +138,14 @@ export function Header({ menuOpen, onMenuClick }: { menuOpen: boolean; onMenuCli
                 >
                   <UserIcon className="w-4 h-4 text-[#0F766E]" />
                   <span>Chỉnh sửa hồ sơ</span>
+                </button>
+
+                <button
+                  onClick={() => { setShowDropdown(false); setActiveTab('pro'); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors mb-1"
+                >
+                  <Crown className="w-4 h-4 text-amber-500" />
+                  <span>Tài khoản Pro</span>
                 </button>
 
                 <button

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Camera captures for "Chụp ảnh từ Camera" are written to the app cache -->
+<paths>
+    <cache-path name="camera" path="camera/" />
+    <!-- Mind map PNG exports shared through the system share sheet -->
+    <cache-path name="exports" path="exports/" />
+</paths>

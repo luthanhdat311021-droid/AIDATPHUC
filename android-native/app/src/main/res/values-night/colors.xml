@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- dark: variants used by the web app (slate-800/900 surfaces, translucent tints) -->
+<resources>
+    <color name="brand">#14B8A6</color>
+    <color name="brand_soft">#134E4A</color>
+    <color name="teal_50">#0F2E2B</color>
+    <color name="amber_soft">#422006</color>
+    <color name="amber_50">#2A1F0A</color>
+    <color name="orange_50">#2B1608</color>
+    <color name="orange_100">#431407</color>
+    <color name="rose_soft">#4C0519</color>
+    <color name="rose_50">#2A0A12</color>
+    <color name="emerald_soft">#064E3B</color>
+    <color name="emerald_50">#052E22</color>
+    <color name="indigo_50">#1E1B4B</color>
+    <color name="violet_50">#2E1065</color>
+    <color name="sky_50">#082F49</color>
+    <color name="bg">#0F172A</color>
+    <color name="surface">#1E293B</color>
+    <color name="surface_alt">#334155</color>
+    <color name="slate_50">#1E293B</color>
+    <color name="slate_100">#334155</color>
+    <color name="slate_200">#334155</color>
+    <color name="border">#334155</color>
+    <color name="text">#F1F5F9</color>
+    <color name="text_secondary">#CBD5E1</color>
+    <color name="text_muted">#94A3B8</color>
+</resources>

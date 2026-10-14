@@ -16,14 +16,16 @@ import {
   Network,
   X,
   Sun,
-  Moon
+  Moon,
+  Crown,
+  ShieldCheck
 } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { TabType } from '../../types';
 
 // Desktop: fixed column. Mobile: slide-in drawer opened from the header's menu button.
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { activeTab, setActiveTab, user, isAuthenticated, openAuthModal, openEditProfileModal, logout, isDarkMode, toggleDarkMode } = useStudy();
+  const { activeTab, setActiveTab, user, isAuthenticated, openAuthModal, openEditProfileModal, logout, isDarkMode, toggleDarkMode, isPro, isAdmin, openUpgrade } = useStudy();
 
   useEffect(() => {
     if (!open) return;
@@ -32,7 +34,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  const navItems: Array<{ id: TabType; label: string; icon: any }> = [
+  const navItems: Array<{ id: TabType; label: string; icon: any; pro?: boolean }> = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
     { id: 'import', label: 'Nhập tài liệu', icon: UploadCloud },
     { id: 'history', label: 'Lịch sử bài học', icon: History },
@@ -42,6 +44,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
     { id: 'mindmap', label: 'Sơ đồ tư duy', icon: GitFork },
     { id: 'flashcard', label: 'Thẻ ghi nhớ', icon: Layers },
     { id: 'quiz', label: 'Trắc nghiệm', icon: HelpCircle },
+    { id: 'fusion', label: 'Hợp nhất kiến thức', icon: GitCompare, pro: true },
+    { id: 'pro', label: 'Tài khoản Pro', icon: Crown },
+    // Shown to admins only; the server enforces the role on every /api/admin request regardless
+    ...(isAdmin ? [{ id: 'admin' as TabType, label: 'Quản trị', icon: ShieldCheck }] : []),
   ];
 
   return (
@@ -91,10 +97,23 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-[#0F766E]' : 'text-slate-400'}`} />
                 <span>{item.label}</span>
+                {item.pro && !isPro && (
+                  <span className="ml-auto text-[9px] font-extrabold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">PRO</span>
+                )}
               </button>
             );
           })}
         </nav>
+
+        {isAuthenticated && !isPro && (
+          <div className="mx-4 mb-4 p-4 rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#134E4A] text-white">
+            <p className="flex items-center gap-1.5 text-xs font-bold text-amber-300"><Crown className="w-3.5 h-3.5" /> StudyMind Pro</p>
+            <p className="text-[11px] text-teal-100 mt-1">Mở khóa phân tích Chuyên sâu & Knowledge Fusion.</p>
+            <button onClick={() => { openUpgrade(); onClose(); }} className="mt-3 w-full bg-white text-[#0F766E] text-xs font-bold py-2 rounded-lg">
+              Nâng cấp ngay
+            </button>
+          </div>
+        )}
       </div>
 
       {/* User Bottom Widget */}
