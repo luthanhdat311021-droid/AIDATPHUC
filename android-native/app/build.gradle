@@ -2,6 +2,11 @@ plugins {
     id 'com.android.application'
 }
 
+def configString = { name, fallback -> groovy.json.JsonOutput.toJson((project.findProperty(name) ?: fallback).toString()) }
+if (project.hasProperty('supabaseUrl') != project.hasProperty('supabaseAnonKey')) {
+    throw new GradleException('Set supabaseUrl and supabaseAnonKey together when selecting a staging project.')
+}
+
 android {
     namespace 'com.studymind.nativeapp'
     compileSdk 36
@@ -16,20 +21,19 @@ android {
 
         // Same Supabase project as the web / WebView app. The API is the "studymind-api" Edge Function
         // (supabase/functions/studymind-api), so the app does not depend on the Vercel deploy.
-        buildConfigField 'String', 'SUPABASE_URL', '"https://gwynjmlqymojrdlpzukn.supabase.co"'
-        buildConfigField 'String', 'API_BASE_URL', '"https://gwynjmlqymojrdlpzukn.supabase.co/functions/v1/studymind-api"'
+        def supabaseUrl = (project.findProperty('supabaseUrl') ?: 'https://gwynjmlqymojrdlpzukn.supabase.co').toString()
+        buildConfigField 'String', 'SUPABASE_URL', configString('supabaseUrl', supabaseUrl)
+        buildConfigField 'String', 'API_BASE_URL', configString('apiBase', supabaseUrl + '/functions/v1/studymind-api')
         // Public web app: privacy page and share links only
-        buildConfigField 'String', 'WEB_URL', '"https://studymind-app-five.vercel.app"'
+        buildConfigField 'String', 'WEB_URL', configString('webUrl', 'https://studymind-app-five.vercel.app')
         // Public publishable key (already shipped in the web bundle); Row Level Security protects the data
-        buildConfigField 'String', 'SUPABASE_ANON_KEY', '"sb_publishable_HdnEe4-ApmYewkEGVmab_Q_Gc-B1hqc"'
+        buildConfigField 'String', 'SUPABASE_ANON_KEY', configString('supabaseAnonKey', 'sb_publishable_HdnEe4-ApmYewkEGVmab_Q_Gc-B1hqc')
     }
 
     buildTypes {
         debug {
             // Test against a backend running on this computer without deploying:
             //   gradlew assembleDebug -PapiBase=http://10.0.2.2:5000   (10.0.2.2 = the host, seen from the emulator)
-            def apiBase = project.findProperty('apiBase')
-            if (apiBase) buildConfigField 'String', 'API_BASE_URL', "\"${apiBase}\""
         }
         release {
             minifyEnabled false

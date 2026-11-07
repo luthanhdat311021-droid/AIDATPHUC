@@ -8,6 +8,17 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABA
 
 const authClient = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
 
+const TOKEN_CACHE_MS = 60_000;
+const TOKEN_CACHE_MAX = 500;
+const verifiedTokens = new Map();
+
+function tokenClaims(token) {
+  try {
+    const part = String(token).split('.')[1];
+    return JSON.parse(Buffer.from(part.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+  } catch { return null; }
+}
+
 // One row of learning_sessions → the lesson shape the frontend expects
 const toLesson = (row) => ({
   id: row.id,
@@ -43,10 +54,26 @@ export const supabaseService = {
     return true;
   },
 
-  /** Verify a Supabase access token; returns the user or null */
+  /**
+   * Verify a Supabase access token; returns the user or null. A verified token is remembered for up to
+   * a minute (never past its own expiry) so a burst of requests from one screen costs one Auth round trip.
+   */
   async getUserFromToken(token) {
+    const now = Date.now(), hit = verifiedTokens.get(token);
+    if (hit && hit.until > now) return hit.user;
     const { data, error } = await authClient.auth.getUser(token);
-    return error ? null : data.user;
+    if (error || !data?.user) { verifiedTokens.delete(token); return null; }
+    const exp = Number(tokenClaims(token)?.exp) * 1000;
+    const until = Math.min(now + TOKEN_CACHE_MS, Number.isFinite(exp) ? exp : now);
+    if (verifiedTokens.size >= TOKEN_CACHE_MAX) verifiedTokens.delete(verifiedTokens.keys().next().value);
+    verifiedTokens.set(token, { user: data.user, until });
+    return data.user;
+  },
+
+  /** Unverified `sub` of a JWT, only to start per-user work early; trust it after getUserFromToken agrees. */
+  claimedUserId(token) {
+    const sub = tokenClaims(token)?.sub;
+    return typeof sub === 'string' ? sub : null;
   },
 
   /** Client that acts as the signed-in user, so Row Level Security scopes every query to their rows */
@@ -57,10 +84,29 @@ export const supabaseService = {
     });
   },
 
-  async getAllLessonHistory(client) {
-    const { data, error } = await client.from('learning_sessions').select('*').order('updated_at', { ascending: false });
+  async getAllLessonHistory(client, ids = null) {
+    let query = client.from('learning_sessions').select('*');
+    if (ids) query = query.in('id', ids);
+    const { data, error } = await query.order('updated_at', { ascending: false });
     if (error) fail('tải lịch sử bài học', error);
     return data.map(toLesson);
+  },
+
+  /**
+   * Lesson list without the heavy columns (raw text, knowledge base, mind map, notes, quiz): enough for the
+   * history list, dashboard stats and flashcard counts. Open a lesson with getLessonHistoryById for the rest.
+   */
+  async getLessonSummaries(client) {
+    const { data, error } = await client.from('learning_sessions')
+      .select('id,title,source_name,input_type,created_at,updated_at,processing,flashcards,quiz_history')
+      .order('updated_at', { ascending: false });
+    if (error) fail('tải lịch sử bài học', error);
+    return data.map(row => {
+      const lesson = toLesson(row);
+      lesson.rawText = '';
+      lesson.studyPack = { flashcards: row.flashcards || [] };
+      return lesson;
+    });
   },
 
   async getLessonHistoryById(id, client) {

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:rewards": "npm --prefix blockchain test"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -22,6 +23,7 @@
     "@xyflow/react": "^12.11.6",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "ethers": "6.17.0",
     "express": "^5.2.1",
     "groq-sdk": "^1.6.0",
     "html-to-image": "^1.11.13",

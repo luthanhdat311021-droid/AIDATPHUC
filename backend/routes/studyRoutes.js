@@ -17,6 +17,13 @@ import { parseDocumentContent } from '../services/extractors/documentParser.js';
 import { extractFromVideoUrlOrFile, extractFromWebUrl } from '../services/textExtractor.js';
 import { supabaseService } from '../services/supabaseService.js';
 import { billingService, HttpError } from '../services/billingService.js';
+import { registerRewardRoutes } from './rewardRoutes.js';
+import { registerRewardWorkerRoute } from './rewardWorkerRoute.js';
+import { isUserCreated, recordLessonActivity } from '../services/rewardsService.js';
+
+// Lesson quizzes count toward StudyCoin quiz missions only at the size of the reward challenge (10 questions).
+const LESSON_QUIZ_MIN_QUESTIONS = 10;
+const lessonTopic = lesson => lesson.studyPack?.quiz?.subject || lesson.title;
 
 export const UPLOAD_BUCKET = 'study-uploads';
 // Each provider call reads ~10k chars, so long text is analysed in ~8k-char parts
@@ -54,6 +61,7 @@ async function pool(items, limit, fn) {
  * (an express app or router). Call before host-specific routes that also need req.user / req.db.
  */
 export function registerStudyRoutes(app) {
+  registerRewardWorkerRoute(app);
   // Healthcheck (public)
   app.get('/api/v1/health', (req, res) => {
     res.json({
@@ -80,12 +88,20 @@ export function registerStudyRoutes(app) {
   // so Row Level Security limits every read and write to their own lessons and files.
   app.use('/api', async (req, res, next) => {
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
-    const user = token ? await supabaseService.getUserFromToken(token) : null;
+    if (!token) return res.status(401).json({ success: false, error: 'Vui lòng đăng nhập để tiếp tục.' });
+    const db = supabaseService.clientFor(token);
+    // Look up the role in parallel with token verification; the result is only used when the verified
+    // user is the one the token claimed, so a forged token gains nothing.
+    const claimed = supabaseService.claimedUserId(token);
+    const [user, early] = await Promise.all([
+      supabaseService.getUserFromToken(token),
+      claimed ? billingService.getAccess(claimed, db, { readOnly: true }).catch(() => null) : null
+    ]);
     if (!user) return res.status(401).json({ success: false, error: 'Vui lòng đăng nhập để tiếp tục.' });
     req.user = user;
-    req.db = supabaseService.clientFor(token);
+    req.db = db;
     // Role (user/admin) and plan (free/pro) come from the database, never from the request
-    req.access = await billingService.getAccess(user.id, req.db);
+    req.access = claimed === user.id && early ? early : await billingService.getAccess(user.id, db);
     next();
   });
 
@@ -106,6 +122,8 @@ export function registerStudyRoutes(app) {
 
   const useQuota = (req, kind = 'generate') => billingService.consumeQuota(req.user.id, req.access, kind);
 
+  registerRewardRoutes(app, requireAdmin);
+
   // The caller's lesson, or a 404 response (RLS already hides other users' lessons)
   async function loadLesson(req, res, id = req.params.id) {
     const lesson = await supabaseService.getLessonHistoryById(id, req.db);
@@ -123,7 +141,7 @@ export function registerStudyRoutes(app) {
 
   // Dashboard numbers, all derived from the caller's own lessons (a new account shows zeros / "no data yet")
   app.get('/api/v1/user/stats', async (req, res) => {
-    const lessons = await supabaseService.getAllLessonHistory(req.db);
+    const lessons = await supabaseService.getLessonSummaries(req.db);
     const WEEK = 7 * 24 * 3600 * 1000;
     const now = Date.now();
     const attempts = lessons.flatMap(l => l.quizHistory || []);
@@ -165,7 +183,7 @@ export function registerStudyRoutes(app) {
   });
 
   app.get('/api/v1/documents', async (req, res) => {
-    const lessons = await supabaseService.getAllLessonHistory(req.db);
+    const lessons = await supabaseService.getLessonSummaries(req.db);
     res.json({ success: true, documents: lessons.map(toDocumentItem) });
   });
 
@@ -537,7 +555,8 @@ export function registerStudyRoutes(app) {
       back: back || 'Đáp án trả lời.',
       difficulty,
       lastReviewed: null,
-      nextReview: new Date().toISOString()
+      nextReview: new Date().toISOString(),
+      userCreated: true
     };
 
     (lesson.studyPack.flashcards ||= []).push(newCard);
@@ -557,10 +576,14 @@ export function registerStudyRoutes(app) {
     card.lastRating = rating;
     card.lastReviewed = new Date().toISOString();
     await saveLesson(req, lesson);
+    // AI-generated cards also advance StudyCoin missions (once per card per day, ≥3 s apart)
+    const counted = isUserCreated(card) ? false
+      : await recordLessonActivity(req.user.id, 'review', lessonTopic(lesson), `lesson-card:${req.user.id}:${req.params.id}:${card.id}`);
 
     res.json({
       success: true,
       card,
+      reward: { counted },
       message: `Đã cập nhật trạng thái thẻ ôn tập: ${rating.toUpperCase()} (Lần ôn tiếp theo: sau ${intervals[rating]})`
     });
   });
@@ -589,7 +612,8 @@ export function registerStudyRoutes(app) {
       questionText: questionText || `Câu hỏi ${qNumber}?`,
       options: options || ["A. Phương án 1", "B. Phương án 2", "C. Phương án 3", "D. Phương án 4"],
       correctIndex: correctIndex !== undefined ? correctIndex : 0,
-      explanation: explanation || "Giải thích chi tiết từ AI."
+      explanation: explanation || "Giải thích chi tiết từ AI.",
+      userCreated: true
     };
 
     quiz.questions.push(newQ);
@@ -613,9 +637,16 @@ export function registerStudyRoutes(app) {
     const feedback = scorePct >= 80 ? "Xuất sắc! Bạn đã nắm rất vững kiến thức bài học." : "Khá tốt! Hãy ôn lại các thẻ ghi nhớ màu đỏ nhé.";
 
     await supabaseService.recordQuizResult(lesson, scorePct, correctCount, total, feedback, results, req.db);
+    // A full, AI-only lesson quiz counts toward the StudyCoin quiz mission; only the first submission per lesson per day.
+    const eligible = questions.length >= LESSON_QUIZ_MIN_QUESTIONS && results.length === questions.length
+      && !questions.some(isUserCreated);
+    const counted = eligible
+      ? await recordLessonActivity(req.user.id, 'quiz', lessonTopic(lesson), `lesson-quiz:${req.user.id}:${req.params.id}`, scorePct)
+      : false;
 
     res.json({
       success: true,
+      reward: { counted },
       score: scorePct,
       correctCount,
       totalQuestions: total,
@@ -626,7 +657,8 @@ export function registerStudyRoutes(app) {
   // ==================== LESSON HISTORY ==================== //
 
   app.get('/api/v1/history', async (req, res) => {
-    const historyList = await supabaseService.getAllLessonHistory(req.db);
+    // List view only: the full lesson is loaded when it is opened (/documents/:id)
+    const historyList = await supabaseService.getLessonSummaries(req.db);
     res.json({
       success: true,
       isSupabaseActive: supabaseService.isConfigured(),
@@ -649,7 +681,8 @@ export function registerStudyRoutes(app) {
   app.post('/api/v1/fusion/analyze', async (req, res) => {
     assertPro(req, 'Hợp nhất kiến thức đa tài liệu');
     const { documentIds } = req.body;
-    const allHistory = Array.isArray(documentIds) ? await supabaseService.getAllLessonHistory(req.db) : [];
+    const allHistory = Array.isArray(documentIds)
+      ? await supabaseService.getAllLessonHistory(req.db, documentIds.filter(id => typeof id === 'string').slice(0, 20)) : [];
     const selectedDocs = allHistory.filter(h => documentIds.includes(h.id));
     if (selectedDocs.length < 2) {
       return res.status(400).json({

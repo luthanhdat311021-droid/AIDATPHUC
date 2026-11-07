@@ -68,6 +68,7 @@ public class DashboardFragment extends BaseFragment {
         ((android.widget.ImageView) streak.getChildAt(0)).setColorFilter(Color.WHITE);
         addWrapRow(hero, streak, 10);
         root.addView(hero);
+        Ui.add(root, Ui.outline(c, "Nhiệm vụ học tập · Kiếm StudyCoin đổi Pro", v -> state.navigate(Screen.REWARDS)), 14);
 
         // ---- 3 stat cards ----
         statCard(root, "Tài liệu đã tải", s != null ? String.valueOf(s.totalDocuments) : "0",

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
@@ -333,6 +333,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     await supabase.auth.signOut();
     // Nothing from this account may linger for the next person on this device
     localStorage.removeItem('studymind_cached_history');
+    docCache.current.clear();
     setBilling(null);
     setHistoryList([]);
     setStats(null);
@@ -427,28 +428,46 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const res = await apiFetch(`/api/v1/history/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
+        docCache.current.delete(id);
         showToast("Đã xóa bài học khỏi lịch sử!");
-        await fetchHistory();
-        await fetchDashboardStats();
+        await Promise.all([fetchHistory(), fetchDashboardStats()]);
       }
     } catch (err) {
       console.error("Delete history item error:", err);
     }
   };
 
+  // Lessons opened in this session: reopening one shows it at once while a fresh copy loads behind it
+  const docCache = useRef(new Map<string, ActiveDocumentData>());
+  useEffect(() => {
+    if (activeDocData?.document?.id) docCache.current.set(activeDocData.document.id, activeDocData);
+  }, [activeDocData]);
+
   const continueLessonFromHistory = async (id: string) => {
+    if (docCache.current.has(id)) {
+      fetchDocumentDetail(id); // shows the cached copy right away, refreshes in the background
+      setActiveTab('workspace');
+      return;
+    }
     await fetchDocumentDetail(id);
     setActiveTab('workspace');
   };
 
   const fetchDocumentDetail = async (docId: string) => {
+    const cached = docCache.current.get(docId);
+    if (cached) {
+      setActiveDocData(cached);
+      setActiveDocId(docId);
+    }
     try {
-      setLoading(true);
+      if (!cached) setLoading(true);
       const res = await apiFetch(`/api/v1/documents/${docId}`);
       const data = await res.json();
       if (data.success) {
-        setActiveDocData(data);
-        setActiveDocId(docId);
+        docCache.current.set(docId, data);
+        // Don't replace the screen if the user has meanwhile opened another lesson
+        setActiveDocData(prev => (!cached || !prev || prev.document?.id === docId ? data : prev));
+        if (!cached) setActiveDocId(docId);
       }
     } catch (err) {
       console.error(`Failed to fetch doc ${docId}:`, err);
@@ -456,6 +475,10 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       setLoading(false);
     }
   };
+
+  // Every edit route answers with the updated part of the study pack; apply it instead of reloading the lesson
+  const applyPack = (patch: Partial<ActiveDocumentData['studyPack']>) =>
+    setActiveDocData(prev => prev && { ...prev, studyPack: { ...prev.studyPack, ...patch } });
 
   // ---- StudyMind Pro ----
   const [billing, setBilling] = useState<BillingInfo | null>(null);
@@ -635,7 +658,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const data = await res.json();
       if (data.success) {
         showToast(`🌿 Đã thêm nút mới vào sơ đồ tư duy: "${nodeData.label}"`);
-        await fetchDocumentDetail(activeDocId);
+        applyPack({ mindmap: data.mindmap });
       }
     } catch (err) {
       console.error("Add mindmap node failed:", err);
@@ -652,7 +675,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const data = await res.json();
       if (data.success) {
         showToast(`Đã cập nhật nút sơ đồ tư duy!`);
-        await fetchDocumentDetail(activeDocId);
+        applyPack({ mindmap: data.mindmap });
       }
     } catch (err) {
       console.error("Update mindmap node failed:", err);
@@ -667,7 +690,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const data = await res.json();
       if (data.success) {
         showToast(`Đã xóa nút sơ đồ tư duy!`);
-        await fetchDocumentDetail(activeDocId);
+        applyPack({ mindmap: data.mindmap });
       }
     } catch (err) {
       console.error("Delete mindmap node failed:", err);
@@ -685,7 +708,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const data = await res.json();
       if (data.success) {
         showToast(`Đã tạo thẻ ghi nhớ mới thành công!`);
-        await fetchDocumentDetail(activeDocId);
+        applyPack({ flashcards: data.flashcards });
       }
     } catch (err) {
       console.error("Add flashcard failed:", err);
@@ -728,7 +751,10 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const data = await res.json();
       if (data.success) {
         showToast(`Đã xóa thẻ ghi nhớ!`);
-        await fetchDocumentDetail(activeDocId);
+        setActiveDocData(prev => prev && {
+          ...prev,
+          studyPack: { ...prev.studyPack, flashcards: (prev.studyPack.flashcards || []).filter(c => c.id !== cardId) }
+        });
       }
     } catch (err) {
       console.error("Delete flashcard failed:", err);
@@ -746,7 +772,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const data = await res.json();
       if (data.success) {
         showToast(`❓ Đã thêm câu hỏi trắc nghiệm mới vào bộ kiểm tra!`);
-        await fetchDocumentDetail(activeDocId);
+        applyPack({ quiz: data.quiz });
       }
     } catch (err) {
       console.error("Add quiz question failed:", err);
@@ -804,7 +830,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       const data = await res.json();
       if (data.success) {
         showToast(`Đã đào sâu và tạo các nhánh con cho "${node.label}"!`);
-        await fetchDocumentDetail(activeDocId);
+        applyPack({ mindmap: data.mindmap });
       }
     } catch (err) {
       console.error("Expand mindmap node failed:", err);

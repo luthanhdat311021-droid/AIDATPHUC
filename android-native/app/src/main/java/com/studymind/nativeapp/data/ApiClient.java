@@ -47,6 +47,29 @@ public class ApiClient {
 
     public JsonObject delete(String path) throws IOException { return send("DELETE", path, null); }
 
+    /** Account-bound mutations must not pick up a different login's token while queued in the pool. */
+    public JsonObject sendAsUser(String method, String path, JsonObject json, String expectedUser) throws IOException {
+        RequestBody body = "GET".equals(method) ? null : RequestBody.create(
+                (json != null ? json : new JsonObject()).toString(), JSON);
+        String token = tokenForUser(expectedUser, false);
+        try { return execute(method, path, body, token); }
+        catch (ApiException e) {
+            if (e.status != 401) throw e;
+            return execute(method, path, body, tokenForUser(expectedUser, true));
+        }
+    }
+
+    private String tokenForUser(String expectedUser, boolean refresh) throws IOException {
+        String token = auth.token(refresh);
+        try {
+            String[] parts = token != null ? token.split("\\.") : new String[0];
+            String payload = new String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE), java.nio.charset.StandardCharsets.UTF_8);
+            String subject = JsonParser.parseString(payload).getAsJsonObject().get("sub").getAsString();
+            if (expectedUser != null && expectedUser.equals(subject)) return token;
+        } catch (RuntimeException ignored) {}
+        throw new ApiException(401, "Phiên đăng nhập đã thay đổi. Hãy mở lại StudyCoin.", null);
+    }
+
     /**
      * Uploads a file to Supabase Storage as the signed-in user (bucket policies only allow "<uid>/…" paths).
      * Goes straight to Supabase, so the size is bounded by the bucket limit (50MB), not by any API host.

@@ -32,7 +32,7 @@ import java.util.Set;
  */
 public class AppState {
 
-    public enum Screen { DASHBOARD, IMPORT, HISTORY, WORKSPACE, PREREQUISITE, GAPS, MINDMAP, FLASHCARD, QUIZ, FUSION, PRO, ADMIN }
+    public enum Screen { DASHBOARD, IMPORT, HISTORY, WORKSPACE, PREREQUISITE, GAPS, MINDMAP, FLASHCARD, QUIZ, FUSION, PRO, REWARDS, ADMIN }
 
     public interface Listener { void onStateChanged(); }
 
@@ -48,6 +48,7 @@ public class AppState {
 
     private final AuthRepository auth;
     private final ApiClient api;
+    private final RewardsRepository rewards;
     private final SharedPreferences prefs;
     private final Set<Listener> listeners = new HashSet<>();
     private Host host;
@@ -61,6 +62,7 @@ public class AppState {
     public AppState(Context context, AuthRepository auth, ApiClient api) {
         this.auth = auth;
         this.api = api;
+        this.rewards = new RewardsRepository(api, auth);
         this.prefs = context.getSharedPreferences("studymind_prefs", Context.MODE_PRIVATE);
         api.setUpgradeListener(reason -> { if (host != null) host.openUpgrade(reason); });
     }
@@ -84,6 +86,8 @@ public class AppState {
     // ---------- getters ----------
 
     public AuthRepository auth() { return auth; }
+
+    public RewardsRepository rewards() { return rewards; }
 
     public ActiveDocument activeDoc() { return activeDoc; }
 
@@ -397,7 +401,8 @@ public class AppState {
         b.addProperty("rating", rating);
         Async.run(() -> api.post(docPath() + "/flashcards/" + cardId + "/review", b), new Async.Callback<JsonObject>() {
             @Override public void onSuccess(JsonObject r) {
-                toast(r.has("message") ? r.get("message").getAsString() : null);
+                String message = r.has("message") ? r.get("message").getAsString() : null;
+                toast(rewardCounted(r) && message != null ? message + " · +1 tiến độ nhiệm vụ StudyCoin" : message);
                 if (host != null) host.announceBadges(Gamification.recordCardReviewed());
                 // Keep the saved rating locally (no refetch per card); the Knowledge Gap Map reads it
                 JsonArray cards = activeDoc.pack.raw.has("flashcards") && activeDoc.pack.raw.get("flashcards").isJsonArray()
@@ -441,6 +446,13 @@ public class AppState {
 
     public interface QuizScore { void score(int scorePct, int correct, int total, String feedback); }
 
+    /** The server reports whether this lesson activity also advanced a StudyCoin mission. */
+    private static boolean rewardCounted(JsonObject r) {
+        if (r == null || !r.has("reward") || !r.get("reward").isJsonObject()) return false;
+        JsonObject reward = r.getAsJsonObject("reward");
+        return reward.has("counted") && reward.get("counted").isJsonPrimitive() && reward.get("counted").getAsBoolean();
+    }
+
     public void submitQuiz(Map<String, Integer> answers, QuizScore cb) {
         JsonObject b = new JsonObject();
         JsonObject a = new JsonObject();
@@ -452,6 +464,7 @@ public class AppState {
                         r.has("feedback") ? r.get("feedback").getAsString() : "");
                 refreshStats();
                 reloadActive(); // fresh quizHistory for the Knowledge Gap Map
+                if (rewardCounted(r)) toast("⭐ Bài quiz đã được tính vào nhiệm vụ StudyCoin.");
                 if (host != null) host.announceBadges(Gamification.recordQuizCompleted(r.get("score").getAsInt()));
             }
             @Override public void onError(String m) { toast(m); }

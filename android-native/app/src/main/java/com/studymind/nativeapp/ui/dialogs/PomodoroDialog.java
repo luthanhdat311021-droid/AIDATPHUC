@@ -23,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.studymind.nativeapp.R;
 import com.studymind.nativeapp.data.AppState;
+import com.studymind.nativeapp.data.FocusRewards;
 import com.studymind.nativeapp.data.Gamification;
 import com.studymind.nativeapp.ui.Ui;
 
@@ -147,10 +148,13 @@ public final class PomodoroDialog {
     private static void stop() {
         if (timer != null) timer.cancel();
         running = false;
+        FocusRewards.workPaused();
     }
 
     private void start() {
         running = true;
+        // Focus phases also count toward the StudyCoin focus mission, timed by the server
+        if (mode == 0) FocusRewards.workStarted();
         timer = new CountDownTimer(timeLeftMs, 1000) {
             @Override public void onTick(long ms) {
                 timeLeftMs = ms;
@@ -173,6 +177,7 @@ public final class PomodoroDialog {
                 host.toast("🎉 Phiên tập trung hoàn tất! Hãy nghỉ ngơi 5 phút nhé!");
                 host.announceBadges(Gamification.recordPomodoroSessionCompleted());
             }
+            FocusRewards.workCompleted(host != null ? host::toast : null);
             mode = 1;
         } else {
             if (host != null) host.toast("⏰ Hết giờ nghỉ giải lao. Bắt đầu phiên tập trung tiếp theo nhé!");

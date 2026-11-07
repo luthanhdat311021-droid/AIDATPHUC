@@ -1,0 +1,14 @@
+{
+  "chainId": 11155111,
+  "network": "Ethereum Sepolia",
+  "contract": "0xA66a22Aa9D891D2611e47Cfe53D90CeB1e2B375d",
+  "transaction": "0xbba47713f6038fd6770be1af3a112fc557bf7d2a8fd0c6af325d1f908f59309d",
+  "blockNumber": 11939889,
+  "deployer": "0x3Dc6A501da42Ff93EeDe4b213Ad16C59b6b7A7Bb",
+  "admin": "0x3Dc6A501da42Ff93EeDe4b213Ad16C59b6b7A7Bb",
+  "operator": "0x56faFeaF53585f71423F0b0F6dd56c3131D66C92",
+  "compiler": "v0.8.30+commit.73712a01",
+  "runtimeBytecodeHash": "0x035930ac259614c829c09836fd32f0f10a558fe5c9e541b68ec11d87c3ec09e9",
+  "constructorArguments": "0000000000000000000000003dc6a501da42ff93eede4b213ad16c59b6b7a7bb00000000000000000000000056fafeaf53585f71423f0b0f6dd56c3131d66c92",
+  "deployedAt": "2026-10-18T08:29:50.070Z"
+}

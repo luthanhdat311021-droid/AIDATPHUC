@@ -29,3 +29,13 @@ dist-ssr
 # Runtime user data - never commit (repo is public)
 backend/uploads/
 backend/history_db.json
+
+# Blockchain build output and private wallet material
+blockchain/artifacts/
+blockchain/.evm-test-*/
+.secrets/
+.local/
+*.keystore.json
+.env.*
+!.env.example
+!.env.rewards.example

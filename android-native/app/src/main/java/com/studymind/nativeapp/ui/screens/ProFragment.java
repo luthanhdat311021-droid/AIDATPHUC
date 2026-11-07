@@ -68,6 +68,7 @@ public class ProFragment extends BaseFragment {
             Ui.addInline(hero, btn, 16);
         }
         root.addView(hero);
+        Ui.add(root, Ui.outline(c, "Đổi StudyCoin lấy Pro", v -> state.navigate(com.studymind.nativeapp.data.AppState.Screen.REWARDS)), 12);
 
         // ---- Today's AI quota ----
         LinearLayout quota = Ui.section(root, "Hạn mức AI hôm nay", null, null, 20);

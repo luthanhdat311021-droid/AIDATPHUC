@@ -87,13 +87,16 @@ export const billingService = {
   isConfigured: () => Boolean(admin),
 
   /** Role + plan of a user. Read with their own RLS-scoped client so it works even without the service key. */
-  async getAccess(userId, userClient) {
-    const { data, error } = await (admin || userClient).from('studymind_accounts').select('*').eq('id', userId).maybeSingle();
+  /** readOnly: never create the profile row; returns null when it is missing (for unverified ids). */
+  async getAccess(userId, userClient, { readOnly = false } = {}) {
+    const { data, error } = await (admin || userClient).from('studymind_accounts').select('role,plan,pro_until').eq('id', userId).maybeSingle();
     if (error) {
+      if (readOnly) return null;
       // Migration 002 not run yet: everybody is a free user, the app keeps working
       console.warn('[billing] profiles unavailable:', error.message);
       return toAccess(null);
     }
+    if (!data && readOnly) return null;
     if (!data && admin) await admin.from('studymind_accounts').upsert({ id: userId }, { onConflict: 'id', ignoreDuplicates: true });
     return toAccess(data);
   },

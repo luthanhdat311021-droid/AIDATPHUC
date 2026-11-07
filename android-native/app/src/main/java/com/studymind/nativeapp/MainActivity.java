@@ -47,6 +47,7 @@ import com.studymind.nativeapp.ui.screens.ImportFragment;
 import com.studymind.nativeapp.ui.screens.MindmapFragment;
 import com.studymind.nativeapp.ui.screens.PrerequisiteFragment;
 import com.studymind.nativeapp.ui.screens.ProFragment;
+import com.studymind.nativeapp.ui.screens.RewardsFragment;
 import com.studymind.nativeapp.ui.screens.QuizFragment;
 import com.studymind.nativeapp.ui.screens.WorkspaceFragment;
 
@@ -70,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
             {Screen.QUIZ, "Trắc nghiệm", R.drawable.ic_quiz},
             {Screen.FUSION, "Hợp nhất kiến thức", R.drawable.ic_compare},
             {Screen.PRO, "Tài khoản Pro", R.drawable.ic_crown},
+            {Screen.REWARDS, "Nhiệm vụ & StudyCoin", R.drawable.ic_wallet},
     };
 
     public interface OnImage { void picked(Uri uri); }
@@ -159,6 +161,16 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
     /** Google sign-in comes back through com.studymind.nativeapp://auth/callback#access_token=… */
     private void handleDeepLink(Intent intent) {
         Uri data = intent != null ? intent.getData() : null;
+        if (data != null && "com.studymind.nativeapp".equals(data.getScheme()) && "referral".equals(data.getHost())) {
+            String code = data.getQueryParameter("code");
+            if (code != null && code.matches("[A-Za-z0-9]{12}")) {
+                getSharedPreferences("studymind_referral", MODE_PRIVATE).edit().putString("pending", code.toUpperCase(java.util.Locale.ROOT)).apply();
+                if (signedInShell) navigate(Screen.REWARDS);
+                toast("Đã lưu mã mời. Hãy xác nhận trong mục Mời bạn.");
+            }
+            intent.setData(null);
+            return;
+        }
         if (data == null || !data.toString().startsWith(AuthRepository.NATIVE_AUTH_REDIRECT)) return;
         intent.setData(null);
         Async.run(() -> { state.auth().handleOAuthCallback(data); return true; }, new Async.Callback<Boolean>() {
@@ -382,6 +394,7 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
             case QUIZ: return new QuizFragment();
             case FUSION: return new FusionFragment();
             case PRO: return new ProFragment();
+            case REWARDS: return new RewardsFragment();
             case ADMIN: return new AdminFragment();
             default: return new DashboardFragment();
         }

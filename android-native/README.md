@@ -60,3 +60,17 @@ Không phụ thuộc deploy Vercel; Edge Functions tự có `SUPABASE_SERVICE_RO
 
 ## Đăng nhập Google
 Thêm `com.studymind.nativeapp://auth/callback` vào Supabase → Authentication → URL Configuration → Redirect URLs.
+
+## StudyCoin — Blockchain phương án B
+
+App có mục **Nhiệm vụ & StudyCoin**: nhiệm vụ ngày/tuần, ôn thẻ, quiz riêng, tập trung, ví token, đổi Pro và giới thiệu bạn học. Token nằm trên smart contract; ví do StudyMind quản lý, operator trả gas. Backend chưa cấu hình hoặc chưa bật cờ thì app hiện trạng thái chờ, không tạo số dư giả.
+
+Luồng đổi Pro phải chờ burn được xác nhận; quyền Pro vẫn lấy từ billing server. Hướng dẫn migrations, hợp đồng, secrets và scheduler nằm ở `../blockchain/README.md`. Tài liệu kế hoạch đã cập nhật phương án B ở `../docs/ke-hoach-blockchain-nhiem-vu-android.md`.
+
+Build trỏ vào **cùng một Supabase staging** cho Auth, Storage và API (không dùng service key trong app):
+
+```powershell
+.\gradlew.bat assembleDebug -PsupabaseUrl=https://YOUR_STAGING_PROJECT.supabase.co -PsupabaseAnonKey=YOUR_PUBLIC_PUBLISHABLE_KEY -PwebUrl=https://YOUR_REFERRAL_SITE
+```
+
+`supabaseUrl` và `supabaseAnonKey` phải đi cùng nhau; API mặc định được suy ra từ URL này. Có thể thêm `-PapiBase=...` để ghi đè endpoint. Các tham số này đều là cấu hình công khai; không nhập private key, service key hoặc worker secret. Không truyền tham số vẫn dùng cấu hình hiện có. Thêm OAuth redirect native vào project staging nếu dùng đăng nhập Google.

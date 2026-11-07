@@ -10,6 +10,7 @@ import fs from 'node:fs';
 const dir = path.dirname(fileURLToPath(import.meta.url));
 
 const NPM = {
+  'ethers': 'npm:ethers@6.17.0',
   'express': 'npm:express@5.2.1',
   '@google/generative-ai': 'npm:@google/generative-ai@0.24.1',
   'groq-sdk': 'npm:groq-sdk@1.6.0',
