@@ -22,7 +22,7 @@ import androidx.core.content.FileProvider;
 
 import com.google.android.material.card.MaterialCardView;
 import com.studymind.nativeapp.R;
-import com.studymind.nativeapp.data.Async;
+import com.studymind.nativeapp.data.AnalysisJobs;
 import com.studymind.nativeapp.data.FileIngest;
 import com.studymind.nativeapp.ui.BaseFragment;
 import com.studymind.nativeapp.ui.Ui;
@@ -57,9 +57,6 @@ public class ImportFragment extends BaseFragment {
     private String statusState = "idle"; // idle | working | done | error
     private String statusMessage = "";
     private int progress;
-    /** The creeping bar stays below this until the server reports the next step */
-    private int creepCap = 20;
-    private final Runnable creep = this::creepProgress;
     private Uri cameraUri;
 
     private final ActivityResultLauncher<String[]> picker = registerForActivityResult(
@@ -77,14 +74,26 @@ public class ImportFragment extends BaseFragment {
     @Override
     protected Object watchKey() { return state.isPro() ? "pro" : "free"; }
 
+    /** The job lives in AppState, so leaving this screen and coming back shows the same progress */
+    private void syncFromJob() {
+        AnalysisJobs.Job j = state.jobs().get(AnalysisJobs.Kind.IMPORT);
+        processing = j != null && j.running();
+        statusState = j == null ? "idle" : j.running() ? "working" : j.status == AnalysisJobs.Status.DONE ? "done" : "error";
+        statusMessage = j == null ? "" : j.stage;
+        progress = j == null ? 0 : j.percent;
+    }
+
     @Override
-    public void onStop() {
-        Async.cancel(creep);
-        super.onStop();
+    public void onJobsChanged() { rerender(); }
+
+    private void dismissFinishedJob() {
+        AnalysisJobs.Job j = state.jobs().get(AnalysisJobs.Kind.IMPORT);
+        if (j != null && !j.running()) state.dismissJob(j);
     }
 
     @Override
     protected void render(LinearLayout root) {
+        syncFromJob();
         Context c = requireContext();
         LinearLayout chips = Ui.horizontal(c);
         LinearLayout conv = Ui.iconText(c, R.drawable.ic_refresh, "Bộ chuyển đổi thông minh", 12, Ui.color(c, R.color.m3_on_secondary_container), false);
@@ -101,6 +110,7 @@ public class ImportFragment extends BaseFragment {
         Ui.add(root, Ui.text(c, "Biến tài liệu thô thành bài học tương tác, sơ đồ tư duy & flashcard trong vài giây", 14, R.color.text_secondary, false), 4);
 
         renderStepper(root);
+        if (!statusState.equals("idle")) renderStatus(root);
 
         sectionTitle(root, "1. Nguồn dữ liệu", "Hỗ trợ OCR tiếng Việt", R.color.brand, 0, 24);
         renderSources(root);
@@ -109,7 +119,6 @@ public class ImportFragment extends BaseFragment {
         else renderTextInput(root);
 
         renderConfig(root);
-        if (!statusState.equals("idle")) renderStatus(root);
 
         LinearLayout tip = Ui.horizontal(c);
         tip.setGravity(Gravity.TOP);
@@ -317,7 +326,7 @@ public class ImportFragment extends BaseFragment {
         Ui.addWrap(foot, Ui.text(c, st, 12, color, true), 8);
         if (!processing) {
             ImageView x = Ui.icon(c, R.drawable.ic_close, 18, Ui.color(c, R.color.text_muted));
-            x.setOnClickListener(v -> { picked = null; preview = null; statusState = "idle"; statusMessage = ""; progress = 0; rerender(); });
+            x.setOnClickListener(v -> { picked = null; preview = null; dismissFinishedJob(); rerender(); });
             Ui.addWrap(foot, x, 10);
         }
         Ui.add(card, foot, 10);
@@ -385,7 +394,8 @@ public class ImportFragment extends BaseFragment {
         }
         Ui.add(in, Ui.track(c, statusState.equals("error") ? 100 : progress, statusState.equals("error") ? R.color.rose : R.color.brand_dark, 8), 14);
         if (!statusMessage.isEmpty()) Ui.add(in, Ui.text(c, statusMessage, 12, statusState.equals("error") ? R.color.rose : R.color.text_muted, false), 8);
-        Ui.add(root, card, 20);
+        if (processing) Ui.add(in, Ui.text(c, "Bạn có thể chuyển màn hình hoặc thoát app. StudyMind sẽ chạy ngầm và báo khi xong.", 12, R.color.brand, false), 8);
+        Ui.add(root, card, 16);
     }
 
     private void renderConfig(LinearLayout root) {
@@ -548,9 +558,7 @@ public class ImportFragment extends BaseFragment {
                 preview = BitmapFactory.decodeStream(in, null, o);
             } catch (Exception ignored) {}
         }
-        statusState = "idle";
-        statusMessage = "";
-        progress = 0;
+        dismissFinishedJob();
         rerender();
     }
 
@@ -569,58 +577,11 @@ public class ImportFragment extends BaseFragment {
         if (source <= 1 && picked == null) { toast("Vui lòng chọn tệp trước khi bấm chuyển hóa!"); return; }
 
         String subj = subject == SUBJECTS.length - 1 ? (customSubject.trim().isEmpty() ? "Chung" : customSubject.trim()) : SUBJECTS[subject];
-        String lang = LANGUAGES[language];
-        processing = true;
-        creepCap = 10;
-        setStatus("working", "Đang chuẩn bị...", 5);
-        Async.mainDelayed(creep, 700);
-
-        com.studymind.nativeapp.data.AppState.Progress steps = (pct, stage) -> {
-            if (!processing) return;
-            creepCap = pct >= 80 ? 97 : Math.min(97, pct + 12);
-            setStatus("working", stage, Math.max(progress, pct));
-        };
-        com.studymind.nativeapp.data.AppState.Done done = ok -> {
-            processing = false;
-            Async.cancel(creep);
-            if (ok) setStatus("done", "Đã hoàn tất trích xuất kiến thức", 100);
-            else setStatus("error", "Xử lý thất bại, vui lòng thử lại.", 0);
-        };
-
-        if (source == 2) state.processVideo(videoUrl.trim(), depth, subj, steps, done);
-        else if (source == 3) state.processUrl(webUrl.trim(), depth, subj, steps, done);
-        else if (source == 4) {
-            state.uploadDocument(null, null, null, rawText, lang, depth, outputs.clone(), subj, steps, done);
-        } else {
-            Uri uri = picked;
-            setStatus("working", source == 1 ? "Đang tối ưu ảnh để tải lên..." : "Đang đọc nội dung tệp...", progress);
-            Async.run(() -> FileIngest.prepare(requireContext().getContentResolver(), uri), new Async.Callback<FileIngest.Prepared>() {
-                @Override public void onSuccess(FileIngest.Prepared p) {
-                    state.uploadDocument(p.binary, p.fileName, p.mime, p.text, lang, depth, outputs.clone(), subj, steps, done);
-                }
-                @Override public void onError(String m) {
-                    processing = false;
-                    Async.cancel(creep);
-                    setStatus("error", m, 0);
-                    toast(m);
-                }
-            });
-        }
-    }
-
-    /** Creep toward the current step's cap while the server works; each finished step moves the cap on */
-    private void creepProgress() {
-        if (!processing) return;
-        if (progress < creepCap) progress += Math.max(1, Math.round((creepCap - progress) / 10f));
-        if (isAdded()) rerender();
-        Async.mainDelayed(creep, 700);
-    }
-
-    private void setStatus(String s, String message, int pct) {
-        statusState = s;
-        statusMessage = message;
-        progress = pct;
-        if (isAdded()) rerender();
+        if (source == 2) state.processVideo(videoUrl.trim(), depth, subj);
+        else if (source == 3) state.processUrl(webUrl.trim(), depth, subj);
+        else if (source == 4) state.importText(rawText, depth, subj);
+        else state.importFile(requireContext().getApplicationContext().getContentResolver(), picked, pickedName,
+                    source == 1 ? "Đang tối ưu ảnh để tải lên..." : "Đang đọc nội dung tệp...", depth, subj);
     }
 
     private static String formatSize(long bytes) {

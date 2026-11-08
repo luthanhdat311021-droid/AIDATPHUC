@@ -108,10 +108,6 @@ public final class FileIngest {
 
     /** Downscale and re-encode so the image fits the upload limit while small print stays legible */
     private static byte[] compressImage(byte[] original) throws IOException {
-        if (original.length <= 1.5 * 1024 * 1024) {
-            Bitmap probe = BitmapFactory.decodeByteArray(original, 0, original.length);
-            if (probe == null) throw new ApiException(400, "Không đọc được ảnh này. Hãy thử ảnh JPG hoặc PNG khác.", null);
-        }
         Bitmap src = BitmapFactory.decodeByteArray(original, 0, original.length);
         if (src == null) throw new ApiException(400, "Không đọc được ảnh này. Hãy thử ảnh JPG hoặc PNG khác.", null);
         for (int maxEdge : new int[]{2400, 2000, 1600}) {

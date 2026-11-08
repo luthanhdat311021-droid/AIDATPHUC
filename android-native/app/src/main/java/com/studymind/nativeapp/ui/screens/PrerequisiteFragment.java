@@ -61,6 +61,7 @@ public class PrerequisiteFragment extends BaseFragment {
 
     @Override
     protected void render(LinearLayout root) {
+        loading = jobRunning();
         if (!requireDocument(root, "phân tích kiến thức tiên quyết")) return;
         Context c = requireContext();
         ActiveDocument a = state.activeDoc();
@@ -382,9 +383,18 @@ public class PrerequisiteFragment extends BaseFragment {
 
     private void analyze() {
         if (loading) return;
-        loading = true;
-        rerender();
-        state.analyzePrerequisites(depth, ok -> { loading = false; if (isAdded()) rerender(); });
+        state.analyzePrerequisites(depth);
+    }
+
+    /** The job outlives this screen, so "loading" is read from it */
+    private boolean jobRunning() {
+        com.studymind.nativeapp.data.AnalysisJobs.Job j = state.jobs().get(com.studymind.nativeapp.data.AnalysisJobs.Kind.PREREQUISITE);
+        return j != null && j.running() && state.activeDoc() != null && state.activeDoc().document.id.equals(j.documentId);
+    }
+
+    @Override
+    public void onJobsChanged() {
+        if (jobRunning() != loading) rerender();
     }
 
     // ---------- diagnostic test ----------

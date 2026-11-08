@@ -234,13 +234,9 @@ public class HistoryFragment extends BaseFragment {
             state.openUpgrade("Hợp nhất kiến thức đa tài liệu là tính năng của StudyMind Pro.");
             return;
         }
-        fusing = true;
-        renderFusionBar();
-        state.fuse(new ArrayList<>(forFusion), ok -> {
-            fusing = false;
-            if (ok) state.navigate(Screen.FUSION);
-            else if (isAdded()) renderFusionBar();
-        });
+        // Runs in the background; the Fusion screen shows its progress and result
+        state.fuse(new ArrayList<>(forFusion));
+        state.navigate(Screen.FUSION);
     }
 
     private void fillList() {

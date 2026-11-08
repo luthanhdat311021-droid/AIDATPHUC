@@ -8,6 +8,8 @@ import { aiLogger } from './AILogger.js';
 import { parseAIJson } from './jsonRepair.js';
 dotenv.config();
 
+const GEMINI_BUDGET_MS = 70_000;
+
 export class GeminiProvider extends AIProvider {
   constructor() {
     super('Gemini');
@@ -29,13 +31,17 @@ export class GeminiProvider extends AIProvider {
   async executeGeminiCall(promptText, filePart = null, jsonMode = true) {
     if (!this.genAI) throw new Error("GEMINI_API_KEY not configured or invalid.");
 
+    // A hung model must not use up the Edge Function's 150s limit: one budget across all models
+    const deadline = Date.now() + GEMINI_BUDGET_MS;
     let lastError = null;
     for (const modelName of this.models) {
+      const left = deadline - Date.now();
+      if (left <= 0) break;
       try {
         const model = this.genAI.getGenerativeModel({
           model: modelName,
           generationConfig: jsonMode ? { responseMimeType: 'application/json', maxOutputTokens: 16384 } : undefined
-        });
+        }, { timeout: left });
         const parts = filePart ? [promptText, filePart] : [promptText];
         const result = await model.generateContent(parts);
         const response = await result.response;

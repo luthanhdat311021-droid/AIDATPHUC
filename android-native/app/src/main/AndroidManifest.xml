@@ -5,6 +5,12 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
 
+    <!-- AI analysis keeps running in the background and reports when it is done -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <!-- Text-to-speech engines are queried for the "Nghe tóm tắt" feature -->
     <queries>
         <intent>
@@ -53,6 +59,11 @@
         </activity>
 
         <activity android:name=".ui.LivenessActivity" android:exported="false" android:screenOrientation="portrait" />
+
+        <service
+            android:name=".AnalysisService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

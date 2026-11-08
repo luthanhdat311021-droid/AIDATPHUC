@@ -41,6 +41,9 @@ public class AppState {
         void toast(String message);
         void openUpgrade(String reason);
         void announceBadges(List<Gamification.Badge> badges);
+        /** The screen the user is looking at; null while the app is in the background */
+        Screen visibleScreen();
+        void askNotificationPermission();
     }
 
     /** Callback that only needs to know when the call finished */
@@ -58,18 +61,25 @@ public class AppState {
     private List<DocumentItem> history = new ArrayList<>();
     private BillingInfo billing;
     private FusionResult fusionResult;
+    private final AnalysisJobs jobs;
 
     public AppState(Context context, AuthRepository auth, ApiClient api) {
         this.auth = auth;
         this.api = api;
         this.rewards = new RewardsRepository(api, auth);
         this.prefs = context.getSharedPreferences("studymind_prefs", Context.MODE_PRIVATE);
+        this.jobs = new AnalysisJobs(context);
         api.setUpgradeListener(reason -> { if (host != null) host.openUpgrade(reason); });
     }
 
     // ---------- observation ----------
 
     public void setHost(Host h) { host = h; }
+
+    /** An activity that is going away must not receive navigation from a job that finishes later */
+    public void clearHost(Host h) { if (host == h) host = null; }
+
+    public AnalysisJobs jobs() { return jobs; }
 
     public void addListener(Listener l) { listeners.add(l); }
 
@@ -132,6 +142,8 @@ public class AppState {
         history = new ArrayList<>();
         billing = null;
         fusionResult = null;
+        jobs.clear();
+        clearPendingImport();
         changed();
     }
 
@@ -201,107 +213,223 @@ public class AppState {
 
     // ---------- import ----------
 
-    /** Import progress for the "Đang phân tích" screen (called on the main thread) */
-    public interface Progress { void progress(int percent, String stage); }
+    /** Builds the lessons/start request on a worker thread (reading and uploading the file happens here) */
+    public interface StartBody { JsonObject build(AnalysisJobs.Job job) throws Exception; }
+
+    private static final String UPLOAD_BUCKET = "study-uploads";
+    private static final String PENDING_IMPORT = "pending_import";
+
+    /** Null when a job of this kind is already running */
+    private AnalysisJobs.Job beginJob(AnalysisJobs.Kind kind, String title, String stage) {
+        if (jobs.isRunning(kind)) {
+            toast("Một phân tích cùng loại đang chạy ngầm. Vui lòng đợi xong rồi thử lại.");
+            return null;
+        }
+        if (host != null) host.askNotificationPermission();
+        return jobs.start(kind, title, stage);
+    }
+
+    private Screen visibleScreen() { return host != null ? host.visibleScreen() : null; }
 
     /**
-     * Text or file import. Files go to Supabase Storage first (≤ 50MB), then the lesson is built in short
-     * server steps — start (read the source) → analyze (a few parts per call) → finish (study pack) — so long
-     * documents never hit a per-request time limit. outputs = {notes, mindmap, flashcards, quiz}: the web
-     * "Sản phẩm muốn tạo" choice, kept for parity; the server always builds the full pack.
+     * File import. Files go to Supabase Storage first (≤ 50MB), then the lesson is built in short server
+     * steps — see {@link #runLessonSteps}. The resolver and name are captured here so the work does not depend on the screen.
      */
-    public void uploadDocument(byte[] file, String fileName, String mime, String rawText, String language, String depth, boolean[] outputs, String subject, Progress progress, Done done) {
-        Async.run(() -> {
+    public void importFile(android.content.ContentResolver resolver, android.net.Uri uri, String displayName, String stage, String depth, String subject) {
+        runImport(displayName, stage, "Đã chuyển hóa tài liệu thành công!", job -> {
+            FileIngest.Prepared p = FileIngest.prepare(resolver, uri);
             JsonObject start = new JsonObject();
             start.addProperty("depth", depth);
             if (subject != null) start.addProperty("subject", subject);
-            if (fileName != null) start.addProperty("fileName", fileName);
-            if (file != null) {
-                report(progress, 5, "Đang tải tệp lên máy chủ...");
+            start.addProperty("fileName", p.fileName);
+            if (p.binary != null) {
+                report(job, 5, "Đang tải tệp lên máy chủ...");
                 String uid = auth.getUser() != null ? auth.getUser().id : null;
                 if (uid == null) throw new ApiException(401, "Vui lòng đăng nhập để tiếp tục.", null);
-                String safe = fileName.replaceAll("[^\\w.\\-]", "_");
+                String safe = p.fileName.replaceAll("[^\\w.\\-]", "_");
                 String path = uid + "/" + System.currentTimeMillis() + "-" + safe;
-                api.uploadToStorage(UPLOAD_BUCKET, path, file, mime, false);
+                api.uploadToStorage(UPLOAD_BUCKET, path, p.binary, p.mime, false);
                 start.addProperty("source", "file");
                 start.addProperty("storagePath", path);
-                start.addProperty("mimeType", mime);
+                start.addProperty("mimeType", p.mime);
             } else {
                 start.addProperty("source", "text");
-                start.addProperty("rawText", rawText);
+                start.addProperty("rawText", p.text);
             }
-            return buildLesson(start, progress);
-        }, importCallback("Đã chuyển hóa tài liệu thành công!", done));
+            return start;
+        });
     }
 
-    public void processVideo(String url, String depth, String subject, Progress progress, Done done) {
+    public void importText(String rawText, String depth, String subject) {
+        String t = rawText.trim();
+        runImport(t.length() > 40 ? t.substring(0, 40) + "..." : t, "Đang chuẩn bị...", "Đã chuyển hóa tài liệu thành công!", job -> {
+            JsonObject start = new JsonObject();
+            start.addProperty("depth", depth);
+            if (subject != null) start.addProperty("subject", subject);
+            start.addProperty("source", "text");
+            start.addProperty("rawText", rawText);
+            return start;
+        });
+    }
+
+    public void processVideo(String url, String depth, String subject) {
+        runImport(url, "Đang chuẩn bị...", "📹 Đã trích xuất transcript từ Video!", job -> linkBody("video", url, depth, subject));
+    }
+
+    public void processUrl(String url, String depth, String subject) {
+        runImport(url, "Đang chuẩn bị...", "🔗 Đã trích xuất bài viết Web thành công!", job -> linkBody("url", url, depth, subject));
+    }
+
+    private static JsonObject linkBody(String source, String url, String depth, String subject) {
         JsonObject b = new JsonObject();
-        b.addProperty("source", "video");
+        b.addProperty("source", source);
         b.addProperty("url", url);
         b.addProperty("depth", depth);
         b.addProperty("subject", subject);
-        Async.run(() -> buildLesson(b, progress), importCallback("📹 Đã trích xuất transcript từ Video!", done));
+        return b;
     }
 
-    public void processUrl(String url, String depth, String subject, Progress progress, Done done) {
-        JsonObject b = new JsonObject();
-        b.addProperty("source", "url");
-        b.addProperty("url", url);
-        b.addProperty("depth", depth);
-        b.addProperty("subject", subject);
-        Async.run(() -> buildLesson(b, progress), importCallback("🔗 Đã trích xuất bài viết Web thành công!", done));
+    private void runImport(String title, String stage, String okMessage, StartBody body) {
+        AnalysisJobs.Job job = beginJob(AnalysisJobs.Kind.IMPORT, title, stage);
+        if (job == null) return;
+        Async.run(() -> {
+            JsonObject start = body.build(job);
+            report(job, 12, "Đang đọc nội dung tài liệu...");
+            JsonObject s = api.post("/api/v1/lessons/start", start);
+            String id = s.get("lessonId").getAsString();
+            int total = Math.max(1, s.get("totalParts").getAsInt());
+            String serverTitle = s.has("title") ? s.get("title").getAsString() : title;
+            Async.main(() -> job.title = serverTitle);
+            savePendingImport(id, serverTitle, total, okMessage);
+            return runLessonSteps(job, id, total);
+        }, importCallback(job, okMessage));
     }
 
-    private static final String UPLOAD_BUCKET = "study-uploads";
-
-    /** Blocking: runs the start → analyze → finish steps and returns the finished lesson ({document, studyPack}) */
-    private JsonObject buildLesson(JsonObject start, Progress progress) throws Exception {
-        report(progress, 12, "Đang đọc nội dung tài liệu...");
-        JsonObject s = api.post("/api/v1/lessons/start", start);
-        String id = s.get("lessonId").getAsString();
-        int total = Math.max(1, s.get("totalParts").getAsInt());
-        int remaining = total;
-        report(progress, 20, total > 1 ? "Đang phân tích " + total + " phần của tài liệu..." : "AI đang phân tích kiến thức...");
-        while (remaining > 0) {
-            JsonObject a = retry(() -> api.post("/api/v1/lessons/" + id + "/analyze", null));
-            int done = a.has("done") ? a.get("done").getAsInt() : total;
-            remaining = a.has("remaining") ? a.get("remaining").getAsInt() : 0;
-            report(progress, 20 + 55 * done / total, total > 1 ? "Đã phân tích " + done + "/" + total + " phần..." : "AI đang phân tích kiến thức...");
-        }
-        report(progress, 80, "Đang tạo ghi chú, sơ đồ tư duy, thẻ ghi nhớ và trắc nghiệm...");
-        JsonObject r = retry(() -> api.post("/api/v1/lessons/" + id + "/finish", null));
-        report(progress, 100, "Hoàn tất!");
-        return r;
-    }
-
-    /** One more try for steps that are safe to repeat (a failed AI call or a dropped connection) */
-    private static JsonObject retry(Async.Task<JsonObject> step) throws Exception {
+    /** Blocking: analyze (a few parts per call) → finish (study pack). The server keeps progress, so this can continue after any failure. */
+    private JsonObject runLessonSteps(AnalysisJobs.Job job, String id, int total) throws Exception {
         try {
-            return step.run();
+            int remaining = total;
+            report(job, 20, total > 1 ? "Đang phân tích " + total + " phần của tài liệu..." : "AI đang phân tích kiến thức...");
+            while (remaining > 0) {
+                if (job.cancelled) throw new java.io.IOException("cancelled");
+                JsonObject a = retry(() -> api.post("/api/v1/lessons/" + id + "/analyze", null));
+                int done = a.has("done") ? a.get("done").getAsInt() : total;
+                remaining = a.has("remaining") ? a.get("remaining").getAsInt() : 0;
+                report(job, 20 + 55 * Math.min(done, total) / total, total > 1 ? "Đã phân tích " + done + "/" + total + " phần..." : "AI đang phân tích kiến thức...");
+            }
+            if (job.cancelled) throw new java.io.IOException("cancelled");
+            report(job, 80, "Đang tạo ghi chú, sơ đồ tư duy, thẻ ghi nhớ và trắc nghiệm...");
+            return retry(() -> api.post("/api/v1/lessons/" + id + "/finish", null));
         } catch (ApiException e) {
-            if (e.status < 500) throw e;
-        } catch (java.io.IOException e) {
-            // network hiccup: try once more below
+            // The lesson is gone or refused: continuing later cannot help. 401 can be cured by signing in again.
+            if (e.status < 500 && e.status != 401) clearPendingImport();
+            throw e;
         }
-        return step.run();
     }
 
-    private static void report(Progress p, int percent, String stage) {
-        if (p != null) Async.main(() -> p.progress(percent, stage));
+    /** Analyze and finish are safe to repeat and use no quota, so ride out dropped connections and busy AI providers */
+    private static JsonObject retry(Async.Task<JsonObject> step) throws Exception {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return step.run();
+            } catch (ApiException e) {
+                if (e.status < 500 || attempt == 3) throw e;
+            } catch (java.io.IOException e) {
+                if (attempt == 3) throw e;
+            }
+            Thread.sleep(2000L * attempt);
+        }
     }
 
-    private Async.Callback<JsonObject> importCallback(String okMessage, Done done) {
+    private void report(AnalysisJobs.Job job, int percent, String stage) {
+        Async.main(() -> jobs.progress(job, percent, stage));
+    }
+
+    private Async.Callback<JsonObject> importCallback(AnalysisJobs.Job job, String okMessage) {
         return new Async.Callback<JsonObject>() {
             @Override public void onSuccess(JsonObject r) {
-                toast(okMessage);
-                setActiveFromResponse(r);
+                if (job.cancelled) return;
+                clearPendingImport();
                 refreshStats();
                 refreshHistory();
-                done.done(true);
-                navigate(Screen.WORKSPACE);
+                String id = r.getAsJsonObject("document").get("id").getAsString();
+                Screen visible = visibleScreen();
+                if (visible == Screen.IMPORT) {
+                    // Still watching this screen: go straight to the lesson
+                    jobs.finish(job, true, okMessage, id, true);
+                    jobs.dismiss(job);
+                    toast(okMessage);
+                    setActiveFromResponse(r);
+                    navigate(Screen.WORKSPACE);
+                } else {
+                    // Studying something else: never swap the open lesson; the banner / notification offers it
+                    jobs.finish(job, true, okMessage, id, visible != null);
+                    refreshBilling(null);
+                }
             }
-            @Override public void onError(String m) { toast(m); refreshHistory(); done.done(false); }
+            @Override public void onError(String m) {
+                if (job.cancelled) return;
+                refreshHistory();
+                job.resumable = prefs.contains(PENDING_IMPORT);
+                jobs.finish(job, false, m, null, visibleScreen() != null);
+            }
         };
+    }
+
+    private void savePendingImport(String lessonId, String title, int total, String okMessage) {
+        if (auth.getUser() == null) return;
+        JsonObject p = new JsonObject();
+        p.addProperty("lessonId", lessonId);
+        p.addProperty("title", title);
+        p.addProperty("total", total);
+        p.addProperty("okMessage", okMessage);
+        p.addProperty("user", auth.getUser().id);
+        prefs.edit().putString(PENDING_IMPORT, p.toString()).apply();
+    }
+
+    private void clearPendingImport() { prefs.edit().remove(PENDING_IMPORT).apply(); }
+
+    /** Continues a lesson whose analysis was cut off (the phone killed the app, or a step failed). No quota is used again. */
+    public void resumePendingImport() {
+        String saved = prefs.getString(PENDING_IMPORT, null);
+        if (saved == null || jobs.get(AnalysisJobs.Kind.IMPORT) != null) return;
+        JsonObject p;
+        try {
+            p = com.google.gson.JsonParser.parseString(saved).getAsJsonObject();
+        } catch (RuntimeException e) {
+            clearPendingImport();
+            return;
+        }
+        if (auth.getUser() == null) return;
+        if (!auth.getUser().id.equals(p.get("user").getAsString())) { clearPendingImport(); return; }
+        String id = p.get("lessonId").getAsString();
+        int total = p.get("total").getAsInt();
+        AnalysisJobs.Job job = jobs.start(AnalysisJobs.Kind.IMPORT, p.get("title").getAsString(), "Đang tiếp tục phân tích...");
+        Async.run(() -> runLessonSteps(job, id, total), importCallback(job, p.get("okMessage").getAsString()));
+    }
+
+    /** Banner / notification tap: open the result, retry a failure, or show the screen of a running job */
+    public void openJob(AnalysisJobs.Job job) {
+        Screen screen = job.kind == AnalysisJobs.Kind.IMPORT ? Screen.IMPORT : job.kind == AnalysisJobs.Kind.PREREQUISITE ? Screen.PREREQUISITE : Screen.FUSION;
+        if (job.running()) { navigate(screen); return; }
+        if (job.status == AnalysisJobs.Status.ERROR) {
+            if (job.resumable) {
+                jobs.dismiss(job);
+                resumePendingImport();
+            } else {
+                if (job.kind != AnalysisJobs.Kind.IMPORT) jobs.dismiss(job); // the import screen shows the error itself
+                navigate(screen);
+            }
+            return;
+        }
+        jobs.dismiss(job);
+        if (job.kind == AnalysisJobs.Kind.FUSION) navigate(screen);
+        else openDocument(job.documentId, job.kind == AnalysisJobs.Kind.IMPORT ? Screen.WORKSPACE : screen);
+    }
+
+    public void dismissJob(AnalysisJobs.Job job) {
+        if (job.kind == AnalysisJobs.Kind.IMPORT) clearPendingImport();
+        jobs.dismiss(job);
     }
 
     // ---------- chat ----------
@@ -506,19 +634,36 @@ public class AppState {
 
     // ---------- prerequisites ----------
 
-    public void analyzePrerequisites(String depth, Done done) {
+    public void analyzePrerequisites(String depth) {
+        if (activeDoc == null) return;
+        String docId = activeDoc.document.id;
+        AnalysisJobs.Job job = beginJob(AnalysisJobs.Kind.PREREQUISITE, activeDoc.document.title, "AI đang phân tích kiến thức tiên quyết...");
+        if (job == null) return;
+        job.documentId = docId;
+        jobs.setCreepCap(job, 92);
         JsonObject b = new JsonObject();
         b.addProperty("depth", depth);
-        Async.run(() -> api.post(docPath() + "/prerequisites", b), new Async.Callback<JsonObject>() {
+        Async.run(() -> api.post("/api/v1/documents/" + docId + "/prerequisites", b), new Async.Callback<JsonObject>() {
             @Override public void onSuccess(JsonObject r) {
+                if (job.cancelled) return;
                 JsonObject p = r.getAsJsonObject("prerequisites");
-                updatePack("prerequisites", p);
+                boolean sameDoc = activeDoc != null && activeDoc.document.id.equals(docId);
+                // Saved on the server either way; another open lesson must not receive this result
+                if (sameDoc) updatePack("prerequisites", p);
                 boolean fallback = p.has("isFallback") && p.get("isFallback").getAsBoolean();
-                toast(fallback ? "AI đang bận, đã tạo phân tích sơ bộ. Hãy thử lại sau ít phút." : "Đã phân tích xong kiến thức tiên quyết!");
+                String message = fallback ? "AI đang bận, đã tạo phân tích sơ bộ. Hãy thử lại sau ít phút." : "Đã phân tích xong kiến thức tiên quyết!";
                 refreshBilling(null);
-                done.done(true);
+                Screen visible = visibleScreen();
+                boolean watching = sameDoc && visible == Screen.PREREQUISITE;
+                jobs.finish(job, true, message, docId, visible != null);
+                if (watching) {
+                    jobs.dismiss(job);
+                    toast(message);
+                }
             }
-            @Override public void onError(String m) { toast(m); done.done(false); }
+            @Override public void onError(String m) {
+                if (!job.cancelled) jobs.finish(job, false, m, null, visibleScreen() != null);
+            }
         });
     }
 
@@ -532,18 +677,29 @@ public class AppState {
 
     // ---------- fusion ----------
 
-    public void fuse(List<String> ids, Done done) {
+    public void fuse(List<String> ids) {
+        AnalysisJobs.Job job = beginJob(AnalysisJobs.Kind.FUSION, "Hợp nhất " + ids.size() + " tài liệu", "AI đang phân tích đối chiếu...");
+        if (job == null) return;
+        jobs.setCreepCap(job, 92);
         JsonObject b = new JsonObject();
         b.add("documentIds", Models.GSON.toJsonTree(ids));
         Async.run(() -> api.post("/api/v1/fusion/analyze", b), new Async.Callback<JsonObject>() {
             @Override public void onSuccess(JsonObject r) {
+                if (job.cancelled) return;
                 fusionResult = Models.GSON.fromJson(r.get("data"), FusionResult.class);
-                toast("✨ Đã hợp nhất & phân tích đối chiếu thành công!");
+                String message = "✨ Đã hợp nhất & phân tích đối chiếu thành công!";
+                Screen visible = visibleScreen();
+                jobs.finish(job, true, message, null, visible != null);
+                if (visible == Screen.FUSION) {
+                    jobs.dismiss(job);
+                    toast(message);
+                }
                 changed();
                 refreshBilling(null);
-                done.done(true);
             }
-            @Override public void onError(String m) { toast(m); done.done(false); }
+            @Override public void onError(String m) {
+                if (!job.cancelled) jobs.finish(job, false, m, null, visibleScreen() != null);
+            }
         });
     }
 

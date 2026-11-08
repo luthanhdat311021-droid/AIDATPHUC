@@ -44,6 +44,7 @@ public class FusionFragment extends BaseFragment {
 
     @Override
     protected void render(LinearLayout root) {
+        loading = state.jobs().isRunning(com.studymind.nativeapp.data.AnalysisJobs.Kind.FUSION);
         Context c = requireContext();
         List<DocumentItem> docs = state.history();
         if (!initSelection && docs.size() >= 2) {
@@ -447,9 +448,15 @@ public class FusionFragment extends BaseFragment {
             return;
         }
         if (selected.size() < 2 || loading) return;
-        loading = true;
+        state.fuse(new ArrayList<>(selected));
+    }
+
+    @Override
+    public void onJobsChanged() {
+        boolean running = state.jobs().isRunning(com.studymind.nativeapp.data.AnalysisJobs.Kind.FUSION);
+        if (running == loading) return;
+        if (!running) tab = 0;
         rerender();
-        state.fuse(new ArrayList<>(selected), ok -> { loading = false; tab = 0; if (isAdded()) rerender(); });
     }
 
     /** Same plain-text report as handleCopyReport on the web */

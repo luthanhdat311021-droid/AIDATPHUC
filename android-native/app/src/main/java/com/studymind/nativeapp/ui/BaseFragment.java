@@ -21,7 +21,7 @@ import java.util.Objects;
  * {@link #watchKey()} limits rebuilds to changes the screen actually shows, so typing or scrolling
  * is not interrupted by unrelated updates (e.g. the AI quota counter).
  */
-public abstract class BaseFragment extends Fragment implements AppState.Listener {
+public abstract class BaseFragment extends Fragment implements AppState.Listener, com.studymind.nativeapp.data.AnalysisJobs.Listener {
     protected AppState state;
     protected LinearLayout root;
     protected ScrollView scroll;
@@ -49,6 +49,7 @@ public abstract class BaseFragment extends Fragment implements AppState.Listener
     public void onStart() {
         super.onStart();
         state.addListener(this);
+        state.jobs().addListener(this);
         lastKey = new Object();
         onStateChanged();
     }
@@ -56,8 +57,13 @@ public abstract class BaseFragment extends Fragment implements AppState.Listener
     @Override
     public void onStop() {
         state.removeListener(this);
+        state.jobs().removeListener(this);
         super.onStop();
     }
+
+    /** Background analysis progress; screens that show it override this */
+    @Override
+    public void onJobsChanged() {}
 
     @Override
     public void onStateChanged() {

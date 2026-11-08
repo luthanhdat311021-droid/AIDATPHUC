@@ -24,6 +24,8 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.snackbar.Snackbar;
+import com.studymind.nativeapp.data.AnalysisJobs;
+import com.studymind.nativeapp.data.AnalysisNotifier;
 import com.studymind.nativeapp.data.AppState;
 import com.studymind.nativeapp.data.AppState.Screen;
 import com.studymind.nativeapp.data.Async;
@@ -57,7 +59,7 @@ import java.util.List;
  * Single-activity shell mirroring the web App.tsx: Header.tsx on top, Sidebar.tsx as the navigation
  * drawer, one screen in between. Signed-out users only see the sign-in screen, like the web app.
  */
-public class MainActivity extends AppCompatActivity implements AppState.Host, AppState.Listener, AuthRepository.UserListener {
+public class MainActivity extends AppCompatActivity implements AppState.Host, AppState.Listener, AuthRepository.UserListener, AnalysisJobs.Listener {
 
     /** Drawer groups (Stitch "Danh mục Drawer"): HỌC TẬP CÁ NHÂN, then CÔNG CỤ */
     private static final Object[][] NAV = {
@@ -108,6 +110,11 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
         imagePicker.launch("image/*");
     }
 
+    /** The analysis runs either way; a refusal only means no system notification (the sound still plays) */
+    private final androidx.activity.result.ActivityResultLauncher<String> notificationPermission = registerForActivityResult(
+            new androidx.activity.result.contract.ActivityResultContracts.RequestPermission(), granted -> {});
+
+    private boolean started;
     private AppState state;
     private DrawerLayout drawer;
     private View header;
@@ -172,15 +179,65 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
     @Override
     protected void onStart() {
         super.onStart();
+        started = true;
         state.addListener(this);
         state.auth().addListener(this);
+        state.jobs().addListener(this);
+        bindJobBanner();
     }
 
     @Override
     protected void onStop() {
+        started = false;
         state.removeListener(this);
         state.auth().removeListener(this);
+        state.jobs().removeListener(this);
         super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        state.clearHost(this);
+        super.onDestroy();
+    }
+
+    @Override
+    public void onJobsChanged() { bindJobBanner(); }
+
+    private void bindJobBanner() {
+        View banner = findViewById(R.id.jobBanner);
+        AnalysisJobs.Job job = signedInShell ? state.jobs().current() : null;
+        // A running job's own screen already shows its progress
+        boolean ownScreen = job != null && job.running() && current == (job.kind == AnalysisJobs.Kind.IMPORT ? Screen.IMPORT
+                : job.kind == AnalysisJobs.Kind.PREREQUISITE ? Screen.PREREQUISITE : Screen.FUSION);
+        if (job == null || ownScreen) {
+            banner.setVisibility(View.GONE);
+            return;
+        }
+        banner.setVisibility(View.VISIBLE);
+        boolean running = job.running();
+        boolean ok = job.status == AnalysisJobs.Status.DONE;
+        ((TextView) findViewById(R.id.jobBannerText)).setText(running ? "Đang phân tích ngầm: " + job.title
+                : ok ? "✅ Đã xong: " + job.title : "⚠️ " + job.stage);
+        ((TextView) findViewById(R.id.jobBannerAction)).setText(running ? job.percent + "%" : ok ? "Mở" : job.resumable ? "Thử lại" : "Xem");
+        View close = findViewById(R.id.jobBannerClose);
+        close.setVisibility(running ? View.GONE : View.VISIBLE);
+        close.setOnClickListener(v -> state.dismissJob(job));
+        android.widget.ProgressBar bar = findViewById(R.id.jobBannerProgress);
+        bar.setVisibility(running ? View.VISIBLE : View.GONE);
+        bar.setProgress(job.percent);
+        banner.setOnClickListener(v -> state.openJob(job));
+    }
+
+    @Override
+    public Screen visibleScreen() { return started ? current : null; }
+
+    @Override
+    public void askNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+                && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+        }
     }
 
     @Override
@@ -191,6 +248,15 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
 
     /** Google sign-in comes back through com.studymind.nativeapp://auth/callback#access_token=… */
     private void handleDeepLink(Intent intent) {
+        String jobKind = intent != null ? intent.getStringExtra(AnalysisNotifier.EXTRA_JOB) : null;
+        if (jobKind != null) {
+            intent.removeExtra(AnalysisNotifier.EXTRA_JOB);
+            for (AnalysisJobs.Kind k : AnalysisJobs.Kind.values()) {
+                AnalysisJobs.Job job = k.name().equals(jobKind) ? state.jobs().get(k) : null;
+                if (job != null && signedInShell) state.openJob(job);
+            }
+            return;
+        }
         Uri data = intent != null ? intent.getData() : null;
         if (data != null && "com.studymind.nativeapp".equals(data.getScheme()) && "referral".equals(data.getHost())) {
             String code = data.getQueryParameter("code");
@@ -216,6 +282,7 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
 
     private void showAuth() {
         signedInShell = false;
+        findViewById(R.id.jobBanner).setVisibility(View.GONE);
         header.setVisibility(View.GONE);
         findViewById(R.id.bottomNav).setVisibility(View.GONE);
         statusBar(Ui.color(this, R.color.bg), !state.isDarkMode()); // continues the sign-in page background
@@ -235,6 +302,7 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
         state.syncGamification("open");
         bindChrome();
         if (freshStart || current == null) navigate(Screen.DASHBOARD);
+        state.resumePendingImport(); // an analysis cut off when the phone killed the app
     }
 
     @Override
@@ -438,6 +506,7 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
         current = screen;
         buildNav();
         bindBottomNav();
+        bindJobBanner();
         getSupportFragmentManager().beginTransaction()
                 .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
                 .replace(R.id.content, fragmentFor(screen))

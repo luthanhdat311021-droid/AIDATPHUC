@@ -8,11 +8,14 @@ import { resolveDepth } from './DepthProfiles.js';
 import { parseAIJson } from './jsonRepair.js';
 dotenv.config();
 
+const GROQ_BUDGET_MS = 60_000;
+
 export class GroqProvider extends AIProvider {
   constructor() {
     super('Groq');
     const apiKey = process.env.GROQ_API_KEY;
-    this.groq = apiKey && apiKey.trim() !== '' ? new Groq({ apiKey }) : null;
+    // maxRetries 0: the SDK would sit out a 429's retry-after on each model; the next model or Gemini answers sooner
+    this.groq = apiKey && apiKey.trim() !== '' ? new Groq({ apiKey, maxRetries: 0 }) : null;
     // The Llama/Mixtral/Gemma models were retired by Groq (404 model_not_found); tried in order
     this.models = [
       'openai/gpt-oss-120b',
@@ -30,9 +33,13 @@ export class GroqProvider extends AIProvider {
       { role: 'user', content: promptText }
     ];
 
+    // Leaves the router time to fall back to Gemini inside the Edge Function's 150s limit
+    const deadline = Date.now() + GROQ_BUDGET_MS;
     let lastError = null;
     for (const modelName of this.models) {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const left = deadline - Date.now();
+        if (left <= 0) throw new Error(`Groq call out of time. Last error: ${lastError?.message}`);
         try {
           const options = {
             messages,
@@ -45,7 +52,7 @@ export class GroqProvider extends AIProvider {
             options.response_format = { type: 'json_object' };
           }
 
-          const completion = await this.groq.chat.completions.create(options);
+          const completion = await this.groq.chat.completions.create(options, { timeout: left });
           this.model = modelName;
           return completion.choices[0]?.message?.content || '';
         } catch (err) {

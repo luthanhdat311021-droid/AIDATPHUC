@@ -32,8 +32,8 @@ const lessonTopic = lesson => lesson.studyPack?.quiz?.subject || lesson.title;
 export const UPLOAD_BUCKET = 'study-uploads';
 // Each provider call reads ~10k chars, so long text is analysed in ~8k-char parts
 const CHUNK_SIZE = 8000;
-// Parts analysed per /analyze call (3 at a time) — keeps one request well inside the host's time limit
-const PARTS_PER_CALL = 6;
+// One parallel round per /analyze call: progress is saved after each round, so a killed request loses little
+const PARTS_PER_CALL = 3;
 const PART_CONCURRENCY = 3;
 
 export const newLessonId = () => `doc-${randomUUID()}`;
