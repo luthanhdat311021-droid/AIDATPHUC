@@ -1,3 +1,4 @@
+import { bridgeSource, forwardLessonActivity } from './rewardsBridge.js';
 import { createClient } from '@supabase/supabase-js';
 import { HttpError } from './billingService.js';
 import { NETWORKS, confirmedBalance, deriveManagedAddress, walletIdentity } from './rewardsChain.js';
@@ -107,6 +108,10 @@ export function isUserCreated(item) {
  * repeat/too fast, null when rewards are off or unavailable. It never makes the study action itself fail.
  */
 export async function recordLessonActivity(uid, kind, topic, key, score = null) {
+  if (bridgeSource()) {
+    try { return await forwardLessonActivity(uid, kind, topic || 'Bài học', key, score); }
+    catch { console.warn('[rewards] bridge lesson evidence unavailable'); return null; }
+  }
   if (process.env.REWARDS_ENABLED !== 'true') return null;
   try {
     const r = await rewardsDb().rpc('studymind_record_lesson_event',

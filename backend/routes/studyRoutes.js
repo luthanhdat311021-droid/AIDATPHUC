@@ -18,6 +18,7 @@ import { extractFromVideoUrlOrFile, extractFromWebUrl } from '../services/textEx
 import { supabaseService } from '../services/supabaseService.js';
 import { billingService, HttpError } from '../services/billingService.js';
 import { registerRewardRoutes } from './rewardRoutes.js';
+import { registerRewardsBridgeInternal, registerRewardsBridgeProxy } from './rewardsBridgeRoutes.js';
 import { registerRewardWorkerRoute } from './rewardWorkerRoute.js';
 import { isUserCreated, recordLessonActivity } from '../services/rewardsService.js';
 import { describeInterval, isDue, isValidRating, scheduleReview } from '../services/srs.js';
@@ -64,6 +65,7 @@ async function pool(items, limit, fn) {
  * (an express app or router). Call before host-specific routes that also need req.user / req.db.
  */
 export function registerStudyRoutes(app) {
+  registerRewardsBridgeInternal(app);
   registerRewardWorkerRoute(app);
   // Healthcheck (public)
   app.get('/api/v1/health', (req, res) => {
@@ -125,6 +127,7 @@ export function registerStudyRoutes(app) {
 
   const useQuota = (req, kind = 'generate') => billingService.consumeQuota(req.user.id, req.access, kind);
 
+  registerRewardsBridgeProxy(app);
   registerRewardRoutes(app, requireAdmin);
 
   // The caller's lesson, or a 404 response (RLS already hides other users' lessons)

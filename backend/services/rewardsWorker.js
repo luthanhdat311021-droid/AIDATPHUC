@@ -1,3 +1,4 @@
+import { syncBridgeGrants } from './rewardsBridge.js';
 import { randomUUID } from 'node:crypto';
 import { Wallet, Transaction } from 'ethers';
 import { checked, rewardsDb, rewardConfig, ensureRewardWallet } from './rewardsService.js';
@@ -39,7 +40,14 @@ async function recoverOperationHash(db, provider, token, job, deadline) {
   return null;
 }
 
-export async function runRewardsWorker({ database, configuration, connectChain = chainClient } = {}) {
+// Both HTTP cron and the CLI runner deliver the durable Pro outbox, even when chain work fails.
+export async function runRewardsWorker(options = {}) {
+  const sync = async () => { try { await syncBridgeGrants(); } catch { console.warn('[rewards] Pro sync pending'); } };
+  await sync();
+  try { return await runChainWorker(options); }
+  finally { await sync(); }
+}
+async function runChainWorker({ database, configuration, connectChain = chainClient } = {}) {
   const db = database || rewardsDb(), config = configuration || await rewardConfig(db), owner = randomUUID();
   const acquired = checked(await db.rpc('studymind_reward_worker_lease', { p_owner: owner, p_release: false }));
   if (!acquired) return { busy: true, processed: 0 };

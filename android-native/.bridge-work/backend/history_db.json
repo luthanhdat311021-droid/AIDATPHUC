@@ -1,0 +1,1190 @@
+[
+  {
+    "id": "doc-1",
+    "title": "Sinh học Tế bào - Ty thể và Chu trình chuyển hóa",
+    "fileType": "PDF",
+    "fileSize": "2.4 MB",
+    "pageCount": 15,
+    "updatedAt": "2026-09-22T01:44:11.734Z",
+    "status": "COMPLETED",
+    "tags": [
+      "Sinh học",
+      "Tế bào",
+      "Ty thể"
+    ],
+    "rawText": "Ty thể (Mitochondria) là bào quan chuyển hóa năng lượng chính của tế bào nhân thực. Ty thể gồm 2 lớp màng: màng ngoài trơn nhẵn chứa protein porin, màng trong gấp nếp sâu tạo các mào (cristae) chứa phức hợp ATP Synthase và chuỗi truyền electron. Chất nền (matrix) của ty thể chứa ADN vòng kép trần và Ribosome 70S nhân sơ, chứng minh nguồn gốc nội cộng sinh.",
+    "quizHistory": []
+  },
+  {
+    "id": "doc-1790305489599",
+    "title": "Ester",
+    "fileType": "TXT",
+    "fileSize": "1.5 MB",
+    "pageCount": 1,
+    "updatedAt": "2026-09-25T03:04:51.510Z",
+    "status": "COMPLETED",
+    "tags": [
+      "AI Analysis Engine"
+    ],
+    "rawText": "ESTER. 1. Khái niệm: Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+    "studyPack": {
+      "knowledgeBase": {
+        "title": "Ester",
+        "language": "Tiếng Việt",
+        "summary": "Tóm tắt nội dung trích xuất từ tài liệu \"Ester\": Ester",
+        "difficulty": "medium",
+        "topics": [
+          "Ester",
+          "Kiến thức trọng tâm"
+        ],
+        "concepts": [
+          {
+            "id": "c-1",
+            "name": "ESTER. 1. Khái niệm",
+            "type": "definition",
+            "description": "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+            "importance": 5,
+            "source": {
+              "section": "Ester"
+            }
+          }
+        ],
+        "relationships": [],
+        "sections": [
+          {
+            "title": "Ester",
+            "summary": "Tóm tắt chi tiết cho mục Ester",
+            "keyPoints": [
+              "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ)."
+            ]
+          },
+          {
+            "title": "Kiến thức trọng tâm",
+            "summary": "Tóm tắt chi tiết cho mục Kiến thức trọng tâm",
+            "keyPoints": []
+          }
+        ],
+        "keyTakeaways": [
+          "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công th"
+        ],
+        "sources": [
+          {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Trích xuất tài liệu"
+          }
+        ],
+        "analysisDepth": "deep"
+      },
+      "notes": {
+        "summaryTitle": "Ester",
+        "summary": "Tóm tắt nội dung trích xuất từ tài liệu \"Ester\": Ester",
+        "keyTakeaways": [
+          "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công th"
+        ],
+        "sections": [
+          {
+            "heading": "ESTER",
+            "items": [
+              {
+                "label": "Ý chính",
+                "text": "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ)."
+              }
+            ]
+          },
+          {
+            "heading": "KIẾN THỨC TRỌNG TÂM",
+            "items": []
+          }
+        ]
+      },
+      "mindmap": {
+        "rootLabel": "ESTER",
+        "root": {
+          "id": "root-node",
+          "label": "ESTER",
+          "shortLabel": "ESTER",
+          "type": "topic",
+          "summary": "Tóm tắt nội dung trích xuất từ tài liệu \"Ester\": Ester",
+          "importance": 5,
+          "level": 0,
+          "children": [
+            "n1",
+            "n2"
+          ]
+        },
+        "nodes": [
+          {
+            "id": "root-node",
+            "label": "ESTER",
+            "shortLabel": "ESTER",
+            "type": "topic",
+            "summary": "Tóm tắt nội dung trích xuất từ tài liệu \"Ester\": Ester",
+            "importance": 5,
+            "level": 0,
+            "children": [
+              "n1",
+              "n2"
+            ]
+          },
+          {
+            "id": "n1",
+            "parentId": "root-node",
+            "label": "Ester",
+            "shortLabel": "Ester",
+            "type": "subtopic",
+            "summary": "Tóm tắt chi tiết cho mục Ester",
+            "importance": 4,
+            "subDetails": [],
+            "source": {
+              "section": "Ester"
+            },
+            "children": [
+              "n1-1",
+              "n1-p1"
+            ],
+            "level": 1
+          },
+          {
+            "id": "n2",
+            "parentId": "root-node",
+            "label": "Kiến thức trọng tâm",
+            "shortLabel": "Kiến thức trọng tâm",
+            "type": "subtopic",
+            "summary": "Tóm tắt chi tiết cho mục Kiến thức trọng tâm",
+            "importance": 4,
+            "subDetails": [],
+            "source": {
+              "section": "Kiến thức trọng tâm"
+            },
+            "children": [],
+            "level": 1
+          },
+          {
+            "id": "n1-1",
+            "parentId": "n1",
+            "label": "ESTER. 1. Khái niệm",
+            "shortLabel": "ESTER. 1. Khái niệm",
+            "type": "definition",
+            "summary": "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+            "importance": 5,
+            "subDetails": [],
+            "source": {
+              "section": "Ester"
+            },
+            "children": [],
+            "level": 2
+          },
+          {
+            "id": "n1-p1",
+            "parentId": "n1",
+            "label": "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' ...",
+            "shortLabel": "Khi thay nhóm OH ở nhóm c",
+            "type": "fact",
+            "summary": "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+            "importance": 2,
+            "subDetails": [],
+            "source": {
+              "section": "Ester"
+            },
+            "children": [],
+            "level": 2
+          }
+        ],
+        "edges": [
+          {
+            "id": "edge-root-node-n1",
+            "source": "root-node",
+            "target": "n1",
+            "type": "contains"
+          },
+          {
+            "id": "edge-root-node-n2",
+            "source": "root-node",
+            "target": "n2",
+            "type": "contains"
+          },
+          {
+            "id": "edge-n1-n1-1",
+            "source": "n1",
+            "target": "n1-1",
+            "type": "contains"
+          },
+          {
+            "id": "edge-n1-n1-p1",
+            "source": "n1",
+            "target": "n1-p1",
+            "type": "contains"
+          }
+        ],
+        "metadata": {
+          "totalNodes": 5,
+          "maxDepth": 2,
+          "depth": "deep",
+          "depthLabel": "Chuyên sâu",
+          "defaultVisibleLevel": 2
+        }
+      },
+      "flashcards": [
+        {
+          "id": "fc_001",
+          "type": "cloze",
+          "topicId": "Ester",
+          "conceptId": "c-1",
+          "front": "Điền từ thích hợp vào chỗ trống trong bài học:\n\"Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 ______ đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).\"",
+          "back": "Từ cần điền: \"đặc,\"\n\nNội dung đầy đủ: Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+          "hint": "definition",
+          "difficulty": "hard",
+          "importance": 5,
+          "tags": [
+            "ester",
+            "study-mind"
+          ],
+          "source": {
+            "section": "Ester"
+          }
+        },
+        {
+          "id": "fc_002",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_2",
+          "front": "Điểm trọng tâm số 2 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 2 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_003",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_3",
+          "front": "Điểm trọng tâm số 3 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 3 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_004",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_4",
+          "front": "Điểm trọng tâm số 4 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 4 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_005",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_5",
+          "front": "Điểm trọng tâm số 5 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 5 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_006",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_6",
+          "front": "Điểm trọng tâm số 6 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 6 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_007",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_7",
+          "front": "Điểm trọng tâm số 7 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 7 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_008",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_8",
+          "front": "Điểm trọng tâm số 8 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 8 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_009",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_9",
+          "front": "Điểm trọng tâm số 9 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 9 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_010",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_10",
+          "front": "Điểm trọng tâm số 10 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 10 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        }
+      ],
+      "quiz": {
+        "title": "Đề kiểm tra trắc nghiệm AI: Ester",
+        "subject": "Ester",
+        "timeLimitMinutes": 12,
+        "questions": [
+          {
+            "id": "q_001",
+            "type": "multiple_choice",
+            "topicId": "Ester",
+            "conceptId": "c-1",
+            "questionNumber": 1,
+            "questionText": "Nhận định nào sau đây mô tả ĐÚNG nhất về \"ESTER. 1. Khái niệm\" trong bài học?",
+            "options": [
+              "A. Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no...",
+              "B. ESTER. 1. Khái niệm không có vai trò nào được đề cập trong nội dung tài liệu.",
+              "C. ESTER. 1. Khái niệm thuộc về một cấu trúc/quy trình thử nghiệm khác.",
+              "D. Tất cả các phương án trên đều sai."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Dựa trên tài liệu \"Ester\": Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+            "difficulty": "hard",
+            "importance": 5,
+            "source": {
+              "section": "Ester"
+            }
+          },
+          {
+            "id": "q_002",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_2",
+            "questionNumber": 2,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 2?",
+            "options": [
+              "A. Kiến thức mục 2 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 2 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 2 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_003",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_3",
+            "questionNumber": 3,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 3?",
+            "options": [
+              "A. Kiến thức mục 3 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 3 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 3 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_004",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_4",
+            "questionNumber": 4,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 4?",
+            "options": [
+              "A. Kiến thức mục 4 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 4 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 4 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_005",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_5",
+            "questionNumber": 5,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 5?",
+            "options": [
+              "A. Kiến thức mục 5 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 5 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 5 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_006",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_6",
+            "questionNumber": 6,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 6?",
+            "options": [
+              "A. Kiến thức mục 6 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 6 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 6 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_007",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_7",
+            "questionNumber": 7,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 7?",
+            "options": [
+              "A. Kiến thức mục 7 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 7 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 7 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_008",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_8",
+            "questionNumber": 8,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 8?",
+            "options": [
+              "A. Kiến thức mục 8 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 8 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 8 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_009",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_9",
+            "questionNumber": 9,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 9?",
+            "options": [
+              "A. Kiến thức mục 9 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 9 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 9 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_010",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_10",
+            "questionNumber": 10,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 10?",
+            "options": [
+              "A. Kiến thức mục 10 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 10 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 10 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          }
+        ]
+      }
+    },
+    "quizHistory": []
+  },
+  {
+    "id": "doc-1790305493182",
+    "title": "Ester",
+    "fileType": "TXT",
+    "fileSize": "1.5 MB",
+    "pageCount": 1,
+    "updatedAt": "2026-09-25T03:04:54.587Z",
+    "status": "COMPLETED",
+    "tags": [
+      "AI Analysis Engine"
+    ],
+    "rawText": "ESTER. 1. Khái niệm: Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+    "studyPack": {
+      "knowledgeBase": {
+        "title": "Ester",
+        "language": "Tiếng Việt",
+        "summary": "Tóm tắt nội dung trích xuất từ tài liệu \"Ester\": Ester",
+        "difficulty": "medium",
+        "topics": [
+          "Ester",
+          "Kiến thức trọng tâm"
+        ],
+        "concepts": [
+          {
+            "id": "c-1",
+            "name": "ESTER. 1. Khái niệm",
+            "type": "definition",
+            "description": "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+            "importance": 5,
+            "source": {
+              "section": "Ester"
+            }
+          }
+        ],
+        "relationships": [],
+        "sections": [
+          {
+            "title": "Ester",
+            "summary": "Tóm tắt chi tiết cho mục Ester",
+            "keyPoints": [
+              "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ)."
+            ]
+          },
+          {
+            "title": "Kiến thức trọng tâm",
+            "summary": "Tóm tắt chi tiết cho mục Kiến thức trọng tâm",
+            "keyPoints": []
+          }
+        ],
+        "keyTakeaways": [
+          "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công th"
+        ],
+        "sources": [
+          {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Trích xuất tài liệu"
+          }
+        ],
+        "analysisDepth": "quick"
+      },
+      "notes": {
+        "summaryTitle": "Ester",
+        "summary": "Tóm tắt nội dung trích xuất từ tài liệu \"Ester\": Ester",
+        "keyTakeaways": [
+          "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công th"
+        ],
+        "sections": [
+          {
+            "heading": "ESTER",
+            "items": [
+              {
+                "label": "Ý chính",
+                "text": "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ)."
+              }
+            ]
+          },
+          {
+            "heading": "KIẾN THỨC TRỌNG TÂM",
+            "items": []
+          }
+        ]
+      },
+      "mindmap": {
+        "rootLabel": "ESTER",
+        "root": {
+          "id": "root-node",
+          "label": "ESTER",
+          "shortLabel": "ESTER",
+          "type": "topic",
+          "summary": "Tóm tắt nội dung trích xuất từ tài liệu \"Ester\": Ester",
+          "importance": 5,
+          "level": 0,
+          "children": [
+            "n1",
+            "n2"
+          ]
+        },
+        "nodes": [
+          {
+            "id": "root-node",
+            "label": "ESTER",
+            "shortLabel": "ESTER",
+            "type": "topic",
+            "summary": "Tóm tắt nội dung trích xuất từ tài liệu \"Ester\": Ester",
+            "importance": 5,
+            "level": 0,
+            "children": [
+              "n1",
+              "n2"
+            ]
+          },
+          {
+            "id": "n1",
+            "parentId": "root-node",
+            "label": "Ester",
+            "shortLabel": "Ester",
+            "type": "subtopic",
+            "summary": "Tóm tắt chi tiết cho mục Ester",
+            "importance": 4,
+            "subDetails": [],
+            "source": {
+              "section": "Ester"
+            },
+            "children": [
+              "n1-1"
+            ],
+            "level": 1
+          },
+          {
+            "id": "n2",
+            "parentId": "root-node",
+            "label": "Kiến thức trọng tâm",
+            "shortLabel": "Kiến thức trọng tâm",
+            "type": "subtopic",
+            "summary": "Tóm tắt chi tiết cho mục Kiến thức trọng tâm",
+            "importance": 4,
+            "subDetails": [],
+            "source": {
+              "section": "Kiến thức trọng tâm"
+            },
+            "children": [],
+            "level": 1
+          },
+          {
+            "id": "n1-1",
+            "parentId": "n1",
+            "label": "ESTER. 1. Khái niệm",
+            "shortLabel": "ESTER. 1. Khái niệm",
+            "type": "definition",
+            "summary": "Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+            "importance": 5,
+            "subDetails": [],
+            "source": {
+              "section": "Ester"
+            },
+            "children": [],
+            "level": 2
+          }
+        ],
+        "edges": [
+          {
+            "id": "edge-root-node-n1",
+            "source": "root-node",
+            "target": "n1",
+            "type": "contains"
+          },
+          {
+            "id": "edge-root-node-n2",
+            "source": "root-node",
+            "target": "n2",
+            "type": "contains"
+          },
+          {
+            "id": "edge-n1-n1-1",
+            "source": "n1",
+            "target": "n1-1",
+            "type": "contains"
+          }
+        ],
+        "metadata": {
+          "totalNodes": 4,
+          "maxDepth": 2,
+          "depth": "quick",
+          "depthLabel": "Tóm lược nhanh",
+          "defaultVisibleLevel": 3
+        }
+      },
+      "flashcards": [
+        {
+          "id": "fc_001",
+          "type": "cloze",
+          "topicId": "Ester",
+          "conceptId": "c-1",
+          "front": "Điền từ thích hợp vào chỗ trống trong bài học:\n\"Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 ______ đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).\"",
+          "back": "Từ cần điền: \"đặc,\"\n\nNội dung đầy đủ: Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+          "hint": "definition",
+          "difficulty": "hard",
+          "importance": 5,
+          "tags": [
+            "ester",
+            "study-mind"
+          ],
+          "source": {
+            "section": "Ester"
+          }
+        },
+        {
+          "id": "fc_002",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_2",
+          "front": "Điểm trọng tâm số 2 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 2 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_003",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_3",
+          "front": "Điểm trọng tâm số 3 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 3 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_004",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_4",
+          "front": "Điểm trọng tâm số 4 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 4 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_005",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_5",
+          "front": "Điểm trọng tâm số 5 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 5 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_006",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_6",
+          "front": "Điểm trọng tâm số 6 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 6 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_007",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_7",
+          "front": "Điểm trọng tâm số 7 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 7 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        },
+        {
+          "id": "fc_008",
+          "type": "concept",
+          "topicId": "topic_001",
+          "conceptId": "concept_8",
+          "front": "Điểm trọng tâm số 8 cần lưu ý trong tài liệu \"Ester\" là gì?",
+          "back": "Kiến thức cốt lõi mục 8 hỗ trợ củng cố sự hiểu biết tổng quan về bài học.",
+          "hint": "Gợi ý ôn tập",
+          "difficulty": "medium",
+          "importance": 3,
+          "tags": [
+            "study-mind"
+          ],
+          "source": {
+            "documentId": "doc-1",
+            "page": 1,
+            "section": "Tổng quan"
+          }
+        }
+      ],
+      "quiz": {
+        "title": "Đề kiểm tra trắc nghiệm AI: Ester",
+        "subject": "Ester",
+        "timeLimitMinutes": 10,
+        "questions": [
+          {
+            "id": "q_001",
+            "type": "multiple_choice",
+            "topicId": "Ester",
+            "conceptId": "c-1",
+            "questionNumber": 1,
+            "questionText": "Nhận định nào sau đây mô tả ĐÚNG nhất về \"ESTER. 1. Khái niệm\" trong bài học?",
+            "options": [
+              "A. Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no...",
+              "B. ESTER. 1. Khái niệm không có vai trò nào được đề cập trong nội dung tài liệu.",
+              "C. ESTER. 1. Khái niệm thuộc về một cấu trúc/quy trình thử nghiệm khác.",
+              "D. Tất cả các phương án trên đều sai."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Dựa trên tài liệu \"Ester\": Khi thay nhóm OH ở nhóm carboxyl của acid carboxylic bằng nhóm OR' thì được ester. Công thức chung ester no đơn chức mạch hở: CnH2nO2 (n>=2). 2. Danh pháp: tên gốc R' + tên gốc acid (đuôi ate), ví dụ CH3COOC2H5 là ethyl acetate. 3. Tính chất vật lí: ester có nhiệt độ sôi thấp hơn acid và alcohol cùng số C do không có liên kết hydrogen giữa các phân tử; ít tan trong nước; có mùi thơm (isoamyl acetate mùi chuối chín). 4. Tính chất hóa học: a) Thủy phân trong môi trường acid: phản ứng thuận nghịch, xúc tác H2SO4 đặc, đun nóng: CH3COOC2H5 + H2O <=> CH3COOH + C2H5OH. b) Thủy phân trong môi trường base (phản ứng xà phòng hóa): phản ứng một chiều: CH3COOC2H5 + NaOH -> CH3COONa + C2H5OH. Lưu ý: ester của phenol tác dụng NaOH tạo 2 muối và nước. 5. Điều chế: phản ứng ester hóa giữa acid carboxylic và alcohol, xúc tác H2SO4 đặc, đun nóng; H2SO4 đặc vừa là xúc tác vừa hút nước làm cân bằng chuyển dịch theo chiều thuận. 6. Ứng dụng: dung môi, hương liệu trong thực phẩm và mỹ phẩm, sản xuất chất dẻo (poly(methyl methacrylate) làm thủy tinh hữu cơ).",
+            "difficulty": "hard",
+            "importance": 5,
+            "source": {
+              "section": "Ester"
+            }
+          },
+          {
+            "id": "q_002",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_2",
+            "questionNumber": 2,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 2?",
+            "options": [
+              "A. Kiến thức mục 2 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 2 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 2 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_003",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_3",
+            "questionNumber": 3,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 3?",
+            "options": [
+              "A. Kiến thức mục 3 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 3 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 3 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_004",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_4",
+            "questionNumber": 4,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 4?",
+            "options": [
+              "A. Kiến thức mục 4 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 4 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 4 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_005",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_5",
+            "questionNumber": 5,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 5?",
+            "options": [
+              "A. Kiến thức mục 5 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 5 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 5 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_006",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_6",
+            "questionNumber": 6,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 6?",
+            "options": [
+              "A. Kiến thức mục 6 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 6 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 6 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_007",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_7",
+            "questionNumber": 7,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 7?",
+            "options": [
+              "A. Kiến thức mục 7 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 7 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 7 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          },
+          {
+            "id": "q_008",
+            "type": "multiple_choice",
+            "topicId": "topic_001",
+            "conceptId": "concept_8",
+            "questionNumber": 8,
+            "questionText": "Trong bài học \"Ester\", nhận định nào sau đây là ĐÚNG về mục 8?",
+            "options": [
+              "A. Kiến thức mục 8 đóng vai trò cốt lõi trong việc hình thành hiểu biết tổng quan bài học.",
+              "B. Mục 8 không được đề cập trong nội dung tài liệu.",
+              "C. Mục 8 chỉ áp dụng cho bài tập lý thuyết đơn giản.",
+              "D. Cả B và C đều đúng."
+            ],
+            "correctIndex": 0,
+            "explanation": "Đáp án A chính xác! Đây là phần kiến thức quan trọng trích xuất từ tài liệu học tập.",
+            "difficulty": "medium",
+            "importance": 3,
+            "source": {
+              "documentId": "doc-1",
+              "page": 1,
+              "section": "Tổng quan"
+            }
+          }
+        ]
+      }
+    },
+    "quizHistory": []
+  }
+]
