@@ -3,7 +3,7 @@ import { Search, Bell, Sparkles, LogIn, LogOut, User as UserIcon, ChevronDown, M
 import { useStudy } from '../../context/StudyContext';
 import { PomodoroModal } from '../common/PomodoroModal';
 import { StreakModal } from '../common/StreakModal';
-import { loadGamificationData, GamificationData, updateActivityStreak } from '../../utils/gamification';
+import { loadGamificationData, GamificationData, updateActivityStreak, GAMIFICATION_CHANGED_EVENT } from '../../utils/gamification';
 
 export function Header({ menuOpen, onMenuClick }: { menuOpen: boolean; onMenuClick: () => void }) {
   const { user, isAuthenticated, openAuthModal, openEditProfileModal, logout, isDarkMode, toggleDarkMode, showToast, isPro, openUpgrade, setActiveTab } = useStudy();
@@ -25,6 +25,11 @@ export function Header({ menuOpen, onMenuClick }: { menuOpen: boolean; onMenuCli
   const refreshGamification = () => {
     setGamification(loadGamificationData());
   };
+
+  useEffect(() => {
+    window.addEventListener(GAMIFICATION_CHANGED_EVENT, refreshGamification);
+    return () => window.removeEventListener(GAMIFICATION_CHANGED_EVENT, refreshGamification);
+  }, []);
 
   return (
     <>

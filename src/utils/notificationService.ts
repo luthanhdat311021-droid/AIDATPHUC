@@ -65,30 +65,13 @@ class NotificationService {
   }
 
   // Schedule Spaced Repetition Flashcard Review
-  async scheduleFlashcardReview(subject: string, rating: 'hard' | 'medium' | 'easy') {
-    const intervals: Record<string, { seconds: number; label: string; text: string }> = {
-      hard: {
-        seconds: 10 * 60, // 10 minutes
-        label: '10 phút',
-        text: `⚡ Đến lúc ôn lại các thẻ ghi nhớ khó của môn [${subject}]!`
-      },
-      medium: {
-        seconds: 24 * 3600, // 1 day
-        label: '1 ngày',
-        text: `⏰ Đã tròn 1 ngày: Củng cố lại kiến thức môn [${subject}] ngay nhé!`
-      },
-      easy: {
-        seconds: 4 * 24 * 3600, // 4 days
-        label: '4 ngày',
-        text: `🌟 Chu kỳ 4 ngày: Kiểm tra trí nhớ dài hạn cho môn [${subject}]!`
-      }
-    };
-
-    const target = intervals[rating] || intervals.medium;
+  async scheduleFlashcardReview(subject: string, nextReview?: string) {
+    const delaySeconds = Math.round((Date.parse(nextReview || '') - Date.now()) / 1000);
+    if (!Number.isFinite(delaySeconds) || delaySeconds <= 0) return false;
     return this.scheduleNotification({
       title: 'StudyMind AI - Nhắc nhở Ôn tập Flashcard',
-      body: target.text,
-      delaySeconds: target.seconds
+      body: `⏰ Đến lúc ôn lại thẻ ghi nhớ của môn [${subject}]!`,
+      delaySeconds
     });
   }
 

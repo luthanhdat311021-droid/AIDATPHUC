@@ -13,6 +13,42 @@ export interface GamificationData {
   cardsReviewed: number;
   perfectQuizzes: number;
   unlockedBadgeIds: string[];
+  /** Account this device cache was last synced with */
+  ownerId?: string;
+}
+
+/** The server's copy of GamificationData, returned by the API */
+export interface ServerGamification extends GamificationData {
+  userId: string;
+  newBadgeIds?: string[];
+}
+
+export type GamificationEventKind = 'open' | 'pomodoro';
+type Transport = (kind: GamificationEventKind, local: GamificationData) => Promise<ServerGamification | null | undefined>;
+
+export const GAMIFICATION_CHANGED_EVENT = 'studymind:gamification-changed';
+let transport: Transport | null = null;
+
+export function setGamificationTransport(next: Transport | null) {
+  transport = next;
+}
+
+/** Stores the server's copy on this device and returns the badges it just unlocked. */
+export function applyServerGamification(server: ServerGamification): Badge[] {
+  const { userId, newBadgeIds = [], ...fields } = server;
+  saveGamificationData({ ...fields, ownerId: userId });
+  window.dispatchEvent(new Event(GAMIFICATION_CHANGED_EVENT));
+  return ALL_BADGES.filter(b => newBadgeIds.includes(b.id));
+}
+
+export async function pushGamificationEvent(kind: GamificationEventKind): Promise<void> {
+  if (!transport) return;
+  try {
+    const server = await transport(kind, loadGamificationData());
+    if (server) applyServerGamification(server);
+  } catch (e) {
+    console.warn('Gamification sync failed:', e);
+  }
 }
 
 export const ALL_BADGES: Badge[] = [
@@ -97,6 +133,7 @@ export function recordPomodoroSessionCompleted(): { data: GamificationData; newB
   data.pomodoroSessions = (data.pomodoroSessions || 0) + 1;
   const newBadges = checkAndUnlockBadges(data);
   saveGamificationData(data);
+  void pushGamificationEvent('pomodoro');
   return { data, newBadges };
 }
 

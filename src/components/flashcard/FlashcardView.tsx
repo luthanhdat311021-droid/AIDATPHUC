@@ -79,13 +79,26 @@ export function FlashcardView() {
   const [cardDifficulty, setCardDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
 
   const currentCard = flashcards[currentIndex] || flashcards[0];
+  const isDue = (card: Flashcard) => {
+    const due = Date.parse(card.nextReview || '');
+    return Number.isNaN(due) || due <= Date.now();
+  };
+  const dueCount = flashcards.filter(isDue).length;
+  const documentId = activeDocData?.document?.id;
+
+  // Each document opens on its first due card
+  useEffect(() => {
+    setCurrentIndex(Math.max(0, flashcards.findIndex(isDue)));
+    setIsFlipped(false);
+  }, [documentId]);
 
   const handleRate = async (rating: string) => {
     if (currentCard) {
       await reviewFlashcard(currentCard.id, rating);
     }
     setIsFlipped(false);
-    setCurrentIndex((prev) => (prev + 1) % Math.max(1, flashcards.length));
+    const nextDue = flashcards.findIndex((c, i) => i !== currentIndex && isDue(c));
+    setCurrentIndex(nextDue >= 0 ? nextDue : (currentIndex + 1) % Math.max(1, flashcards.length));
   };
 
   const handleSaveCard = async () => {
@@ -157,6 +170,9 @@ export function FlashcardView() {
               Phiên học: <strong className="text-[#111827]">{activeDocData?.document?.title || "Tài liệu học tập"}</strong>
             </span>
             <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                {dueCount} thẻ đến hạn
+              </span>
               <span className="text-xs font-extrabold text-[#0F766E] bg-teal-50 px-3 py-1 rounded-full border border-teal-100">
                 Thẻ {currentIndex + 1} / {Math.max(1, flashcards.length)}
               </span>
@@ -236,7 +252,7 @@ export function FlashcardView() {
               className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs py-3 px-4 rounded-xl transition-all flex flex-col items-center gap-0.5"
             >
               <span>🔴 Chưa thuộc (Khó)</span>
-              <span className="text-[10px] font-medium text-rose-500">Ôn lại sau 1 phút</span>
+              <span className="text-[10px] font-medium text-rose-500">Ôn lại sau 10 phút</span>
             </button>
 
             <button
@@ -244,7 +260,7 @@ export function FlashcardView() {
               className="bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs py-3 px-4 rounded-xl transition-all flex flex-col items-center gap-0.5"
             >
               <span>🟡 Tương đối (Trung bình)</span>
-              <span className="text-[10px] font-medium text-amber-600">Ôn lại sau 10 phút</span>
+              <span className="text-[10px] font-medium text-amber-600">Giãn lịch ôn ít</span>
             </button>
 
             <button
@@ -252,7 +268,7 @@ export function FlashcardView() {
               className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold text-xs py-3 px-4 rounded-xl transition-all flex flex-col items-center gap-0.5"
             >
               <span>🟢 Đã thuộc (Dễ)</span>
-              <span className="text-[10px] font-medium text-emerald-600">Ôn lại sau 4 ngày</span>
+              <span className="text-[10px] font-medium text-emerald-600">Giãn lịch ôn nhiều</span>
             </button>
           </div>
         </div>

@@ -232,6 +232,7 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
         drawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         state.loadAccount();
         announceBadges(Gamification.updateActivityStreak());
+        state.syncGamification("open");
         bindChrome();
         if (freshStart || current == null) navigate(Screen.DASHBOARD);
     }

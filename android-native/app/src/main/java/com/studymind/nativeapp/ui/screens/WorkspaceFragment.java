@@ -656,6 +656,15 @@ public class WorkspaceFragment extends BaseFragment {
             if (!m.fromUser) lp.setMarginStart(Ui.dp(c, 8));
             row.addView(bubble, lp);
             Ui.add(col, row, 12);
+            if (!m.sources.isEmpty()) {
+                TextView sources = Ui.text(c, "Nguồn trong tài liệu (" + m.sources.size() + ") ▾", 12, R.color.brand_dark, true);
+                sources.setPadding(Ui.dp(c, 38), 0, 0, 0);
+                sources.setOnClickListener(v -> new com.google.android.material.dialog.MaterialAlertDialogBuilder(c)
+                        .setTitle("Nguồn trong tài liệu")
+                        .setMessage(android.text.TextUtils.join("\n\n", m.sources))
+                        .setPositiveButton("Đóng", null).show());
+                Ui.add(col, sources, 6);
+            }
         }
         if (sending) {
             TextView th = Ui.text(c, "• StudyMind đang suy luận từng bước...", 12, R.color.text_muted, false);
@@ -727,8 +736,8 @@ public class WorkspaceFragment extends BaseFragment {
         sending = true;
         rerender();
         scroll.post(() -> scroll.fullScroll(View.FOCUS_DOWN));
-        state.chat(question.trim(), history, socratic ? gapFocus() : null, reply -> {
-            messages.add(new ChatMessage(false, reply));
+        state.chat(question.trim(), history, socratic ? gapFocus() : null, (reply, sources) -> {
+            messages.add(new ChatMessage(false, reply, sources));
             sending = false;
             if (isAdded()) {
                 rerender();

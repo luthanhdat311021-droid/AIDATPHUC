@@ -1,5 +1,6 @@
 import { HttpError } from '../services/billingService.js';
 import { rewardsService } from '../services/rewardsService.js';
+import { biometricService } from '../services/biometricService.js';
 
 const uuid = v => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 function valid(ok) { if (!ok) throw new HttpError(400, 'Dữ liệu yêu cầu chưa hợp lệ.', 'INVALID_REQUEST'); }
@@ -15,7 +16,16 @@ export function registerRewardRoutes(app, requireAdmin) {
   app.post(p + '/redemptions', json(req => {
     valid(uuid(req.body.key) && Number.isSafeInteger(req.body.version) && req.body.version > 0
       && typeof req.body.catalogId === 'string' && req.body.catalogId.length <= 60);
-    return rewardsService.redeem(req.user.id, req.body);
+    return biometricService.assertRedemption(req.user.id, req.body).then(() => rewardsService.redeem(req.user.id, req.body));
+  }));
+  app.post(p + '/biometric/enroll', json(req => {
+    valid(typeof req.body.publicKey === 'string' && req.body.publicKey.length <= 500);
+    return biometricService.enroll(req.user.id, req.body.publicKey);
+  }));
+  app.post(p + '/biometric/challenge', json(req => {
+    valid(uuid(req.body.key) && Number.isSafeInteger(req.body.version) && req.body.version > 0
+      && typeof req.body.catalogId === 'string' && req.body.catalogId.length <= 60);
+    return biometricService.challenge(req.user.id, req.body);
   }));
   app.post(p + '/sessions/start', json(req => {
     valid(['quiz','review','focus'].includes(req.body.kind)

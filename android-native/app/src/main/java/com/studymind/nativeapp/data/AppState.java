@@ -306,7 +306,7 @@ public class AppState {
 
     // ---------- chat ----------
 
-    public interface Reply { void reply(String text); }
+    public interface Reply { void reply(String text, List<String> sources); }
 
     public void chat(String question, List<ChatMessage> history, String socraticFocus, Reply reply) {
         if (activeDoc == null) return;
@@ -325,9 +325,19 @@ public class AppState {
             b.addProperty("mode", "socratic");
             b.addProperty("focus", socraticFocus);
         }
-        Async.run(() -> api.post("/api/ai/chat", b).get("answer").getAsString(), new Async.Callback<String>() {
-            @Override public void onSuccess(String a) { reply.reply(a); refreshBilling(null); }
-            @Override public void onError(String m) { reply.reply(m); }
+        Async.run(() -> api.post("/api/ai/chat", b), new Async.Callback<JsonObject>() {
+            @Override public void onSuccess(JsonObject r) {
+                List<String> sources = new ArrayList<>();
+                if (r.has("sources") && r.get("sources").isJsonArray()) {
+                    for (com.google.gson.JsonElement e : r.getAsJsonArray("sources")) {
+                        JsonObject s = e.getAsJsonObject();
+                        sources.add("[" + s.get("n").getAsInt() + "] " + s.get("excerpt").getAsString());
+                    }
+                }
+                reply.reply(r.get("answer").getAsString(), sources);
+                refreshBilling(null);
+            }
+            @Override public void onError(String m) { reply.reply(m, new ArrayList<>()); }
         });
     }
 
@@ -396,6 +406,29 @@ public class AppState {
         simple(() -> api.delete(docPath() + "/flashcards/" + cardId), "Đã xóa thẻ ghi nhớ!", r -> reloadActive());
     }
 
+    private static boolean hasGamification(JsonObject r) {
+        return r != null && r.has("gamification") && r.get("gamification").isJsonObject();
+    }
+
+    /** kind: open, pomodoro or freeze. On failure the device keeps its local copy. */
+    public void syncGamification(String kind) {
+        JsonObject b = new JsonObject();
+        b.addProperty("kind", kind);
+        if ("open".equals(kind)) {
+            JsonObject local = Gamification.localSnapshot();
+            b.add("localImport", local);
+            if (local.has("ownerId")) b.add("localOwnerId", local.get("ownerId"));
+        }
+        Async.run(() -> api.post("/api/v1/gamification/event", b), new Async.Callback<JsonObject>() {
+            @Override public void onSuccess(JsonObject r) {
+                if (!hasGamification(r)) return;
+                Gamification.applyServer(r.getAsJsonObject("gamification"));
+                if (host != null) host.announceBadges(new ArrayList<>()); // refreshes the streak counter
+            }
+            @Override public void onError(String m) {}
+        });
+    }
+
     public void reviewFlashcard(String cardId, String rating) {
         JsonObject b = new JsonObject();
         b.addProperty("rating", rating);
@@ -403,7 +436,7 @@ public class AppState {
             @Override public void onSuccess(JsonObject r) {
                 String message = r.has("message") ? r.get("message").getAsString() : null;
                 toast(rewardCounted(r) && message != null ? message + " · +1 tiến độ nhiệm vụ StudyCoin" : message);
-                if (host != null) host.announceBadges(Gamification.recordCardReviewed());
+                if (host != null) host.announceBadges(hasGamification(r) ? Gamification.applyServer(r.getAsJsonObject("gamification")) : Gamification.recordCardReviewed());
                 // Keep the saved rating locally (no refetch per card); the Knowledge Gap Map reads it
                 JsonArray cards = activeDoc.pack.raw.has("flashcards") && activeDoc.pack.raw.get("flashcards").isJsonArray()
                         ? activeDoc.pack.raw.getAsJsonArray("flashcards").deepCopy() : new JsonArray();
@@ -465,7 +498,7 @@ public class AppState {
                 refreshStats();
                 reloadActive(); // fresh quizHistory for the Knowledge Gap Map
                 if (rewardCounted(r)) toast("⭐ Bài quiz đã được tính vào nhiệm vụ StudyCoin.");
-                if (host != null) host.announceBadges(Gamification.recordQuizCompleted(r.get("score").getAsInt()));
+                if (host != null) host.announceBadges(hasGamification(r) ? Gamification.applyServer(r.getAsJsonObject("gamification")) : Gamification.recordQuizCompleted(r.get("score").getAsInt()));
             }
             @Override public void onError(String m) { toast(m); }
         });

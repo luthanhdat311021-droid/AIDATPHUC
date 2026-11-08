@@ -88,6 +88,16 @@ public final class Models {
         public String conceptId;
         public String lastRating;
         public String lastReviewed;
+        public String nextReview;
+
+        /** A card with no valid nextReview has never been scheduled, so it is due. */
+        public boolean isDue() {
+            try {
+                return nextReview == null || !java.time.Instant.parse(nextReview).isAfter(java.time.Instant.now());
+            } catch (RuntimeException e) {
+                return true;
+            }
+        }
     }
 
     public static class QuizQuestion {
@@ -357,10 +367,17 @@ public final class Models {
     public static class ChatMessage {
         public final boolean fromUser;
         public final String text;
+        /** Document excerpts the answer cites, each already prefixed with its number */
+        public final List<String> sources;
 
         public ChatMessage(boolean fromUser, String text) {
+            this(fromUser, text, new ArrayList<>());
+        }
+
+        public ChatMessage(boolean fromUser, String text, List<String> sources) {
             this.fromUser = fromUser;
             this.text = text;
+            this.sources = sources;
         }
     }
 }

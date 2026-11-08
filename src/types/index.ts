@@ -24,6 +24,11 @@ export interface DocumentItem {
   rawText?: string;
 }
 
+export interface ChatSource {
+  n: number;
+  excerpt: string;
+}
+
 export interface SpacedRepetitionItem {
   id: string;
   title: string;
@@ -142,6 +147,9 @@ export interface Flashcard {
   lastRating?: 'easy' | 'medium' | 'hard';
   lastReviewed?: string | null;
   nextReview?: string;
+  easeFactor?: number;
+  repetitions?: number;
+  intervalDays?: number;
 }
 
 export interface QuizQuestion {

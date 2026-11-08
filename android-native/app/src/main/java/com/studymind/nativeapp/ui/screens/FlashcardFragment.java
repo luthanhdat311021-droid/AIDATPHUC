@@ -50,8 +50,8 @@ public class FlashcardFragment extends BaseFragment {
         if (!requireDocument(root, "ôn tập thẻ ghi nhớ")) return;
         Context c = requireContext();
         ActiveDocument a = state.activeDoc();
-        if (!a.document.id.equals(docId)) { docId = a.document.id; index = 0; flipped = false; }
         List<Flashcard> cards = a.pack.flashcards();
+        if (!a.document.id.equals(docId)) { docId = a.document.id; index = Math.max(0, nextDue(cards, -1)); flipped = false; }
         if (index >= cards.size()) index = 0;
         Flashcard card = cards.isEmpty() ? null : cards.get(index);
         com.studymind.nativeapp.data.Gamification.Data g = com.studymind.nativeapp.data.Gamification.load();
@@ -206,9 +206,9 @@ public class FlashcardFragment extends BaseFragment {
         rh.addView(Ui.text(c, "Khoảng cách lặp kế tiếp", 13, R.color.text_secondary, false));
         Ui.add(root, rh, 20);
         LinearLayout rates = Ui.horizontal(c);
-        rateButton(rates, R.drawable.ic_close, "Chưa thuộc", "Sau 1 phút", "hard", R.color.rose_soft, 0xFFBA1A1A, card);
-        rateButton(rates, R.drawable.ic_refresh, "Tương đối", "Sau 10 phút", "medium", R.color.orange_100, 0xFF734700, card);
-        rateButton(rates, R.drawable.ic_check_circle, "Đã thuộc", "Sau 4 ngày", "easy", R.color.teal_200, 0xFF005C55, card);
+        rateButton(rates, R.drawable.ic_close, "Chưa thuộc", "Sau 10 phút", "hard", R.color.rose_soft, 0xFFBA1A1A, card);
+        rateButton(rates, R.drawable.ic_refresh, "Tương đối", "Giãn lịch ít", "medium", R.color.orange_100, 0xFF734700, card);
+        rateButton(rates, R.drawable.ic_check_circle, "Đã thuộc", "Giãn lịch nhiều", "easy", R.color.teal_200, 0xFF005C55, card);
         Ui.add(root, rates, 10);
 
         // ---- Deck list ----
@@ -226,8 +226,9 @@ public class FlashcardFragment extends BaseFragment {
             int n = fl.size();
             if (n == 0) continue;
             any = true;
-            int mastered = 0;
-            for (Flashcard f : fl) if ("easy".equals(f.difficulty)) mastered++;
+            int due = 0;
+            for (Flashcard f : fl) if (f.isDue()) due++;
+            int mastered = n - due;
             int pct = mastered * 100 / n;
             boolean active = d.id.equals(a.document.id);
             int accent = alt ? 0xFF734700 : 0xFF005C55;
@@ -259,7 +260,7 @@ public class FlashcardFragment extends BaseFragment {
             View track = Ui.track(c, pct, teal ? R.color.brand_dark : R.color.m3_tertiary, 10);
             Ui.add(deck, track, 14);
             LinearLayout foot = Ui.horizontal(c);
-            Ui.addWeighted(foot, Ui.iconText(c, R.drawable.ic_timer, "Hôm nay: " + (n - mastered) + " thẻ cần lặp lại", 13, Ui.color(c, R.color.text_secondary), false), 0);
+            Ui.addWeighted(foot, Ui.iconText(c, R.drawable.ic_timer, "Hôm nay: " + due + " thẻ cần lặp lại", 13, Ui.color(c, R.color.text_secondary), false), 0);
             LinearLayout go = Ui.iconText(c, 0, active ? "Đang ôn" : "Ôn tập ngay", 14, accent, true);
             go.addView(Ui.icon(c, R.drawable.ic_arrow_right, 16, accent));
             foot.addView(go);
@@ -289,10 +290,18 @@ public class FlashcardFragment extends BaseFragment {
         b.setOnClickListener(v -> {
             if (card == null) return;
             flipped = false;
-            index = index + 1; // next card, wraps in render
+            List<Flashcard> deck = state.activeDoc().pack.flashcards();
+            int next = nextDue(deck, index);
+            index = next >= 0 ? next : index + 1; // wraps in render
             state.reviewFlashcard(card.id, rating);
         });
         Ui.addWeighted(row, b, row.getChildCount() > 0 ? 10 : 0);
+    }
+
+    /** Index of the first due card other than {@code skip}, or -1 */
+    private static int nextDue(List<Flashcard> cards, int skip) {
+        for (int i = 0; i < cards.size(); i++) if (i != skip && cards.get(i).isDue()) return i;
+        return -1;
     }
 
     private View rule(Context c, int top) {

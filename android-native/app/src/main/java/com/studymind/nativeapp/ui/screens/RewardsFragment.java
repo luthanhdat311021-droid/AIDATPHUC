@@ -19,6 +19,8 @@ import com.studymind.nativeapp.BuildConfig;
 import com.studymind.nativeapp.R;
 import com.studymind.nativeapp.data.Async;
 import com.studymind.nativeapp.ui.BaseFragment;
+import com.studymind.nativeapp.ui.BiometricGuard;
+import com.studymind.nativeapp.ui.LivenessActivity;
 import com.studymind.nativeapp.ui.Ui;
 import java.util.UUID;
 
@@ -29,6 +31,19 @@ public class RewardsFragment extends BaseFragment {
     private boolean busy, loading, visible;
     private TextView focusLabel;
     private String owner;
+    private final androidx.activity.result.ActivityResultLauncher<Intent> liveness = registerForActivityResult(
+            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), r -> rerender());
+
+    /** Shows the human check instead of the screen until it has passed. */
+    private boolean requireHuman(LinearLayout root) {
+        String owner = state.auth().getUser() != null ? state.auth().getUser().id : null;
+        if (LivenessActivity.isVerified(owner)) return true;
+        Context c = requireContext();
+        LinearLayout card = Ui.section(root, "Xác minh bạn là người thật", null, null, 0);
+        card.addView(Ui.body(c, "Làm theo 2 yêu cầu trước camera trước, ví dụ chớp mắt hoặc quay đầu. Hình ảnh chỉ xử lý trên máy, không lưu và không gửi đi."));
+        Ui.add(card, Ui.primary(c, "Bắt đầu quét khuôn mặt", v -> liveness.launch(LivenessActivity.intent(c, owner))), 12);
+        return false;
+    }
 
     private final Runnable poll = new Runnable() {
         @Override public void run() {
@@ -147,6 +162,7 @@ public class RewardsFragment extends BaseFragment {
         Context c = requireContext();
         root.addView(Ui.title(c, "Nhiệm vụ & StudyCoin"));
         Ui.add(root, Ui.muted(c, "Học tập, nhận token và đổi thời gian sử dụng Pro."), 6);
+        if (!requireHuman(root)) return;
         if (busy) Ui.add(root, Ui.muted(c, "Đang xử lý…"), 8);
         if (data == null || !yes(data, "enabled")) {
             LinearLayout box = Ui.vertical(c);
@@ -341,7 +357,23 @@ public class RewardsFragment extends BaseFragment {
         String key=prefs.getString(pref,null);
         if (key==null) {key=UUID.randomUUID().toString();prefs.edit().putString(pref,key).apply();}
         JsonObject b=new JsonObject();b.addProperty("key",key);b.addProperty("catalogId",str(reward,"id"));b.addProperty("version",number(reward,"version"));
-        request("POST","/redemptions",b,r->{prefs.edit().remove(pref).apply();toast("Yêu cầu đổi Pro đang chờ blockchain xác nhận.");load(true);},true);
+        if (!BiometricGuard.available(requireActivity())) {toast("Hãy bật vân tay, khuôn mặt hoặc khóa màn hình trên máy để đổi token.");return;}
+        JsonObject enroll=new JsonObject();
+        try {enroll.addProperty("publicKey",BiometricGuard.publicKey(owner));}
+        catch (Exception e) {toast("Không tạo được khóa bảo mật trên thiết bị này.");return;}
+        request("POST","/biometric/enroll",enroll,status->{
+            if (!yes(status,"active")) {toast("Thiết bị mới cần chờ 24 giờ trước khi được đổi token, để bảo vệ tài khoản.");return;}
+            request("POST","/biometric/challenge",b,challenge->BiometricGuard.sign(requireActivity(),owner,str(challenge,"message"),
+                "Tiêu "+number(reward,"amount")+" SC để đổi "+str(reward,"title"),new BiometricGuard.Signed(){
+                    @Override public void success(String signature) {
+                        if (!isAdded()) return;
+                        JsonObject proof=new JsonObject();proof.addProperty("challengeId",str(challenge,"challengeId"));proof.addProperty("signature",signature);
+                        b.add("biometric",proof);
+                        request("POST","/redemptions",b,r->{prefs.edit().remove(pref).apply();toast("Yêu cầu đổi Pro đang chờ blockchain xác nhận.");load(true);},true);
+                    }
+                    @Override public void failure(String message) { if (isAdded()) toast(message); }
+                }),true);
+        },true);
     }
 
     private void drawReferrals(LinearLayout root) {
