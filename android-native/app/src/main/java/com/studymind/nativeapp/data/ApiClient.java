@@ -49,13 +49,27 @@ public class ApiClient {
 
     /** Account-bound mutations must not pick up a different login's token while queued in the pool. */
     public JsonObject sendAsUser(String method, String path, JsonObject json, String expectedUser) throws IOException {
+        return sendAsUser(method, path, json, expectedUser, http);
+    }
+
+    /** Same as {@link #sendAsUser} but gives up after {@code timeoutSeconds} instead of the 5-minute AI timeout */
+    public JsonObject sendAsUser(String method, String path, JsonObject json, String expectedUser, int timeoutSeconds) throws IOException {
+        OkHttpClient quick = http.newBuilder()
+                .connectTimeout(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
+                .callTimeout(timeoutSeconds + 5, java.util.concurrent.TimeUnit.SECONDS)
+                .build();
+        return sendAsUser(method, path, json, expectedUser, quick);
+    }
+
+    private JsonObject sendAsUser(String method, String path, JsonObject json, String expectedUser, OkHttpClient client) throws IOException {
         RequestBody body = "GET".equals(method) ? null : RequestBody.create(
                 (json != null ? json : new JsonObject()).toString(), JSON);
         String token = tokenForUser(expectedUser, false);
-        try { return execute(method, path, body, token); }
+        try { return execute(method, path, body, token, client); }
         catch (ApiException e) {
             if (e.status != 401) throw e;
-            return execute(method, path, body, tokenForUser(expectedUser, true));
+            return execute(method, path, body, tokenForUser(expectedUser, true), client);
         }
     }
 
@@ -113,13 +127,17 @@ public class ApiClient {
     }
 
     private JsonObject execute(String method, String path, RequestBody body, String token) throws IOException {
+        return execute(method, path, body, token, http);
+    }
+
+    private JsonObject execute(String method, String path, RequestBody body, String token, OkHttpClient client) throws IOException {
         Request req = new Request.Builder()
                 .url(path.startsWith("http") ? path : BuildConfig.API_BASE_URL + path)
                 .header("Authorization", "Bearer " + token)
                 .header("apikey", BuildConfig.SUPABASE_ANON_KEY) // the Supabase gateway wants the project key too
                 .method(method, body)
                 .build();
-        try (Response r = http.newCall(req).execute()) {
+        try (Response r = client.newCall(req).execute()) {
             String text = r.body() != null ? r.body().string() : "";
             JsonObject json = null;
             try {

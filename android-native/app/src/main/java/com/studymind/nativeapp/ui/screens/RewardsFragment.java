@@ -123,6 +123,7 @@ public class RewardsFragment extends BaseFragment {
     private void load(boolean show) {
         if (loading || !isAdded()) return;
         loading = true;
+        if (show && data == null) { error = null; rerender(); }
         state.rewards().request("GET", "/me", null, new Async.Callback<JsonObject>() {
             @Override public void onSuccess(JsonObject r) {
                 loading = false;
@@ -147,12 +148,32 @@ public class RewardsFragment extends BaseFragment {
         root.addView(Ui.title(c, "Nhiệm vụ & StudyCoin"));
         Ui.add(root, Ui.muted(c, "Học tập, nhận token và đổi thời gian sử dụng Pro."), 6);
         if (busy) Ui.add(root, Ui.muted(c, "Đang xử lý…"), 8);
-        if (error != null) Ui.add(root, Ui.muted(c, error), 10);
         if (data == null || !yes(data, "enabled")) {
-            Ui.add(root, Ui.body(c, data == null ? "Đang tải thông tin StudyCoin…" : "StudyCoin đang chờ máy chủ bật mạng token thử nghiệm."), 20);
-            Ui.add(root, Ui.outline(c, "Tải lại", v -> load(true)), 12);
+            LinearLayout box = Ui.vertical(c);
+            box.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+            box.setBackground(Ui.rounded(c, R.color.m3_surface_low, 20, 0));
+            box.setPadding(Ui.dp(c, 20), Ui.dp(c, 24), Ui.dp(c, 20), Ui.dp(c, 20));
+            String msg;
+            if (data == null && loading) {
+                box.addView(Ui.spinner(c));
+                msg = "Đang tải thông tin StudyCoin…";
+            } else if (data == null) {
+                box.addView(Ui.iconBox(c, R.drawable.ic_alert, R.color.rose_soft, R.color.m3_error, 52, 26, 999));
+                msg = error != null && error.contains("quá lâu") || error != null && error.toLowerCase().contains("timeout")
+                        ? "Máy chủ StudyCoin phản hồi quá lâu. Hãy thử lại sau ít phút."
+                        : error != null ? error : "Chưa tải được thông tin StudyCoin.";
+            } else {
+                box.addView(Ui.iconBox(c, R.drawable.ic_wallet, R.color.m3_tertiary_fixed, R.color.m3_tertiary, 52, 26, 999));
+                msg = "StudyCoin đang chờ máy chủ bật mạng token thử nghiệm.";
+            }
+            TextView mt = Ui.body(c, msg);
+            mt.setGravity(android.view.Gravity.CENTER);
+            Ui.add(box, mt, 12);
+            if (!loading) Ui.add(box, Ui.primary(c, "Tải lại", v -> load(true)), 14);
+            Ui.add(root, box, 20);
             return;
         }
+        if (error != null) Ui.add(root, Ui.muted(c, error), 10);
         LinearLayout hero = Ui.section(root, "Ví StudyCoin", null, null, 16);
         hero.addView(Ui.text(c, yes(data,"chainAvailable") ? number(data,"balance") + " SC đã xác nhận" : "Chưa đọc được số dư blockchain", 22, R.color.brand, true));
         Ui.add(hero, Ui.muted(c, "Chờ nhận: " + number(data,"pendingMint") + " SC · Chờ đổi: " + number(data,"pendingBurn") + " SC"), 6);

@@ -76,6 +76,8 @@ public class MindmapFragment extends BaseFragment {
     private final Map<String, MindmapNode> byId = new LinkedHashMap<>();
     private final Map<String, List<String>> children = new HashMap<>();
     private final Map<String, Integer> level = new HashMap<>();
+    private final Map<String, String> parent = new HashMap<>();
+    private View inspector;
     private int maxLevel = 1;
 
     @Override
@@ -143,7 +145,7 @@ public class MindmapFragment extends BaseFragment {
         searchField.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a1, int b, int d) {}
             @Override public void onTextChanged(CharSequence s, int a1, int b, int d) {}
-            @Override public void afterTextChanged(Editable s) { search = s.toString(); refreshGraph(true); }
+            @Override public void afterTextChanged(Editable s) { search = s.toString(); applySearch(rootLabel); }
         });
         LinearLayout.LayoutParams sfl = new LinearLayout.LayoutParams(0, Ui.dp(c, 42), 1f);
         sfl.setMarginStart(Ui.dp(c, 6));
@@ -207,7 +209,9 @@ public class MindmapFragment extends BaseFragment {
         // ---- Canvas ----
         FrameLayout canvas = new FrameLayout(c);
         canvas.setBackgroundColor(Ui.color(c, R.color.bg));
-        graph = new GraphView(c);
+        // Reuse the view across rerenders: a new one forgot the pan/zoom every time a node was tapped
+        if (graph == null) graph = new GraphView(c);
+        else if (graph.getParent() instanceof ViewGroup) ((ViewGroup) graph.getParent()).removeView(graph);
         graph.setDotColor(Ui.color(c, R.color.m3_outline_variant));
         graph.setOnNodeClick(n -> { selectedId = n.id; keepView = true; rerender(); });
         canvas.addView(graph, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -234,9 +238,37 @@ public class MindmapFragment extends BaseFragment {
         int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.5);
         root.addView(canvas, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height));
         refreshGraph(keepView);
-        keepView = false;
+        // Later rerenders (edit, add, AI expand) stay where the user is; filters and tiers ask for a refit
+        keepView = true;
 
         renderInspector(root, rootLabel);
+    }
+
+    // ---------- search ----------
+
+    private static String fold(String s) {
+        String n = java.text.Normalizer.normalize(s == null ? "" : s, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+        return n.replace('đ', 'd').replace('Đ', 'D').toLowerCase(Locale.ROOT);
+    }
+
+    /** Finds the first match (accents optional), opens its branch, selects it and centres the map on it */
+    private void applySearch(String rootLabel) {
+        String q = fold(search.trim());
+        if (!q.isEmpty()) {
+            for (MindmapNode n : byId.values()) {
+                if (n.id.equals(ROOT) || !fold(n.label).contains(q)) continue;
+                for (String p = parent.get(n.id); p != null; p = parent.get(p)) collapsed.remove(p);
+                selectedId = n.id;
+                refreshGraph(true);
+                graph.centerOn(n.id);
+                if (inspector != null && inspector.getParent() == root) {
+                    root.removeView(inspector);
+                    renderInspector(root, rootLabel);
+                }
+                return;
+            }
+        }
+        refreshGraph(true);
     }
 
     // ---------- tree ----------
@@ -245,6 +277,7 @@ public class MindmapFragment extends BaseFragment {
         byId.clear();
         children.clear();
         level.clear();
+        parent.clear();
         MindmapNode r = new MindmapNode();
         r.id = ROOT;
         r.label = rootLabel;
@@ -258,6 +291,7 @@ public class MindmapFragment extends BaseFragment {
             if (n.id.equals(ROOT)) continue;
             String p = n.parentId != null && byId.containsKey(n.parentId) && !n.parentId.equals(n.id) ? n.parentId : ROOT;
             children.computeIfAbsent(p, k -> new ArrayList<>()).add(n.id);
+            parent.put(n.id, p);
         }
         // True depth from parent links (stored "level" values can be stale after edits)
         maxLevel = 1;
@@ -271,6 +305,25 @@ public class MindmapFragment extends BaseFragment {
                 level.put(ch, level.get(id) + 1);
                 maxLevel = Math.max(maxLevel, level.get(ch));
                 queue.add(ch);
+            }
+        }
+        // Bad AI data can form parent loops that never reach the root: hang those nodes off the root
+        for (MindmapNode n : byId.values()) {
+            if (level.containsKey(n.id)) continue;
+            List<String> old = children.get(parent.get(n.id));
+            if (old != null) old.remove(n.id);
+            children.computeIfAbsent(ROOT, k -> new ArrayList<>()).add(n.id);
+            parent.put(n.id, ROOT);
+            level.put(n.id, 1);
+            ArrayList<String> sub = new ArrayList<>();
+            sub.add(n.id);
+            for (int i = 0; i < sub.size(); i++) {
+                for (String ch : children.getOrDefault(sub.get(i), new ArrayList<>())) {
+                    if (level.containsKey(ch)) continue;
+                    level.put(ch, level.get(sub.get(i)) + 1);
+                    maxLevel = Math.max(maxLevel, level.get(ch));
+                    sub.add(ch);
+                }
             }
         }
     }
@@ -333,11 +386,11 @@ public class MindmapFragment extends BaseFragment {
         layoutSide(right, 1, rw, nodes, placed);
         layoutSide(left, -1, lw, nodes, placed);
 
-        String q = search.trim().toLowerCase(Locale.ROOT);
+        String q = fold(search.trim());
         for (GraphView.Node g : nodes) {
             if (g.id.equals(ROOT)) continue;
             MindmapNode n = byId.get(g.id);
-            boolean match = !q.isEmpty() && n.label.toLowerCase(Locale.ROOT).contains(q);
+            boolean match = !q.isEmpty() && fold(n.label).contains(q);
             boolean sel = g.id.equals(selectedId);
             g.fill = match ? 0xFFFFFBEB : sel ? 0xFF0F766E : Ui.color(c, R.color.surface);
             g.stroke = match ? 0xFFF59E0B : sel ? 0xFF005C55 : Ui.color(c, R.color.border);
@@ -354,9 +407,11 @@ public class MindmapFragment extends BaseFragment {
 
         for (GraphView.Node g : nodes) {
             if (g.id.equals(ROOT)) continue;
-            String parent = parentOf(g.id);
-            if (!placed.containsKey(parent)) continue;
-            GraphView.Edge e = new GraphView.Edge(parent, g.id);
+            // With a filter on, the direct parent may be hidden: link to the nearest ancestor still drawn
+            String up = parent.get(g.id);
+            while (up != null && !placed.containsKey(up)) up = parent.get(up);
+            if (up == null) continue;
+            GraphView.Edge e = new GraphView.Edge(up, g.id);
             e.color = 0xFF0F766E;
             e.width = 2.5f;
             edges.add(e);
@@ -375,10 +430,6 @@ public class MindmapFragment extends BaseFragment {
             }
         }
         graph.setGraph(nodes, edges, keep);
-        // Search: centre on the first match like the web's setCenter
-        if (!q.isEmpty()) {
-            for (GraphView.Node g : nodes) if (!g.id.equals(ROOT) && g.title.toLowerCase(Locale.ROOT).contains(q)) { selectedId = g.id; break; }
-        }
     }
 
     private String parentOf(String id) {
@@ -458,6 +509,7 @@ public class MindmapFragment extends BaseFragment {
         LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         pl.topMargin = -Ui.dp(c, 20);
         root.addView(panel, pl);
+        inspector = panel;
 
         View handle = new View(c);
         handle.setBackground(Ui.rounded(c, R.color.m3_outline_variant, 999, 0));
@@ -631,7 +683,7 @@ public class MindmapFragment extends BaseFragment {
     private void exportImage(String rootLabel) {
         if (graph == null) return;
         toast("Đang chuẩn bị xuất ảnh HD...");
-        Bitmap bmp = graph.exportBitmap(0xFFF8FAFC);
+        Bitmap bmp = graph.exportBitmap(Ui.color(requireContext(), R.color.bg)); // dark mode text needs a dark page
         if (bmp == null) { toast("Sơ đồ tư duy chưa tải xong!"); return; }
         Context c = requireContext();
         Async.run(() -> {

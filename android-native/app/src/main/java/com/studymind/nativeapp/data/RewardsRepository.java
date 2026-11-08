@@ -12,7 +12,8 @@ public final class RewardsRepository {
         String owner = auth.getUser() != null ? auth.getUser().id : null;
         Async.run(() -> {
             if (owner == null) throw new ApiException(401, "Vui lòng đăng nhập.", null);
-            JsonObject response = api.sendAsUser(method, "/api/v1/rewards" + path, body, owner);
+            // Wallet/missions calls are quick; never hold the screen for the 5-minute AI timeout
+            JsonObject response = api.sendAsUser(method, "/api/v1/rewards" + path, body, owner, 20);
             return response.getAsJsonObject("data");
         }, new Async.Callback<JsonObject>() {
             private boolean current() { return auth.getUser() != null && owner != null && owner.equals(auth.getUser().id); }

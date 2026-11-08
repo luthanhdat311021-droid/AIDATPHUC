@@ -17,7 +17,7 @@ public final class Async {
         void onError(String message);
     }
 
-    private static final ExecutorService POOL = Executors.newFixedThreadPool(4);
+    private static final ExecutorService POOL = Executors.newFixedThreadPool(10); // long AI calls must not starve quick screens (StudyCoin, billing)
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
     public static <T> void run(Task<T> task, Callback<T> callback) {
@@ -27,7 +27,9 @@ public final class Async {
                 MAIN.post(() -> callback.onSuccess(result));
             } catch (Exception e) {
                 String msg = e.getMessage() != null ? e.getMessage() : "Đã xảy ra lỗi, vui lòng thử lại.";
-                if (e instanceof java.io.IOException && !(e instanceof ApiException)) {
+                if (e instanceof java.io.InterruptedIOException) {
+                    msg = "Máy chủ phản hồi quá lâu. Hãy thử lại sau ít phút.";
+                } else if (e instanceof java.io.IOException && !(e instanceof ApiException)) {
                     msg = "Không kết nối được máy chủ. Kiểm tra Internet rồi thử lại.";
                 }
                 String finalMsg = msg;

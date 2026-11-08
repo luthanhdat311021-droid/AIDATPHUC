@@ -36,6 +36,9 @@ public class GraphView extends View {
         public float titleSp = 11f;
         public boolean bold = true;
 
+        /** Text layouts are built once per node: rebuilding them every frame made panning stutter */
+        StaticLayout titleLayout, subLayout;
+
         public Node(String id) { this.id = id; }
     }
 
@@ -102,6 +105,7 @@ public class GraphView extends View {
         gestures = new GestureDetector(c, new GestureDetector.SimpleOnGestureListener() {
             @Override public boolean onDown(MotionEvent e) { return true; }
             @Override public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy) {
+                if (scaler.isInProgress() || e2.getPointerCount() > 1) return true; // no jumps while pinching
                 tx -= dx;
                 ty -= dy;
                 invalidate();
@@ -129,6 +133,16 @@ public class GraphView extends View {
         edges.addAll(e);
         for (Node node : n) byId.put(node.id, node);
         if (!keepView) fitted = false;
+        invalidate();
+    }
+
+    /** Pan so the node sits in the middle of the view, keeping the zoom (search results) */
+    public void centerOn(String id) {
+        Node n = byId.get(id);
+        if (n == null || getWidth() == 0) return;
+        if (!fitted) fit();
+        tx = getWidth() / 2f - (n.x + n.w / 2) * density * scale;
+        ty = getHeight() / 2f - (n.y + n.h / 2) * density * scale;
         invalidate();
     }
 
@@ -162,8 +176,16 @@ public class GraphView extends View {
         }
         if (nodes.isEmpty()) return null;
         float pad = 40, out = 2f / density; // 2 px per dp
+        // Deep maps at 2x can need hundreds of MB: cap the long side so export never runs out of memory
+        float longest = Math.max(maxX - minX, maxY - minY) + pad * 2;
+        if (longest * density * out > 6000) out = 6000f / (longest * density);
         int w = (int) ((maxX - minX + pad * 2) * density * out), h = (int) ((maxY - minY + pad * 2) * density * out);
-        android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(Math.max(1, w), Math.max(1, h), android.graphics.Bitmap.Config.ARGB_8888);
+        android.graphics.Bitmap bmp;
+        try {
+            bmp = android.graphics.Bitmap.createBitmap(Math.max(1, w), Math.max(1, h), android.graphics.Bitmap.Config.ARGB_8888);
+        } catch (OutOfMemoryError e) {
+            return null;
+        }
         Canvas cv = new Canvas(bmp);
         cv.drawColor(backgroundArgb);
         float s0 = scale, x0 = tx, y0 = ty;
@@ -256,7 +278,11 @@ public class GraphView extends View {
         }
 
         float sd = getResources().getDisplayMetrics().scaledDensity / density;
+        // Skip nodes outside the visible area (the export canvas is bitmap sized, so use the canvas size)
+        float s = scale * density;
+        float viewL = -tx / s, viewT = -ty / s, viewR = viewL + canvas.getWidth() / s, viewB = viewT + canvas.getHeight() / s;
         for (Node n : nodes) {
+            if (n.x > viewR || n.x + n.w < viewL || n.y > viewB || n.y + n.h < viewT) continue;
             rect.set(n.x, n.y, n.x + n.w, n.y + n.h);
             fillPaint.setColor(n.fill);
             fillPaint.setAlpha((int) (Color_alpha(n.fill) * n.alpha));
@@ -267,24 +293,29 @@ public class GraphView extends View {
             strokePaint.setPathEffect(n.dashed ? new DashPathEffect(new float[]{5, 4}, 0) : null);
             canvas.drawRoundRect(rect, 12, 12, strokePaint);
 
-            titlePaint.setColor(n.text);
-            titlePaint.setAlpha((int) (255 * n.alpha));
-            titlePaint.setTextSize(n.titleSp * sd);
-            titlePaint.setFakeBoldText(n.bold);
             int innerW = (int) Math.max(10, n.w - 16);
-            StaticLayout title = StaticLayout.Builder.obtain(n.title != null ? n.title : "", 0, n.title != null ? n.title.length() : 0, titlePaint, innerW)
-                    .setAlignment(Layout.Alignment.ALIGN_NORMAL).setMaxLines(n.subtitle != null ? 2 : 3)
-                    .setEllipsize(android.text.TextUtils.TruncateAt.END).build();
-            float th = title.getHeight();
-            StaticLayout sub = null;
-            if (n.subtitle != null) {
-                subPaint.setColor(n.text);
-                subPaint.setAlpha((int) (190 * n.alpha));
-                subPaint.setTextSize(9 * sd);
-                sub = StaticLayout.Builder.obtain(n.subtitle, 0, n.subtitle.length(), subPaint, innerW).setMaxLines(1)
+            if (n.titleLayout == null) {
+                // Each layout keeps its own paint: a shared one would recolour every cached node
+                TextPaint tp = new TextPaint(titlePaint);
+                tp.setColor(n.text);
+                tp.setAlpha((int) (255 * n.alpha));
+                tp.setTextSize(n.titleSp * sd);
+                tp.setFakeBoldText(n.bold);
+                n.titleLayout = StaticLayout.Builder.obtain(n.title != null ? n.title : "", 0, n.title != null ? n.title.length() : 0, tp, innerW)
+                        .setAlignment(Layout.Alignment.ALIGN_NORMAL).setMaxLines(n.subtitle != null ? 2 : 3)
                         .setEllipsize(android.text.TextUtils.TruncateAt.END).build();
-                th += sub.getHeight() + 2;
+                if (n.subtitle != null) {
+                    TextPaint sp = new TextPaint(subPaint);
+                    sp.setColor(n.text);
+                    sp.setAlpha((int) (190 * n.alpha));
+                    sp.setTextSize(9 * sd);
+                    n.subLayout = StaticLayout.Builder.obtain(n.subtitle, 0, n.subtitle.length(), sp, innerW).setMaxLines(1)
+                            .setEllipsize(android.text.TextUtils.TruncateAt.END).build();
+                }
             }
+            StaticLayout title = n.titleLayout, sub = n.subLayout;
+            float th = title.getHeight();
+            if (sub != null) th += sub.getHeight() + 2;
             canvas.save();
             canvas.translate(n.x + 8, n.y + (n.h - th) / 2);
             title.draw(canvas);
