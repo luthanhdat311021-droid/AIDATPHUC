@@ -315,6 +315,7 @@ public final class PomodoroDialog {
                 host.toast("🎉 Phiên tập trung hoàn tất! Hãy nghỉ ngơi 5 phút nhé!");
                 host.announceBadges(Gamification.recordPomodoroSessionCompleted());
             }
+            com.studymind.nativeapp.StudyMindApp.state().syncGamification("pomodoro");
             FocusRewards.workCompleted(host != null ? host::toast : null);
             mode = 1;
         } else {

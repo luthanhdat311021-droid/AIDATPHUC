@@ -19,10 +19,11 @@ import {
   BillingInfo,
   PaymentOrder,
   AccessInfo,
-  AdminOverview
+  AdminOverview,
+  ChatSource
 } from '../types';
 import { notificationService } from '../utils/notificationService';
-import { recordCardReviewed, recordQuizCompleted } from '../utils/gamification';
+import { applyServerGamification, pushGamificationEvent, recordCardReviewed, recordQuizCompleted, setGamificationTransport } from '../utils/gamification';
 
 interface StudyContextType {
   activeTab: TabType;
@@ -45,7 +46,7 @@ interface StudyContextType {
   processUrl: (url: string, subject?: string) => Promise<void>;
   reviewFlashcard: (cardId: string, rating: string) => Promise<void>;
   submitQuiz: (quizId: string, answers: Record<string, number>) => Promise<any>;
-  sendChatMessage: (documentId: string, question: string, history: any[], tutor?: { mode: 'socratic'; focus: string }) => Promise<string>;
+  sendChatMessage: (documentId: string, question: string, history: any[], tutor?: { mode: 'socratic'; focus: string }) => Promise<{ answer: string; sources: ChatSource[] }>;
   
   // Knowledge Fusion Operations
   fusionResult: KnowledgeFusionResult | null;
@@ -443,6 +444,22 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
     if (activeDocData?.document?.id) docCache.current.set(activeDocData.document.id, activeDocData);
   }, [activeDocData]);
 
+  // After sign-in the server's streak and badges replace this device's copy
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setGamificationTransport(async (kind, local) => {
+      const { ownerId, ...localImport } = local;
+      const res = await apiFetch('/api/v1/gamification/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(kind === 'open' ? { kind, localImport, localOwnerId: ownerId } : { kind })
+      });
+      return (await res.json()).gamification;
+    });
+    void pushGamificationEvent('open');
+    return () => setGamificationTransport(null);
+  }, [isAuthenticated]);
+
   const continueLessonFromHistory = async (id: string) => {
     if (docCache.current.has(id)) {
       fetchDocumentDetail(id); // shows the cached copy right away, refreshes in the background
@@ -726,11 +743,11 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
       if (data.success) {
         showToast(data.message);
         // Track gamification & schedule smart spaced repetition notification
-        const { newBadges } = recordCardReviewed();
+        const newBadges = data.gamification ? applyServerGamification(data.gamification) : recordCardReviewed().newBadges;
         if (newBadges.length > 0) {
           newBadges.forEach(b => showToast(`🎉 Mở khóa Huy hiệu mới: [${b.name}] ${b.icon}`));
         }
-        notificationService.scheduleFlashcardReview(activeDocData?.document.title || 'Bài học', rating as any);
+        notificationService.scheduleFlashcardReview(activeDocData?.document.title || 'Bài học', data.card?.nextReview);
 
         // Keep the saved rating in state (no refetch per card); the Knowledge Gap Map reads it
         setActiveDocData(prev => prev && {
@@ -793,7 +810,7 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
         fetchDocumentDetail(quizId); // fresh quizHistory for the Knowledge Gap Map
 
         // Track gamification for quiz completion
-        const { newBadges } = recordQuizCompleted(data.score || 0);
+        const newBadges = data.gamification ? applyServerGamification(data.gamification) : recordQuizCompleted(data.score || 0).newBadges;
         if (newBadges && newBadges.length > 0) {
           newBadges.forEach(b => showToast(`🎉 Mở khóa Huy hiệu mới: [${b.name}] ${b.icon}`));
         }
@@ -812,10 +829,10 @@ const safeFetchJson = async (res: Response): Promise<{ ok: boolean; data: any; e
         body: JSON.stringify({ documentId, question, chatHistory: history, ...tutor })
       });
       const data = await res.json();
-      return data.answer;
+      return { answer: data.answer, sources: data.sources || [] };
     } catch (err) {
       console.error("Send chat message failed:", err);
-      return "Rất tiếc, máy chủ AI đang bận. Bạn vui lòng thử lại sau giây lát.";
+      return { answer: "Rất tiếc, máy chủ AI đang bận. Bạn vui lòng thử lại sau giây lát.", sources: [] };
     }
   };
 

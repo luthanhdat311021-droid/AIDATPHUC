@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, FileText, Layers, Award, ArrowRight, CheckCircle2, Flame, Folder, Timer, Bell, Sparkles } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
 import { PomodoroModal } from '../common/PomodoroModal';
 import { StreakModal } from '../common/StreakModal';
-import { loadGamificationData, ALL_BADGES } from '../../utils/gamification';
+import { loadGamificationData, ALL_BADGES, GAMIFICATION_CHANGED_EVENT } from '../../utils/gamification';
 
 export function DashboardView() {
   const { stats, setActiveTab, fetchDocumentDetail } = useStudy();
@@ -19,6 +19,11 @@ export function DashboardView() {
   const refreshGamification = () => {
     setGamification(loadGamificationData());
   };
+
+  useEffect(() => {
+    window.addEventListener(GAMIFICATION_CHANGED_EVENT, refreshGamification);
+    return () => window.removeEventListener(GAMIFICATION_CHANGED_EVENT, refreshGamification);
+  }, []);
 
   return (
     <>
@@ -281,7 +286,8 @@ export function DashboardView() {
                   </p>
                 </div>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    await fetchDocumentDetail(item.docId);
                     if (item.buttonText.includes('sơ đồ')) setActiveTab('mindmap');
                     else setActiveTab('flashcard');
                   }}
@@ -295,6 +301,9 @@ export function DashboardView() {
                 </button>
               </div>
             ))}
+            {!stats?.spacedRepetitionItems?.length && (
+              <p className="text-xs text-slate-500">Hôm nay chưa có thẻ nào đến hạn ôn.</p>
+            )}
           </div>
         </div>
 

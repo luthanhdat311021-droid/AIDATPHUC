@@ -114,6 +114,7 @@ public final class StreakDialog {
         freeze.setOnClickListener(v -> {
             if (frozen) return;
             if (Gamification.freezeTomorrow()) {
+                state.syncGamification("freeze");
                 if (activity instanceof AppState.Host) ((AppState.Host) activity).toast("❄ Đã đóng băng chuỗi ngày: ngày mai bận cũng không mất chuỗi!");
                 build(activity, body, sheet);
             } else if (activity instanceof AppState.Host) {

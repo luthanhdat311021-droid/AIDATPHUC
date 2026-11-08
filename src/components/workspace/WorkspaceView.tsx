@@ -17,6 +17,7 @@ import {
   FileDown
 } from 'lucide-react';
 import { useStudy } from '../../context/StudyContext';
+import { ChatSource } from '../../types';
 import { analyzeKnowledgeGaps } from '../../utils/knowledgeGaps';
 import { ttsService } from '../../utils/ttsService';
 import { exportNotesToMarkdown } from '../../utils/exportUtils';
@@ -26,6 +27,7 @@ type ChatMode = 'qa' | 'socratic';
 interface ChatMessage {
   sender: 'user' | 'ai';
   text: string;
+  sources?: ChatSource[];
 }
 
 export function WorkspaceView() {
@@ -155,12 +157,12 @@ export function WorkspaceView() {
     setInputQuery('');
     setIsSending(true);
 
-    const aiReply = await sendChatMessage(
+    const { answer, sources } = await sendChatMessage(
       doc?.id || 'doc-1', textToSend, chatMessages,
       chatMode === 'socratic' ? { mode: 'socratic', focus: gapFocus } : undefined
     );
     
-    setChatMessages((prev) => [...prev, { sender: 'ai', text: aiReply }]);
+    setChatMessages((prev) => [...prev, { sender: 'ai', text: answer, sources }]);
     setIsSending(false);
   };
 
@@ -482,6 +484,16 @@ export function WorkspaceView() {
                     }`}
                   >
                     {msg.text}
+                    {!!msg.sources?.length && (
+                      <details className="mt-2 border-t border-slate-200 pt-2">
+                        <summary className="cursor-pointer font-bold text-[#0F766E]">Nguồn trong tài liệu ({msg.sources.length})</summary>
+                        <div className="mt-1.5 space-y-1.5">
+                          {msg.sources.map((s) => (
+                            <p key={s.n} className="text-[11px] text-slate-600"><strong>[{s.n}]</strong> {s.excerpt}</p>
+                          ))}
+                        </div>
+                      </details>
+                    )}
                   </div>
                 </div>
               ))}

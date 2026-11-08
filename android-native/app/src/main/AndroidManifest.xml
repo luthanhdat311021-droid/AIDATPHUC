@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
 
     <!-- Text-to-speech engines are queried for the "Nghe tóm tắt" feature -->
     <queries>
@@ -49,6 +51,8 @@
                 <data android:scheme="com.studymind.nativeapp" android:host="auth" android:path="/callback" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".ui.LivenessActivity" android:exported="false" android:screenOrientation="portrait" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -152,7 +152,7 @@ export class GroqProvider extends AIProvider {
     const messages = [
       { role: 'system', content: instructions || `Bạn là trợ lý học tập StudyMind AI cho tài liệu "${docTitle}". Trả lời ngắn gọn, dễ hiểu bằng Tiếng Việt.` },
       ...chatHistory.slice(-6).map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })),
-      { role: 'user', content: `[Ngữ cảnh]: ${docContext.slice(0, 4000)}\n\n[Câu hỏi]: ${userQuestion}` }
+      { role: 'user', content: `[Ngữ cảnh]: ${docContext.slice(0, 7000)}\n\n[Câu hỏi]: ${userQuestion}` }
     ];
 
     if (!this.groq) throw new Error("GROQ_API_KEY not configured or invalid.");

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -39,7 +41,28 @@ public final class Gamification {
         /** Day protected by "Đóng băng chuỗi ngày" (yyyy-MM-dd), and the week it was used in (yyyy-ww) */
         public String frozenDate;
         public String freezeWeek;
+        /** Server's answer for this week; null until the first sync */
+        public Boolean canFreeze;
+        /** Account this device cache was last synced with */
+        public String ownerId;
     }
+
+    /** Stores the server's copy on this device and returns the badges it just unlocked. */
+    public static List<Badge> applyServer(JsonObject server) {
+        Data d = GSON.fromJson(server, Data.class);
+        if (d.unlockedBadgeIds == null) d.unlockedBadgeIds = new ArrayList<>();
+        if (server.has("userId") && !server.get("userId").isJsonNull()) d.ownerId = server.get("userId").getAsString();
+        save(d);
+        List<Badge> unlocked = new ArrayList<>();
+        if (server.has("newBadgeIds") && server.get("newBadgeIds").isJsonArray()) {
+            for (JsonElement id : server.getAsJsonArray("newBadgeIds")) {
+                for (Badge b : ALL_BADGES) if (b.id.equals(id.getAsString())) unlocked.add(b);
+            }
+        }
+        return unlocked;
+    }
+
+    public static JsonObject localSnapshot() { return GSON.toJsonTree(load()).getAsJsonObject(); }
 
     private static String week() {
         Calendar cal = Calendar.getInstance();
@@ -49,15 +72,16 @@ public final class Gamification {
     /** One streak freeze per calendar week; it protects tomorrow */
     public static boolean canFreeze() {
         Data d = load();
-        return !week().equals(d.freezeWeek);
+        return d.canFreeze != null ? d.canFreeze : !week().equals(d.freezeWeek);
     }
 
     public static boolean isTomorrowFrozen() { return day(1).equals(load().frozenDate); }
 
     public static boolean freezeTomorrow() {
+        if (!canFreeze()) return false;
         Data d = load();
-        if (week().equals(d.freezeWeek)) return false;
         d.freezeWeek = week();
+        d.canFreeze = false;
         d.frozenDate = day(1);
         save(d);
         return true;

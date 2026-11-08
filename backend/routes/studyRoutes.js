@@ -20,6 +20,9 @@ import { billingService, HttpError } from '../services/billingService.js';
 import { registerRewardRoutes } from './rewardRoutes.js';
 import { registerRewardWorkerRoute } from './rewardWorkerRoute.js';
 import { isUserCreated, recordLessonActivity } from '../services/rewardsService.js';
+import { describeInterval, isDue, isValidRating, scheduleReview } from '../services/srs.js';
+import { applyGamificationEvent } from '../services/gamificationService.js';
+import { citedSources, formatPassages, retrievePassages } from '../services/ragService.js';
 
 // Lesson quizzes count toward StudyCoin quiz missions only at the size of the reward challenge (10 questions).
 const LESSON_QUIZ_MIN_QUESTIONS = 10;
@@ -176,10 +179,36 @@ export function registerStudyRoutes(app) {
         weeklyQuizCount: { current: recent.reduce((s, a) => s + a.totalQuestions, 0), target: 50 },
         streakDays,
         recentDocuments: lessons.map(toDocumentItem),
-        spacedRepetitionItems: [],
+        spacedRepetitionItems: lessons
+          .map(l => ({ lesson: l, cards: l.studyPack?.flashcards || [] }))
+          .map(({ lesson, cards: deck }) => ({ lesson, total: deck.length, due: deck.filter(c => isDue(c, now)).length }))
+          .filter(d => d.due > 0)
+          .sort((a, b) => b.due - a.due)
+          .slice(0, 5)
+          .map(({ lesson, total, due }) => ({
+            id: lesson.id,
+            docId: lesson.id,
+            title: lesson.title,
+            memoryLevel: `${total - due}/${total} thẻ chưa đến hạn`,
+            actionNeeded: `${due} thẻ cần ôn hôm nay`,
+            buttonText: 'Ôn thẻ ngay'
+          })),
         recentActivities: []
       }
     });
+  });
+
+  // Client-reported events. Card and quiz events are recorded by their own routes below.
+  app.post('/api/v1/gamification/event', async (req, res) => {
+    const { kind, localImport, localOwnerId } = req.body || {};
+    if (!['open', 'pomodoro', 'freeze'].includes(kind)) {
+      return res.status(400).json({ success: false, error: 'Sự kiện không hợp lệ.' });
+    }
+    // A device cache that belongs to another account must not seed this one
+    const usable = kind === 'open' && localImport && typeof localImport === 'object' && (!localOwnerId || localOwnerId === req.user.id);
+    const gamification = await applyGamificationEvent(req.user.id, kind, usable ? localImport : null);
+    if (!gamification) return res.status(503).json({ success: false, error: 'Chưa lưu được tiến độ lên máy chủ.' });
+    res.json({ success: true, gamification });
   });
 
   app.get('/api/v1/documents', async (req, res) => {
@@ -336,11 +365,24 @@ export function registerStudyRoutes(app) {
     if (!lesson) return;
     await useQuota(req, 'chat');
     // Socratic mode: tutor never gives answers; focus = root gaps summarised by the client's Knowledge Gap Map
-    const instructions = mode === 'socratic'
+    const socratic = mode === 'socratic';
+    // A short follow-up ("giải thích thêm") only makes sense together with the previous question
+    const lastAsked = [...chatHistory].reverse().find(m => m.sender === 'user')?.text;
+    const query = String(question).length < 40 && lastAsked ? `${lastAsked}\n${question}` : String(question);
+    let passages = [];
+    try {
+      passages = await retrievePassages(req.db, lesson, req.user.id, query);
+    } catch (err) {
+      // Chat must keep working without search: fall back to the start of the document
+      console.warn('[rag] retrieval failed:', err.message);
+    }
+    const grounded = passages.length > 0;
+    const instructions = socratic
       ? PromptManager.getSocraticInstructions(lesson.title, String(focus || '').slice(0, 1200))
-      : null;
-    const reply = await aiRouter.chat(lesson.title, lesson.rawText || '', question, chatHistory, instructions);
-    res.json({ success: true, answer: reply });
+      : grounded ? PromptManager.getGroundedChatInstructions(lesson.title) : null;
+    const context = grounded ? formatPassages(passages) : lesson.rawText || '';
+    const reply = await aiRouter.chat(lesson.title, context, question, chatHistory, instructions);
+    res.json({ success: true, answer: reply, sources: grounded && !socratic ? citedSources(reply, passages) : [] });
   });
 
   // ==================== STEP-BY-STEP LESSON PIPELINE ==================== //
@@ -565,9 +607,8 @@ export function registerStudyRoutes(app) {
   });
 
   app.post('/api/v1/documents/:id/flashcards/:cardId/review', async (req, res) => {
-    const intervals = { hard: '1 phút', medium: '10 phút', easy: '4 ngày' };
     const { rating } = req.body;
-    if (!intervals[rating]) return res.status(400).json({ success: false, error: 'Đánh giá không hợp lệ.' });
+    if (!isValidRating(rating)) return res.status(400).json({ success: false, error: 'Đánh giá không hợp lệ.' });
     const lesson = await loadLesson(req, res);
     if (!lesson) return;
 
@@ -575,6 +616,7 @@ export function registerStudyRoutes(app) {
     if (!card) return res.status(404).json({ success: false, error: 'Không tìm thấy thẻ ghi nhớ.' });
     card.lastRating = rating;
     card.lastReviewed = new Date().toISOString();
+    Object.assign(card, scheduleReview(card, rating));
     await saveLesson(req, lesson);
     // AI-generated cards also advance StudyCoin missions (once per card per day, ≥3 s apart)
     const counted = isUserCreated(card) ? false
@@ -584,7 +626,8 @@ export function registerStudyRoutes(app) {
       success: true,
       card,
       reward: { counted },
-      message: `Đã cập nhật trạng thái thẻ ôn tập: ${rating.toUpperCase()} (Lần ôn tiếp theo: sau ${intervals[rating]})`
+      gamification: await applyGamificationEvent(req.user.id, 'card'),
+      message: `Đã cập nhật trạng thái thẻ ôn tập: ${rating.toUpperCase()} (Lần ôn tiếp theo: sau ${describeInterval(card)})`
     });
   });
 
@@ -647,6 +690,7 @@ export function registerStudyRoutes(app) {
     res.json({
       success: true,
       reward: { counted },
+      gamification: await applyGamificationEvent(req.user.id, scorePct >= 100 ? 'quiz_perfect' : 'activity'),
       score: scorePct,
       correctCount,
       totalQuestions: total,
