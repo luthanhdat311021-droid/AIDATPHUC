@@ -40,3 +40,13 @@ route proxy ở lớp vận hành trước khi tắt source mode.
 Giới hạn tin cậy: backend staging được phép chứng thực các burn của contract testnet để cấp
 Pro trên chính. Chỉ bật sau khi chấp thuận mối liên kết này. Khóa HMAC bị lộ cho phép giả
 mạo yêu cầu bridge; cần giữ nó trong secrets và thay đồng thời ở hai project khi xoay khóa.
+
+## Kết quả triển khai ngày 08/11/2026
+
+Đã áp dụng primary.sql và staging.sql, deploy studymind-api lên cả hai project, đặt shared HMAC secret và bật mode source/target. Verify JWT của function giữ nguyên false; API người dùng vẫn xác thực Supabase JWT trong backend, bridge yêu cầu HMAC.
+
+Scheduler `studymind-rewards-sepolia` đã bật mỗi phút và lần chạy được kiểm tra có trạng thái `succeeded`. Khóa worker hiện có được lưu trong Supabase Vault với tên `studymind_rewards_worker`. Scheduler chỉ gọi worker khi có jobs/referrals hoặc Pro outbox cần xử lý. SQL tái lập ở `supabase/bridge/scheduler.sql`; theo hướng dẫn chính thức: https://supabase.com/docs/guides/functions/schedule-functions.
+
+Kiểm tra live qua tài khoản thử riêng trên API chính: HTTP 200, enabled=true, chainId=11155111, network=Ethereum Sepolia, chainAvailable=true, tạo được ví và trả 6 nhiệm vụ. Yêu cầu cấp Pro không chữ ký bị trả 401. Worker trả success, failed=0; không có Pro outbox chờ. Tài khoản và dữ liệu thử đã được xóa. Không mint/burn thử trong lần triển khai này; kiểm thử giao dịch thực trên điện thoại do người dùng thực hiện.
+
+Bản sao backend trước deploy nằm trong `android-native/.bridge-deploy/primary-backup` và `staging-backup` (được Git bỏ qua). Android không cần rebuild hay đổi Supabase URL.
