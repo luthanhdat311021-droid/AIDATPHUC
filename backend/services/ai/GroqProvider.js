@@ -102,6 +102,10 @@ export class GroqProvider extends AIProvider {
     }
   }
 
+  async generateJson(prompt) {
+    return parseAIJson(await this.executeGroqCall(prompt, true, 2, 3000));
+  }
+
   async generateNotes(knowledgeJson) {
     const startTime = Date.now();
     const prompt = PromptManager.getNotesGenerationPrompt(knowledgeJson);

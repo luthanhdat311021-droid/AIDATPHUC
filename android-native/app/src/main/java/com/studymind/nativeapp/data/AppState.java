@@ -32,7 +32,7 @@ import java.util.Set;
  */
 public class AppState {
 
-    public enum Screen { DASHBOARD, IMPORT, HISTORY, WORKSPACE, PREREQUISITE, GAPS, MINDMAP, FLASHCARD, QUIZ, FUSION, PRO, REWARDS, ADMIN }
+    public enum Screen { DASHBOARD, IMPORT, HISTORY, WORKSPACE, PREREQUISITE, GAPS, MINDMAP, FLASHCARD, QUIZ, FUSION, PRO, REWARDS, ADMIN, MISTAKES, DUEL, ROOM }
 
     public interface Listener { void onStateChanged(); }
 
@@ -62,6 +62,7 @@ public class AppState {
     private BillingInfo billing;
     private FusionResult fusionResult;
     private final AnalysisJobs jobs;
+    private final Context appContext;
 
     public AppState(Context context, AuthRepository auth, ApiClient api) {
         this.auth = auth;
@@ -69,6 +70,7 @@ public class AppState {
         this.rewards = new RewardsRepository(api, auth);
         this.prefs = context.getSharedPreferences("studymind_prefs", Context.MODE_PRIVATE);
         this.jobs = new AnalysisJobs(context);
+        this.appContext = context.getApplicationContext();
         api.setUpgradeListener(reason -> { if (host != null) host.openUpgrade(reason); });
     }
 
@@ -80,6 +82,34 @@ public class AppState {
     public void clearHost(Host h) { if (host == h) host = null; }
 
     public AnalysisJobs jobs() { return jobs; }
+
+    public ApiClient api() { return api; }
+
+    /** Finds the root causes in a graded test photo; new flashcards land on the open lesson. */
+    public void analyzeMistakes(android.content.ContentResolver resolver, android.net.Uri uri, Async.Callback<JsonObject> cb) {
+        if (activeDoc == null) return;
+        String docId = activeDoc.document.id;
+        Async.run(() -> {
+            FileIngest.Prepared p = FileIngest.prepare(resolver, uri);
+            if (p.binary == null) throw new ApiException(400, "Hãy chọn ảnh chụp hoặc tệp PDF của bài kiểm tra.", null);
+            String uid = auth.getUser() != null ? auth.getUser().id : null;
+            if (uid == null) throw new ApiException(401, "Vui lòng đăng nhập để tiếp tục.", null);
+            String path = uid + "/" + System.currentTimeMillis() + "-" + p.fileName.replaceAll("[^\\w.\\-]", "_");
+            api.uploadToStorage(UPLOAD_BUCKET, path, p.binary, p.mime, false);
+            JsonObject b = new JsonObject();
+            b.addProperty("storagePath", path);
+            b.addProperty("fileName", p.fileName);
+            b.addProperty("mimeType", p.mime);
+            return api.post("/api/v1/documents/" + docId + "/mistakes", b);
+        }, new Async.Callback<JsonObject>() {
+            @Override public void onSuccess(JsonObject r) {
+                if (activeDoc != null && activeDoc.document.id.equals(docId)) openDocument(docId, null);
+                refreshBilling(null);
+                cb.onSuccess(r);
+            }
+            @Override public void onError(String m) { cb.onError(m); }
+        });
+    }
 
     public void addListener(Listener l) { listeners.add(l); }
 
@@ -144,6 +174,8 @@ public class AppState {
         fusionResult = null;
         jobs.clear();
         clearPendingImport();
+        prefs.edit().remove("room_code").remove("pending_duel").apply();
+        com.studymind.nativeapp.StudyCardWidget.clear(appContext);
         changed();
     }
 

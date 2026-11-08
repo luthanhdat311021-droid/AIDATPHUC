@@ -93,6 +93,10 @@ export class GeminiProvider extends AIProvider {
     }
   }
 
+  async generateJson(prompt) {
+    return parseAIJson((await this.executeGeminiCall(prompt)).text);
+  }
+
   async generateNotes(knowledgeJson) {
     const startTime = Date.now();
     const prompt = PromptManager.getNotesGenerationPrompt(knowledgeJson);

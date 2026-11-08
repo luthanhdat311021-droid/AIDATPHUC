@@ -73,6 +73,9 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
             {Screen.FLASHCARD, "Thẻ ghi nhớ", R.drawable.ic_layers},
             {Screen.QUIZ, "Trắc nghiệm", R.drawable.ic_quiz},
             {null, "CÔNG CỤ", 0},
+            {Screen.MISTAKES, "Chụp bài sai", R.drawable.ic_target},
+            {Screen.DUEL, "Đấu trường 1 chọi 1", R.drawable.ic_quiz},
+            {Screen.ROOM, "Phòng học nhóm", R.drawable.ic_users},
             {Screen.FUSION, "Hợp nhất kiến thức", R.drawable.ic_compare},
             {Screen.REWARDS, "Nhiệm vụ & StudyCoin", R.drawable.ic_wallet},
             {Screen.PRO, "Tài khoản Pro", R.drawable.ic_crown},
@@ -93,6 +96,9 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
             case PRO: return "Tài khoản Pro";
             case REWARDS: return "Nhiệm vụ & StudyCoin";
             case ADMIN: return "Quản trị";
+            case MISTAKES: return "Chụp bài sai";
+            case DUEL: return "Đấu trường";
+            case ROOM: return "Phòng học nhóm";
             default: return "Tổng quan";
         }
     }
@@ -258,6 +264,15 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
             return;
         }
         Uri data = intent != null ? intent.getData() : null;
+        if (data != null && "com.studymind.nativeapp".equals(data.getScheme()) && "duel".equals(data.getHost())) {
+            String code = data.getQueryParameter("code");
+            if (code != null && code.matches("[A-Za-z0-9]{8}")) {
+                getSharedPreferences("studymind_prefs", MODE_PRIVATE).edit().putString("pending_duel", code).apply();
+                if (signedInShell) navigate(Screen.DUEL);
+            }
+            intent.setData(null);
+            return;
+        }
         if (data != null && "com.studymind.nativeapp".equals(data.getScheme()) && "referral".equals(data.getHost())) {
             String code = data.getQueryParameter("code");
             if (code != null && code.matches("[A-Za-z0-9]{12}")) {
@@ -548,6 +563,9 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
             case PRO: return new ProFragment();
             case REWARDS: return new RewardsFragment();
             case ADMIN: return new AdminFragment();
+            case MISTAKES: return new com.studymind.nativeapp.ui.screens.MistakesFragment();
+            case DUEL: return new com.studymind.nativeapp.ui.screens.DuelFragment();
+            case ROOM: return new com.studymind.nativeapp.ui.screens.RoomFragment();
             default: return new DashboardFragment();
         }
     }

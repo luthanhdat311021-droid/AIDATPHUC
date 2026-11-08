@@ -24,6 +24,7 @@ import { isUserCreated, recordLessonActivity } from '../services/rewardsService.
 import { describeInterval, isDue, isValidRating, scheduleReview } from '../services/srs.js';
 import { applyGamificationEvent } from '../services/gamificationService.js';
 import { citedSources, formatPassages, retrievePassages } from '../services/ragService.js';
+import { normalizeMistakes } from '../services/mistakes.js';
 
 // Lesson quizzes count toward StudyCoin quiz missions only at the size of the reward challenge (10 questions).
 const LESSON_QUIZ_MIN_QUESTIONS = 10;
@@ -742,6 +743,90 @@ export function registerStudyRoutes(app) {
     const fusionResult = await aiRouter.analyzeFusion(selectedDocs);
     res.json({ success: true, data: fusionResult });
   });
+
+  // ==================== MISTAKE ROOT CAUSES ==================== //
+
+  app.post('/api/v1/documents/:id/mistakes', async (req, res) => {
+    const { storagePath, fileName, mimeType } = req.body || {};
+    if (!storagePath || !String(storagePath).startsWith(`${req.user.id}/`)) throw new HttpError(400, 'Tệp tải lên không hợp lệ.');
+    const lesson = await loadLesson(req, res);
+    if (!lesson) return;
+    await useQuota(req);
+
+    const { data: blob, error } = await req.db.storage.from(UPLOAD_BUCKET).download(storagePath);
+    if (error || !blob) throw new HttpError(404, 'Không tìm thấy tệp đã tải lên, vui lòng tải lại.');
+    const name = String(fileName || 'bai-kiem-tra').replace(/[^\w.\-]/g, '_');
+    const tmp = path.join(os.tmpdir(), `${randomUUID()}-${name}`);
+    await fs.promises.writeFile(tmp, Buffer.from(await blob.arrayBuffer()));
+    let text;
+    try {
+      text = await parseDocumentContent(tmp, name, mimeType || blob.type);
+    } finally {
+      fs.promises.unlink(tmp).catch(() => {});
+      req.db.storage.from(UPLOAD_BUCKET).remove([storagePath]).catch(() => {});
+    }
+    if (!text?.trim()) throw new HttpError(400, 'Không đọc được nội dung bài kiểm tra. Hãy chụp rõ hơn.');
+
+    const concepts = (lesson.studyPack.knowledgeBase?.concepts || []).map(c => c.name).filter(Boolean);
+    const result = normalizeMistakes(await aiRouter.analyzeMistakes(text, lesson.title, concepts));
+    if (result.flashcards.length) {
+      (lesson.studyPack.flashcards ||= []).push(...result.flashcards);
+      await saveLesson(req, lesson);
+    }
+    res.json({ success: true, ...result });
+  });
+
+  // ==================== WIDGET ==================== //
+
+  app.get('/api/v1/flashcards/due', async (req, res) => {
+    const lessons = await supabaseService.getLessonSummaries(req.db);
+    const cards = lessons.flatMap(l => (l.studyPack.flashcards || []).filter(c => isDue(c))
+      .map(c => ({ documentId: l.id, id: c.id, front: c.front, back: c.back })));
+    res.json({ success: true, cards: cards.slice(0, 20) });
+  });
+
+  // ==================== DUELS & STUDY ROOMS ==================== //
+
+  const displayName = (req) => String(req.user.user_metadata?.full_name || 'Bạn học').slice(0, 40);
+  // Messages raised by the SQL functions are written for the user; anything else is not shown
+  async function rpc(req, fn, args) {
+    const { data, error } = await req.db.rpc(fn, args);
+    if (error) throw error.code === 'P0001' ? new HttpError(400, error.message) : new HttpError(500, 'Lỗi máy chủ, vui lòng thử lại.');
+    return data;
+  }
+
+  app.post('/api/v1/duels', async (req, res) => {
+    const lesson = await loadLesson(req, res, req.body?.documentId);
+    if (!lesson) return;
+    const questions = (lesson.studyPack.quiz?.questions || []).slice(0, 10)
+      .map(({ id, questionText, options, correctIndex, explanation }) => ({ id, questionText, options, correctIndex, explanation }));
+    if (questions.length < 3) throw new HttpError(400, 'Bài học cần ít nhất 3 câu trắc nghiệm để tạo trận đấu.');
+    res.json({ success: true, duel: await rpc(req, 'studymind_duel_create', { p_title: lesson.title, p_questions: questions, p_name: displayName(req) }) });
+  });
+
+  app.get('/api/v1/duels/:code', async (req, res) => {
+    res.json({ success: true, duel: await rpc(req, 'studymind_duel_get', { p_code: req.params.code }) });
+  });
+
+  app.post('/api/v1/duels/:code/submit', async (req, res) => {
+    const { answers, ms } = req.body || {};
+    if (!answers || typeof answers !== 'object' || !Number.isInteger(ms)) throw new HttpError(400, 'Bài nộp không hợp lệ.');
+    res.json({ success: true, duel: await rpc(req, 'studymind_duel_submit', { p_code: req.params.code, p_answers: answers, p_ms: ms, p_name: displayName(req) }) });
+  });
+
+  app.post('/api/v1/rooms', async (req, res) => {
+    res.json({ success: true, room: await rpc(req, 'studymind_room_create', { p_name: displayName(req) }) });
+  });
+
+  app.post('/api/v1/rooms/:code/join', async (req, res) => {
+    res.json({ success: true, room: await rpc(req, 'studymind_room_join', { p_code: req.params.code, p_name: displayName(req) }) });
+  });
+
+  for (const action of ['beat', 'start', 'leave']) {
+    app.post(`/api/v1/rooms/:code/${action}`, async (req, res) => {
+      res.json({ success: true, room: await rpc(req, `studymind_room_${action}`, { p_code: req.params.code }) });
+    });
+  }
 
   return { assertDepthAllowed, useQuota };
 }
