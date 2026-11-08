@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;font-family:'Be Vietnam Pro',sans-serif;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb95f", "tertiary": "#734700", "tertiary-container": "#945d00", "surface-container-high": "#dce9ff", "background": "#f8f9ff", "primary-fixed-dim": "#80d5cb", "on-secondary": "#ffffff", "on-surface": "#0b1c30", "inverse-surface": "#213145", "secondary": "#515f74", "tertiary-fixed": "#ffddb8", "secondary-fixed": "#d5e3fc", "on-primary-fixed": "#00201d", "on-secondary-container": "#57657a", "surface-container-low": "#eff4ff", "primary": "#005c55", "surface-container-highest": "#d3e4fe", "error-container": "#ffdad6", "on-error-container": "#93000a", "on-tertiary-fixed-variant": "#653e00", "surface-tint": "#006a63", "surface": "#f8f9ff", "on-background": "#0b1c30", "primary-fixed": "#9cf2e8", "primary-container": "#0f766e", "on-secondary-fixed": "#0d1c2e", "error": "#ba1a1a", "on-tertiary-fixed": "#2a1700", "inverse-on-surface": "#eaf1ff", "outline": "#6e7977", "on-primary": "#ffffff", "secondary-fixed-dim": "#b9c7df", "surface-dim": "#cbdbf5", "surface-variant": "#d3e4fe", "secondary-container": "#d5e3fc", "surface-container-lowest": "#ffffff", "on-primary-fixed-variant": "#00504a", "inverse-primary": "#80d5cb", "on-secondary-fixed-variant": "#3a485b", "on-tertiary": "#ffffff", "surface-bright": "#f8f9ff", "surface-container": "#e5eeff", "on-surface-variant": "#3e4947", "outline-variant": "#bdc9c6", "on-primary-container": "#a3faef", "on-tertiary-container": "#ffe6cc" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "margin": "1rem", "space-xl": "1.5rem", "gutter": "1rem", "space-md": "1rem", "gutter-tablet": "1.5rem", "margin-tablet": "1.5rem", "space-sm": "0.5rem", "margin-desktop": "2rem", "space-lg": "1.25rem", "gutter-desktop": "1.5rem", "space-xs": "0.25rem" }, fontFamily: { "title-lg": ["Be Vietnam Pro"], "body-lg": ["Be Vietnam Pro"], "label-sm": ["Be Vietnam Pro"], "body-sm": ["Be Vietnam Pro"], "headline-lg": ["Be Vietnam Pro"], "label-lg": ["Be Vietnam Pro"], "title-md": ["Be Vietnam Pro"], "body-md": ["Be Vietnam Pro"], "headline-lg-mobile": ["Be Vietnam Pro"], "headline-sm": ["Be Vietnam Pro"], "display-lg": ["Be Vietnam Pro"], "headline-md": ["Be Vietnam Pro"], "label-md": ["Be Vietnam Pro"] }, fontSize: { "title-lg": ["18px", { "lineHeight": "26px", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "500" }], "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "display-lg": ["40px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><button aria-label="Quay lại" class="w-11 h-11 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container active:bg-surface-container-high transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><h1 class="font-title-md text-title-md text-on-surface truncate">Tập Trung Pomodoro</h1></div><div class="flex items-center gap-space-sm"><div class="flex items-center gap-space-xs bg-tertiary-fixed text-on-tertiary-fixed px-space-sm py-1 rounded-full"><span class="material-symbols-outlined text-[16px] text-tertiary-container">local_fire_department</span><span class="font-label-sm text-label-sm font-bold">7 Ngày</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full pb-10 px-margin space-y-space-lg">
+<!-- Sub-header bar for dedicated timer actions -->
+<div class="flex items-center justify-between pt-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-md text-label-md text-primary font-bold uppercase tracking-wider">Không gian học sâu</span>
+</div>
+<button aria-label="Cài đặt Pomodoro" class="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors" id="btn-settings">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+<!-- Segmented Control: 3 Modes -->
+<div class="w-full bg-surface-container p-1 rounded-full flex items-center shadow-sm">
+<button class="flex-1 py-2 rounded-full font-label-md text-label-md transition-all text-on-primary bg-primary shadow-sm font-semibold text-center truncate" id="tab-focus" onclick="switchMode('focus')">
+      Tập trung (25p)
+    </button>
+<button class="flex-1 py-2 rounded-full font-label-md text-label-md transition-all text-secondary hover:text-on-surface font-medium text-center truncate" id="tab-short" onclick="switchMode('short')">
+      Nghỉ ngắn (5p)
+    </button>
+<button class="flex-1 py-2 rounded-full font-label-md text-label-md transition-all text-secondary hover:text-on-surface font-medium text-center truncate" id="tab-long" onclick="switchMode('long')">
+      Nghỉ dài (15p)
+    </button>
+</div>
+<!-- Circular Progress Countdown Display -->
+<div class="flex flex-col items-center justify-center relative py-space-sm">
+<!-- Ambient back glow -->
+<div class="absolute w-64 h-64 rounded-full bg-primary/10 blur-2xl pointer-events-none"></div>
+<div class="relative w-72 h-72 flex items-center justify-center">
+<!-- SVG Progress Ring -->
+<svg class="w-full h-full -rotate-90 transform" viewbox="0 0 280 280">
+<!-- Track -->
+<circle class="text-surface-container-high" cx="140" cy="140" fill="transparent" r="120" stroke="currentColor" stroke-width="10"></circle>
+<!-- Animated Teal Progress Bar -->
+<circle class="transition-all duration-1000 ease-linear" cx="140" cy="140" fill="transparent" id="timer-progress" r="120" stroke="#005c55" stroke-dasharray="753.98" stroke-dashoffset="40" stroke-linecap="round" stroke-width="12"></circle>
+</svg>
+<!-- Center Elements -->
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+<!-- Session Badge -->
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-highest text-primary mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[16px] animate-bounce" style="font-variation-settings: 'FILL' 1;">ecg_heart</span>
+<span class="font-label-sm text-label-sm font-bold tracking-tight">Phiên học sâu #3</span>
+</div>
+<!-- Timer Digits -->
+<span class="font-display-lg text-display-lg font-bold tracking-tight text-on-surface select-none drop-shadow-sm" id="timer-display">24:45</span>
+<!-- AI Focus Status Phrase -->
+<p class="font-body-sm text-body-sm text-secondary flex items-center gap-1 mt-1" id="timer-status-text">
+<span class="material-symbols-outlined text-[15px] text-tertiary-container">psychology</span>
+          Đang rèn luyện tư duy Toán 12
+        </p>
+</div>
+</div>
+</div>
+<!-- Interactive Controls Hub -->
+<div class="flex items-center justify-center gap-space-md pt-space-xs">
+<!-- Reset Button -->
+<button class="w-13 h-13 min-w-[48px] min-h-[48px] rounded-full bg-surface-container-low text-secondary flex items-center justify-center hover:bg-surface-container-high active:scale-95 transition-all shadow-sm" onclick="resetTimer()" title="Đặt lại">
+<span class="material-symbols-outlined text-[24px]">replay</span>
+</button>
+<!-- Main Action Button (Toggle Play/Pause) -->
+<button class="h-16 px-10 rounded-full bg-primary text-on-primary flex items-center justify-center gap-space-sm shadow-md hover:bg-primary-container active:scale-95 transition-all min-w-[170px]" id="btn-toggle" onclick="toggleTimer()">
+<span class="material-symbols-outlined text-[28px]" id="btn-icon" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+<span class="font-label-lg text-label-lg tracking-wide uppercase font-bold" id="btn-label">Bắt đầu</span>
+</button>
+<!-- Skip Session Button -->
+<button class="w-13 h-13 min-w-[48px] min-h-[48px] rounded-full bg-surface-container-low text-secondary flex items-center justify-center hover:bg-surface-container-high active:scale-95 transition-all shadow-sm" onclick="skipSession()" title="Bỏ qua phiên">
+<span class="material-symbols-outlined text-[24px]">skip_next</span>
+</button>
+</div>
+<!-- Daily Summary & Gamified Target Card -->
+<div class="w-full bg-surface-container-lowest rounded-[20px] p-space-md shadow-sm space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface">Mục tiêu hôm nay</h2>
+<p class="font-body-sm text-body-sm text-secondary">Đã tích luỹ 100 phút tập trung</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">4</span>
+<span class="font-body-md text-body-md text-secondary">/8 phiên</span>
+</div>
+</div>
+<!-- Target Progress Bar -->
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-500" style="width: 50%"></div>
+</div>
+<div class="flex items-center justify-between pt-1 font-label-sm text-label-sm">
+<span class="text-secondary">Tiến độ ngày: 50%</span>
+<span class="text-tertiary-container font-semibold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">bolt</span> Thưởng +40 StudyCoins
+      </span>
+</div>
+</div>
+<!-- Background Ambience Selector -->
+<div class="w-full space-y-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-title-md text-title-md text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[20px] text-primary">headphones</span>
+        Âm thanh hỗ trợ sóng não
+      </h3>
+<span class="font-label-sm text-label-sm text-secondary">Spatial Audio</span>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+<!-- Ambience Pill 1: Alpha Waves (Active) -->
+<button class="sound-chip flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-md text-label-md font-semibold transition-all" onclick="selectSound(this, 'Sóng não Alpha')">
+<span class="material-symbols-outlined text-[18px]">graphic_eq</span>
+<span>Sóng Alpha (10Hz)</span>
+</button>
+<!-- Ambience Pill 2: Rain Sound -->
+<button class="sound-chip flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container text-secondary hover:text-on-surface font-label-md text-label-md font-medium transition-all" onclick="selectSound(this, 'Mưa rừng nhiệt đới')">
+<span class="material-symbols-outlined text-[18px]">rainy</span>
+<span>Mưa rào nhẹ</span>
+</button>
+<!-- Ambience Pill 3: Lo-fi Study -->
+<button class="sound-chip flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container text-secondary hover:text-on-surface font-label-md text-label-md font-medium transition-all" onclick="selectSound(this, 'Lofi Chill')">
+<span class="material-symbols-outlined text-[18px]">music_note</span>
+<span>Nhạc Lofi chill</span>
+</button>
+<!-- Ambience Pill 4: White Noise -->
+<button class="sound-chip flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container text-secondary hover:text-on-surface font-label-md text-label-md font-medium transition-all" onclick="selectSound(this, 'White Noise')">
+<span class="material-symbols-outlined text-[18px]">air</span>
+<span>Tiếng ồn trắng</span>
+</button>
+</div>
+</div>
+<!-- Scientific Pomodoro Study Tip (Bottom Insight Card) -->
+<div class="w-full bg-secondary-container rounded-[20px] p-space-md flex gap-space-sm items-start">
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex-shrink-0 flex items-center justify-center mt-0.5 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">lightbulb</span>
+</div>
+<div class="space-y-1">
+<h4 class="font-title-md text-title-md text-on-secondary-fixed font-semibold">Lời khuyên từ StudyMind AI</h4>
+<p class="font-body-sm text-body-sm text-on-secondary-container leading-relaxed">
+        Theo kỹ thuật Pomodoro, não bộ đạt đỉnh tập trung trong 25 phút đầu. Sau phiên này, hãy rời mắt khỏi màn hình điện thoại trong 5 phút để bảo toàn khả năng ghi nhớ dài hạn!
+      </p>
+</div>
+</div>
+</div>
+<script>
+  let timerInterval = null;
+  let isRunning = false;
+  let totalSeconds = 25 * 60;
+  let remainingSeconds = 24 * 60 + 45;
+  const circumference = 2 * Math.PI * 120; // 753.98
+
+  function updateTimerUI() {
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    const display = document.getElementById('timer-display');
+    if (display) {
+      display.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    const circle = document.getElementById('timer-progress');
+    if (circle) {
+      const progressRatio = remainingSeconds / totalSeconds;
+      const offset = circumference * (1 - progressRatio);
+      circle.style.strokeDashoffset = offset;
+    }
+  }
+
+  function toggleTimer() {
+    const btnLabel = document.getElementById('btn-label');
+    const btnIcon = document.getElementById('btn-icon');
+    if (!isRunning) {
+      isRunning = true;
+      if (btnLabel) btnLabel.textContent = 'Tạm dừng';
+      if (btnIcon) btnIcon.textContent = 'pause';
+      timerInterval = setInterval(() => {
+        if (remainingSeconds > 0) {
+          remainingSeconds--;
+          updateTimerUI();
+        } else {
+          clearInterval(timerInterval);
+          isRunning = false;
+          if (btnLabel) btnLabel.textContent = 'Bắt đầu';
+          if (btnIcon) btnIcon.textContent = 'play_arrow';
+          alert('Chúc mừng bạn đã hoàn thành phiên Pomodoro!');
+        }
+      }, 1000);
+    } else {
+      isRunning = false;
+      clearInterval(timerInterval);
+      if (btnLabel) btnLabel.textContent = 'Tiếp tục';
+      if (btnIcon) btnIcon.textContent = 'play_arrow';
+    }
+  }
+
+  function resetTimer() {
+    isRunning = false;
+    clearInterval(timerInterval);
+    remainingSeconds = totalSeconds;
+    const btnLabel = document.getElementById('btn-label');
+    const btnIcon = document.getElementById('btn-icon');
+    if (btnLabel) btnLabel.textContent = 'Bắt đầu';
+    if (btnIcon) btnIcon.textContent = 'play_arrow';
+    updateTimerUI();
+  }
+
+  function skipSession() {
+    resetTimer();
+  }
+
+  function switchMode(mode) {
+    const tabFocus = document.getElementById('tab-focus');
+    const tabShort = document.getElementById('tab-short');
+    const tabLong = document.getElementById('tab-long');
+
+    [tabFocus, tabShort, tabLong].forEach(tab => {
+      if (tab) {
+        tab.className = 'flex-1 py-2 rounded-full font-label-md text-label-md transition-all text-secondary hover:text-on-surface font-medium text-center truncate';
+      }
+    });
+
+    if (mode === 'focus') {
+      if (tabFocus) tabFocus.className = 'flex-1 py-2 rounded-full font-label-md text-label-md transition-all text-on-primary bg-primary shadow-sm font-semibold text-center truncate';
+      totalSeconds = 25 * 60;
+    } else if (mode === 'short') {
+      if (tabShort) tabShort.className = 'flex-1 py-2 rounded-full font-label-md text-label-md transition-all text-on-primary bg-primary shadow-sm font-semibold text-center truncate';
+      totalSeconds = 5 * 60;
+    } else if (mode === 'long') {
+      if (tabLong) tabLong.className = 'flex-1 py-2 rounded-full font-label-md text-label-md transition-all text-on-primary bg-primary shadow-sm font-semibold text-center truncate';
+      totalSeconds = 15 * 60;
+    }
+    resetTimer();
+  }
+
+  function selectSound(btn, name) {
+    document.querySelectorAll('.sound-chip').forEach(el => {
+      el.className = 'sound-chip flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container text-secondary hover:text-on-surface font-label-md text-label-md font-medium transition-all';
+    });
+    btn.className = 'sound-chip flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-md text-label-md font-semibold transition-all';
+  }
+
+  updateTimerUI();
+</script></main></body></html>

@@ -59,6 +59,7 @@ import java.util.List;
  */
 public class MainActivity extends AppCompatActivity implements AppState.Host, AppState.Listener, AuthRepository.UserListener {
 
+    /** Drawer groups (Stitch "Danh mục Drawer"): HỌC TẬP CÁ NHÂN, then CÔNG CỤ */
     private static final Object[][] NAV = {
             {Screen.DASHBOARD, "Tổng quan", R.drawable.ic_dashboard},
             {Screen.IMPORT, "Nhập tài liệu", R.drawable.ic_upload},
@@ -69,10 +70,30 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
             {Screen.MINDMAP, "Sơ đồ tư duy", R.drawable.ic_mindmap},
             {Screen.FLASHCARD, "Thẻ ghi nhớ", R.drawable.ic_layers},
             {Screen.QUIZ, "Trắc nghiệm", R.drawable.ic_quiz},
+            {null, "CÔNG CỤ", 0},
             {Screen.FUSION, "Hợp nhất kiến thức", R.drawable.ic_compare},
-            {Screen.PRO, "Tài khoản Pro", R.drawable.ic_crown},
             {Screen.REWARDS, "Nhiệm vụ & StudyCoin", R.drawable.ic_wallet},
+            {Screen.PRO, "Tài khoản Pro", R.drawable.ic_crown},
     };
+
+    /** Top app bar title of each screen */
+    private static String titleOf(Screen s) {
+        switch (s) {
+            case IMPORT: return "Nhập tài liệu";
+            case HISTORY: return "Lịch sử bài học";
+            case WORKSPACE: return "Không gian tài liệu";
+            case PREREQUISITE: return "Kiến thức tiên quyết";
+            case GAPS: return "Bản đồ lỗ hổng";
+            case MINDMAP: return "Sơ đồ tư duy";
+            case FLASHCARD: return "Thẻ ghi nhớ";
+            case QUIZ: return "Trắc nghiệm";
+            case FUSION: return "Hợp nhất kiến thức";
+            case PRO: return "Tài khoản Pro";
+            case REWARDS: return "Nhiệm vụ & StudyCoin";
+            case ADMIN: return "Quản trị";
+            default: return "Tổng quan";
+        }
+    }
 
     public interface OnImage { void picked(Uri uri); }
 
@@ -118,7 +139,12 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
         findViewById(R.id.themeBtn).setOnClickListener(v -> toggleTheme());
         findViewById(R.id.bellBtn).setOnClickListener(v -> toast("🔔 Nhắc học mỗi ngày lúc 20:00 đang bật."));
         findViewById(R.id.headerAvatar).setOnClickListener(this::showAccountMenu);
-        findViewById(R.id.profile).setOnClickListener(v -> { drawer.closeDrawer(GravityCompat.START); ProfileDialog.show(this); });
+        findViewById(R.id.profile).setOnClickListener(this::showAccountMenu);
+        findViewById(R.id.navHome).setOnClickListener(v -> navigate(Screen.DASHBOARD));
+        findViewById(R.id.navHistory).setOnClickListener(v -> navigate(Screen.HISTORY));
+        findViewById(R.id.navImport).setOnClickListener(v -> navigate(Screen.IMPORT));
+        findViewById(R.id.navWorkspace).setOnClickListener(v -> navigate(Screen.WORKSPACE));
+        findViewById(R.id.navMore).setOnClickListener(v -> drawer.openDrawer(GravityCompat.START));
         findViewById(R.id.logoutBtn).setOnClickListener(v -> state.logout(this::showAuth));
         MaterialSwitch sw = findViewById(R.id.themeSwitch);
         sw.setChecked(state.isDarkMode());
@@ -133,7 +159,12 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
         });
 
         state.setHost(this);
-        if (state.auth().isSignedIn()) showSignedIn(true);
+        boolean remember = getSharedPreferences("studymind_prefs", MODE_PRIVATE).getBoolean("remember_login", true);
+        if (savedInstanceState == null && !remember && state.auth().isSignedIn()) {
+            // "Ghi nhớ đăng nhập" was unticked: a fresh app launch starts signed out
+            getSharedPreferences("studymind_prefs", MODE_PRIVATE).edit().putBoolean("remember_login", true).apply();
+            state.logout(this::showAuth);
+        } else if (state.auth().isSignedIn()) showSignedIn(true);
         else showAuth();
         handleDeepLink(getIntent());
     }
@@ -186,7 +217,8 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
     private void showAuth() {
         signedInShell = false;
         header.setVisibility(View.GONE);
-        statusBar(0xFF64748B, false); // the dimmed cloud background of the sign-in page
+        findViewById(R.id.bottomNav).setVisibility(View.GONE);
+        statusBar(Ui.color(this, R.color.bg), !state.isDarkMode()); // continues the sign-in page background
         drawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
         current = null;
         getSupportFragmentManager().beginTransaction().replace(R.id.content, new AuthFragment()).commitAllowingStateLoss();
@@ -195,7 +227,8 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
     private void showSignedIn(boolean freshStart) {
         signedInShell = true;
         header.setVisibility(View.VISIBLE);
-        statusBar(Ui.color(this, R.color.surface), !state.isDarkMode()); // continues the white header
+        findViewById(R.id.bottomNav).setVisibility(View.VISIBLE);
+        statusBar(Ui.color(this, R.color.bg), !state.isDarkMode()); // continues the top app bar
         drawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         state.loadAccount();
         announceBadges(Gamification.updateActivityStreak());
@@ -225,28 +258,72 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
         AppUser u = state.auth().getUser();
         ((TextView) findViewById(R.id.streakText)).setText(String.valueOf(Gamification.load().streak));
         ImageLoader.load(findViewById(R.id.headerAvatar), u != null ? u.avatarUrl : null);
-        ImageLoader.load(findViewById(R.id.avatar), u != null ? u.avatarUrl : null);
+        ImageView avatar = findViewById(R.id.avatar);
+        boolean hasPhoto = u != null && u.avatarUrl != null && !u.avatarUrl.isEmpty();
+        // A photo fills the circle; without one the white person glyph sits on the teal disc
+        avatar.setImageTintList(hasPhoto ? null : android.content.res.ColorStateList.valueOf(0xFFFFFFFF));
+        int ap = hasPhoto ? 0 : Ui.dp(this, 10);
+        avatar.setPadding(ap, ap, ap, ap);
+        ImageLoader.load(avatar, hasPhoto ? u.avatarUrl : null);
         ((TextView) findViewById(R.id.name)).setText(u != null ? u.fullName : "");
-        ((TextView) findViewById(R.id.tier)).setText("✦ " + state.tierLabel());
+        String tier = state.tierLabel();
+        ((TextView) findViewById(R.id.tier)).setText(tier.startsWith("Gói") ? tier : "Gói " + tier);
 
         boolean dark = state.isDarkMode();
         ((ImageView) findViewById(R.id.themeIcon)).setImageResource(dark ? R.drawable.ic_dark : R.drawable.ic_sun);
-        ((ImageView) findViewById(R.id.themeIcon)).setColorFilter(dark ? 0xFF818CF8 : 0xFFF59E0B);
+        ((ImageView) findViewById(R.id.themeIcon)).setColorFilter(Ui.color(this, R.color.text_secondary));
         ((TextView) findViewById(R.id.themeLabel)).setText(dark ? "Giao diện Tối" : "Giao diện Sáng");
         ImageView themeBtn = findViewById(R.id.themeBtn);
-        themeBtn.setImageResource(dark ? R.drawable.ic_sun : R.drawable.ic_dark);
-        themeBtn.setColorFilter(dark ? 0xFFFBBF24 : Ui.color(this, R.color.text_secondary));
+        themeBtn.setImageResource(dark ? R.drawable.ic_dark : R.drawable.ic_sun);
+        themeBtn.setColorFilter(Ui.color(this, R.color.text_secondary));
+        bindBottomNav();
 
         buildNav();
+    }
+
+    /** Bottom navigation: teal icon + bold label on the current destination */
+    private void bindBottomNav() {
+        Object[][] items = {
+                {Screen.DASHBOARD, R.id.navHomeIcon, R.id.navHomeLabel},
+                {Screen.HISTORY, R.id.navHistoryIcon, R.id.navHistoryLabel},
+                {Screen.WORKSPACE, R.id.navWorkspaceIcon, R.id.navWorkspaceLabel},
+        };
+        for (Object[] it : items) {
+            boolean active = it[0] == current;
+            int col = Ui.color(this, active ? R.color.brand : R.color.text_muted);
+            ((ImageView) findViewById((int) it[1])).setColorFilter(col);
+            TextView l = findViewById((int) it[2]);
+            l.setTextColor(col);
+            l.setTypeface(Typeface.DEFAULT, active ? Typeface.BOLD : Typeface.NORMAL);
+        }
+        if (current != null) ((TextView) findViewById(R.id.headerTitle)).setText(titleOf(current));
+    }
+
+    private TextView navSection(String label) {
+        TextView t = Ui.text(this, label, 12, R.color.text_muted, true);
+        t.setLetterSpacing(0.1f);
+        t.setPadding(Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 8));
+        return t;
     }
 
     private void buildNav() {
         navList.removeAllViews();
         boolean pro = state.isPro();
+        navList.addView(navSection("HỌC TẬP CÁ NHÂN"));
         for (Object[] item : NAV) {
             Screen s = (Screen) item[0];
+            if (s == null) {
+                View rule = new View(this);
+                rule.setBackgroundColor(Ui.color(this, R.color.border));
+                LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 1));
+                rl.setMargins(Ui.dp(this, 18), Ui.dp(this, 10), Ui.dp(this, 18), 0);
+                navList.addView(rule, rl);
+                navList.addView(navSection((String) item[1]));
+                continue;
+            }
             navList.addView(navItem(s, (String) item[1], (int) item[2], s == Screen.FUSION && !pro));
         }
+        navList.addView(navItem(null, "Bộ đếm Pomodoro", R.drawable.ic_timer, false));
         if (state.isAdmin()) navList.addView(navItem(Screen.ADMIN, "Quản trị", R.drawable.ic_shield, false));
 
         // Upgrade card under the menu (Sidebar.tsx) for signed-in free users
@@ -271,19 +348,23 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
 
     /** Web nav item: rounded-lg; active = bg #CCFBF1 + teal semibold, else #4B5563 with slate-400 icon */
     private View navItem(Screen s, String label, int icon, boolean proBadge) {
-        boolean active = s == current;
+        boolean active = s != null && s == current;
         LinearLayout row = Ui.horizontal(this);
-        row.setPadding(Ui.dp(this, 14), Ui.dp(this, 10), Ui.dp(this, 14), Ui.dp(this, 10));
-        if (active) row.setBackground(Ui.rounded(this, R.color.brand_soft, 8, 0));
-        row.addView(Ui.icon(this, icon, 16, active ? Ui.color(this, R.color.brand) : Ui.color(this, R.color.slate_400)));
-        TextView t = Ui.text(this, label, 14, active ? R.color.brand : R.color.text_secondary, active);
+        row.setMinimumHeight(Ui.dp(this, 52));
+        row.setPadding(Ui.dp(this, 18), Ui.dp(this, 12), Ui.dp(this, 18), Ui.dp(this, 12));
+        if (active) row.setBackgroundResource(R.drawable.bg_nav_active);
+        row.addView(Ui.icon(this, icon, 22, Ui.color(this, active ? R.color.brand : R.color.text_secondary)));
+        TextView t = Ui.text(this, label, 15, active ? R.color.brand : R.color.text_secondary, false);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        lp.setMarginStart(Ui.dp(this, 12));
+        lp.setMarginStart(Ui.dp(this, 18));
         row.addView(t, lp);
         if (proBadge) row.addView(Ui.pill(this, "PRO", R.color.amber_soft, R.color.amber_700));
-        row.setOnClickListener(v -> { drawer.closeDrawer(GravityCompat.START); navigate(s); });
+        row.setOnClickListener(v -> {
+            drawer.closeDrawer(GravityCompat.START);
+            if (s == null) PomodoroDialog.show(this); else navigate(s);
+        });
         LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        rlp.bottomMargin = Ui.dp(this, 4);
+        rlp.bottomMargin = Ui.dp(this, 2);
         row.setLayoutParams(rlp);
         return row;
     }
@@ -309,7 +390,7 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
         box.addView(menuRow(R.drawable.ic_person, "Chỉnh sửa hồ sơ", R.color.brand, R.color.text_secondary, () -> { popup.dismiss(); ProfileDialog.show(this); }));
         box.addView(menuRow(R.drawable.ic_crown, "Tài khoản Pro", R.color.amber, R.color.text_secondary, () -> { popup.dismiss(); navigate(Screen.PRO); }));
         box.addView(menuRow(R.drawable.ic_logout, "Đăng xuất tài khoản", R.color.rose, R.color.rose, () -> { popup.dismiss(); state.logout(this::showAuth); }));
-        popup.showAsDropDown(anchor, -Ui.dp(this, 186), Ui.dp(this, 8));
+        popup.showAsDropDown(anchor, Ui.dp(this, 12), Ui.dp(this, 8));
     }
 
     private View menuRow(int icon, String label, int iconColor, int textColor, Runnable onClick) {
@@ -355,6 +436,7 @@ public class MainActivity extends AppCompatActivity implements AppState.Host, Ap
         if (!signedInShell) return;
         current = screen;
         buildNav();
+        bindBottomNav();
         getSupportFragmentManager().beginTransaction()
                 .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
                 .replace(R.id.content, fragmentFor(screen))

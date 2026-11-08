@@ -79,7 +79,7 @@ public final class Ui {
     /** White rounded card with a 1dp border; children go into the returned card's inner column */
     public static MaterialCardView card(Context c) {
         MaterialCardView card = new MaterialCardView(c);
-        card.setRadius(dp(c, 16));
+        card.setRadius(dp(c, 20));
         card.setCardElevation(0);
         card.setStrokeWidth(dp(c, 1));
         card.setStrokeColor(color(c, R.color.border));
@@ -105,8 +105,12 @@ public final class Ui {
         MaterialButton b = new MaterialButton(c);
         b.setText(label);
         b.setAllCaps(false);
-        b.setCornerRadius(dp(c, 12));
-        b.setBackgroundTintList(ColorStateList.valueOf(color(c, R.color.brand)));
+        b.setCornerRadius(dp(c, 16));
+        b.setMinHeight(dp(c, 48));
+        b.setInsetTop(0);
+        b.setInsetBottom(0);
+        b.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        b.setBackgroundTintList(ColorStateList.valueOf(0xFF0F766E));
         b.setTextColor(color(c, android.R.color.white));
         b.setOnClickListener(onClick);
         return b;
@@ -116,9 +120,12 @@ public final class Ui {
         MaterialButton b = new MaterialButton(c, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
         b.setText(label);
         b.setAllCaps(false);
-        b.setCornerRadius(dp(c, 12));
+        b.setCornerRadius(dp(c, 16));
+        b.setMinHeight(dp(c, 48));
+        b.setInsetTop(0);
+        b.setInsetBottom(0);
         b.setTextColor(color(c, R.color.brand));
-        b.setStrokeColor(ColorStateList.valueOf(color(c, R.color.brand)));
+        b.setStrokeColor(ColorStateList.valueOf(color(c, R.color.border)));
         b.setOnClickListener(onClick);
         return b;
     }
@@ -143,14 +150,15 @@ public final class Ui {
 
     /** Selectable pill (segmented control item) */
     public static TextView choice(Context c, CharSequence s, boolean selected, View.OnClickListener onClick) {
-        TextView t = text(c, s, 12, selected ? R.color.brand : R.color.text_muted, true);
+        TextView t = text(c, s, 13, selected ? R.color.brand : R.color.text_muted, true);
         GradientDrawable d = new GradientDrawable();
-        d.setCornerRadius(dp(c, 10));
-        d.setColor(color(c, selected ? R.color.brand_soft : R.color.surface_alt));
+        d.setCornerRadius(dp(c, 999));
+        d.setColor(color(c, selected ? R.color.brand_soft : R.color.slate_100));
         if (selected) d.setStroke(dp(c, 1), color(c, R.color.brand));
         t.setBackground(d);
         t.setGravity(Gravity.CENTER);
-        t.setPadding(dp(c, 10), dp(c, 8), dp(c, 10), dp(c, 8));
+        t.setMinHeight(dp(c, 36));
+        t.setPadding(dp(c, 14), dp(c, 8), dp(c, 14), dp(c, 8));
         t.setOnClickListener(onClick);
         return t;
     }
@@ -423,11 +431,10 @@ public final class Ui {
     public static LinearLayout section(ViewGroup parent, String title, String action, View.OnClickListener onAction, int topMarginDp) {
         Context c = parent.getContext();
         MaterialCardView card = card(c);
-        card.setRadius(dp(c, 12));
         LinearLayout in = inner(card);
         in.setPadding(dp(c, 20), dp(c, 18), dp(c, 20), dp(c, 20));
         LinearLayout head = horizontal(c);
-        TextView t = text(c, title, 16, R.color.text, true);
+        TextView t = text(c, title, 18, R.color.text, true);
         addWeighted(head, t, 0);
         if (action != null) {
             TextView a = text(c, action, 12, R.color.brand, true);

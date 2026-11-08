@@ -54,116 +54,245 @@ public class FlashcardFragment extends BaseFragment {
         List<Flashcard> cards = a.pack.flashcards();
         if (index >= cards.size()) index = 0;
         Flashcard card = cards.isEmpty() ? null : cards.get(index);
+        com.studymind.nativeapp.data.Gamification.Data g = com.studymind.nativeapp.data.Gamification.load();
 
-        // ---- Title header ----
+        // ---- Chips + title ----
+        LinearLayout chips = Ui.horizontal(c);
+        LinearLayout doc = Ui.iconText(c, R.drawable.ic_sparkles, a.document.title, 13, Ui.color(c, R.color.m3_on_secondary_container), false);
+        ((TextView) doc.getChildAt(1)).setMaxLines(1);
+        ((TextView) doc.getChildAt(1)).setEllipsize(android.text.TextUtils.TruncateAt.END);
+        doc.setBackground(Ui.rounded(c, R.color.m3_secondary_container, 999, 0));
+        doc.setPadding(Ui.dp(c, 12), Ui.dp(c, 5), Ui.dp(c, 12), Ui.dp(c, 5));
+        Ui.addWeighted(chips, doc, 0);
+        LinearLayout streak = Ui.iconText(c, R.drawable.ic_flame, "Chuỗi " + g.streak + " ngày", 13, Ui.color(c, R.color.m3_tertiary), false);
+        streak.setBackground(Ui.rounded(c, R.color.m3_tertiary_fixed, 999, 0));
+        streak.setPadding(Ui.dp(c, 12), Ui.dp(c, 5), Ui.dp(c, 12), Ui.dp(c, 5));
+        Ui.addWrap(chips, streak, 10);
+        root.addView(chips);
         LinearLayout title = Ui.horizontal(c);
-        title.addView(Ui.icon(c, R.drawable.ic_layers, 20, Ui.color(c, R.color.brand)));
-        Ui.addWrap(title, Ui.text(c, "Học tập trung cùng Flashcard", 20, R.color.text, true), 8);
-        root.addView(title);
-        Ui.add(root, Ui.text(c, "Ôn tập thẻ từ vựng và câu hỏi cấu trúc siêu vi tế bào hiệu quả", 13, R.color.text_muted, false), 4);
+        Ui.addWeighted(title, Ui.text(c, "Học tập trung cùng Flashcard", 22, R.color.text, true), 0);
+        LinearLayout algo = Ui.horizontal(c);
+        View dot = new View(c);
+        dot.setBackground(Ui.rounded(c, R.color.brand_dark, 999, 0));
+        algo.addView(dot, new LinearLayout.LayoutParams(Ui.dp(c, 7), Ui.dp(c, 7)));
+        Ui.addWrap(algo, Ui.text(c, "Thuật toán SM-2", 13, R.color.text_secondary, false), 6);
+        Ui.addWrap(title, algo, 8);
+        Ui.add(root, title, 12);
 
+        // ---- Actions ----
         LinearLayout tools = Ui.horizontal(c);
-        LinearLayout anki = Ui.pillButton(c, R.drawable.ic_download, "Xuất Anki / CSV", R.color.surface, R.color.text_secondary, R.color.border, v -> exportAnki(a, cards));
-        ((ImageView) anki.getChildAt(0)).setColorFilter(Ui.color(c, R.color.brand));
-        anki.setBackground(Ui.rounded(c, R.color.surface, 12, R.color.border));
-        tools.addView(anki);
-        LinearLayout gen = Ui.pillButton(c, 0, generating ? "Đang tạo 10-12 thẻ..." : "Tạo 10-12 Thẻ ghi nhớ", R.color.brand, android.R.color.white, 0, v -> regenerate());
-        gen.setBackground(Ui.rounded(c, R.color.brand, 12, 0));
-        gen.setAlpha(generating ? 0.5f : 1f);
-        Ui.addWrap(tools, gen, 8);
-        LinearLayout add = Ui.pillButton(c, 0, "Tạo thẻ mới", R.color.surface, R.color.text_secondary, R.color.border, v -> addDialog());
-        add.setBackground(Ui.rounded(c, R.color.surface, 12, R.color.border));
-        Ui.addWrap(tools, add, 8);
-        HorizontalScrollView ts = new HorizontalScrollView(c);
-        ts.setHorizontalScrollBarEnabled(false);
-        ts.addView(tools);
-        Ui.add(root, ts, 16);
+        LinearLayout gen = Ui.iconText(c, R.drawable.ic_sparkles, generating ? "Đang tạo 10–12 thẻ..." : "+ Tạo 10–12 thẻ bằng AI", 15, 0xFFFFFFFF, true);
+        gen.setGravity(Gravity.CENTER);
+        gen.setBackground(Ui.gradient(c, 16, 0xFF005C55, 0xFF0F766E));
+        gen.setMinimumHeight(Ui.dp(c, 54));
+        gen.setAlpha(generating ? 0.6f : 1f);
+        gen.setOnClickListener(v -> regenerate());
+        tools.addView(gen, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.6f));
+        LinearLayout add = Ui.iconText(c, R.drawable.ic_plus_circle, "Tạo thẻ mới", 15, Ui.color(c, R.color.text), false);
+        add.setGravity(Gravity.CENTER);
+        add.setBackground(Ui.rounded(c, R.color.m3_secondary_container, 16, 0));
+        add.setMinimumHeight(Ui.dp(c, 54));
+        add.setOnClickListener(v -> addDialog());
+        LinearLayout.LayoutParams al = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        al.setMarginStart(Ui.dp(c, 10));
+        tools.addView(add, al);
+        Ui.add(root, tools, 16);
 
         // ---- Card viewer ----
         MaterialCardView viewer = Ui.card(c);
+        viewer.setRadius(Ui.dp(c, 28));
+        viewer.setCardElevation(Ui.dp(c, 4));
+        viewer.setStrokeWidth(0);
         LinearLayout vi = Ui.inner(viewer);
-        vi.setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20));
+        vi.setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 18));
         LinearLayout head = Ui.horizontal(c);
-        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder("Phiên học: ");
-        int st = sb.length();
-        sb.append(a.document.title);
-        sb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), st, sb.length(), 0);
-        sb.setSpan(new android.text.style.ForegroundColorSpan(Ui.color(c, R.color.text)), st, sb.length(), 0);
-        TextView session = Ui.text(c, sb, 12, R.color.text_secondary, false);
-        session.setMaxLines(2);
-        Ui.addWeighted(head, session, 0);
-        TextView counter = Ui.text(c, "Thẻ " + (index + 1) + " / " + Math.max(1, cards.size()), 12, R.color.brand, true);
-        counter.setBackground(Ui.rounded(c, R.color.teal_50, 999, R.color.brand_soft));
-        counter.setPadding(Ui.dp(c, 12), Ui.dp(c, 4), Ui.dp(c, 12), Ui.dp(c, 4));
-        Ui.addWrap(head, counter, 8);
+        head.addView(Ui.pill(c, "Thẻ " + (cards.isEmpty() ? 0 : index + 1) + " / " + cards.size(), R.color.m3_primary_fixed, R.color.brand_dark));
+        int session = g.cardsReviewed / Math.max(1, cards.size()) + 1;
+        TextView sess = Ui.text(c, "Phiên ôn tập #" + session, 13, R.color.text_secondary, false);
+        LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        sl.setMarginStart(Ui.dp(c, 10));
+        head.addView(sess, sl);
+        ImageView exp = Ui.icon(c, R.drawable.ic_download, 20, Ui.color(c, R.color.text_secondary));
+        exp.setOnClickListener(v -> exportAnki(a, cards));
+        head.addView(exp);
         if (card != null) {
-            ImageView del = Ui.icon(c, R.drawable.ic_trash, 18, Ui.color(c, R.color.slate_400));
+            ImageView speak = Ui.icon(c, R.drawable.ic_volume, 20, Ui.color(c, speaking ? R.color.brand : R.color.text_secondary));
+            speak.setOnClickListener(v -> speak(flipped ? card.back : card.front));
+            Ui.addWrap(head, speak, 14);
+            ImageView del = Ui.icon(c, R.drawable.ic_trash, 20, Ui.color(c, R.color.m3_error));
             del.setOnClickListener(v -> new MaterialAlertDialogBuilder(c).setMessage("Bạn có chắc muốn xóa thẻ ghi nhớ này?")
                     .setNegativeButton("Hủy", null).setPositiveButton("Xóa", (d, w) -> { state.deleteFlashcard(card.id); index = 0; }).show());
-            Ui.addWrap(head, del, 10);
+            Ui.addWrap(head, del, 14);
         }
         vi.addView(head);
-        vi.addView(rule(c, 16));
 
         LinearLayout face = Ui.vertical(c);
-        face.setGravity(Gravity.CENTER);
-        face.setMinimumHeight(Ui.dp(c, 260));
-        android.graphics.drawable.GradientDrawable fb = Ui.rounded(c, R.color.slate_50, 16, R.color.slate_200);
-        fb.setStroke(Ui.dp(c, 2), Ui.color(c, R.color.slate_200));
-        face.setBackground(fb);
-        face.setPadding(Ui.dp(c, 24), Ui.dp(c, 24), Ui.dp(c, 24), Ui.dp(c, 24));
+        face.setMinimumHeight(Ui.dp(c, 220));
         face.setOnClickListener(v -> { flipped = !flipped; rerender(); });
-        LinearLayout badge = Ui.horizontal(c);
-        badge.setGravity(Gravity.CENTER);
-        TextView side = Ui.text(c, flipped ? "ĐÁP ÁN (MẶT SAU)" : "CÂU HỎI (MẶT TRƯỚC)", 11, flipped ? R.color.emerald_700 : R.color.brand, true);
-        side.setBackground(Ui.rounded(c, flipped ? R.color.emerald_soft : R.color.brand_soft, 999, 0));
-        side.setPadding(Ui.dp(c, 12), Ui.dp(c, 4), Ui.dp(c, 12), Ui.dp(c, 4));
-        badge.addView(side);
+        LinearLayout side = Ui.horizontal(c);
+        View sd = new View(c);
+        sd.setBackground(Ui.rounded(c, flipped ? R.color.brand_dark : R.color.m3_tertiary, 999, 0));
+        side.addView(sd, new LinearLayout.LayoutParams(Ui.dp(c, 8), Ui.dp(c, 8)));
+        TextView sideT = Ui.text(c, flipped ? "MẶT SAU: ĐÁP ÁN CHÍNH XÁC" : "MẶT TRƯỚC: CÂU HỎI", 13, flipped ? R.color.brand_dark : R.color.m3_tertiary, true);
+        sideT.setLetterSpacing(0.04f);
+        LinearLayout.LayoutParams stl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        stl.setMarginStart(Ui.dp(c, 8));
+        side.addView(sideT, stl);
         if (card != null) {
-            ImageView speak = Ui.icon(c, R.drawable.ic_volume, 16, Ui.color(c, speaking ? R.color.emerald_700 : R.color.slate_400));
-            speak.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
-            speak.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 28), Ui.dp(c, 28)));
-            speak.setBackground(speaking ? Ui.rounded(c, R.color.emerald_soft, 999, 0) : null);
-            speak.setOnClickListener(v -> speak(flipped ? card.back : card.front));
-            Ui.addWrap(badge, speak, 6);
+            String diff = "hard".equals(card.difficulty) ? "Khó" : "easy".equals(card.difficulty) ? "Dễ" : "Vừa";
+            side.addView(Ui.pill(c, "Độ khó: " + diff, R.color.m3_secondary_container, R.color.m3_on_secondary_container));
         }
-        face.addView(badge);
-        TextView body = Ui.text(c, card != null ? (flipped ? card.back : card.front) : "Chưa có thẻ nào", flipped ? 15 : 18, R.color.text, true);
-        body.setGravity(Gravity.CENTER);
-        body.setLineSpacing(0, 1.35f);
-        Ui.add(face, body, 16);
-        LinearLayout hint = Ui.iconText(c, R.drawable.ic_reset, flipped ? "Nhấp để lật về mặt trước" : "Nhấp vào thẻ để lật xem đáp án", 12, Ui.color(c, R.color.slate_400), false);
-        ((ImageView) hint.getChildAt(0)).setColorFilter(Ui.color(c, R.color.brand));
-        Ui.addInline(face, hint, 18);
-        Ui.add(vi, face, 16);
+        Ui.add(face, side, 18);
 
-        vi.addView(rule(c, 18));
-        rateButton(vi, "🔴 Chưa thuộc (Khó)", "Ôn lại sau 1 phút", "hard", R.color.rose_50, R.color.rose_soft, R.color.rose, card);
-        rateButton(vi, "🟡 Tương đối (Trung bình)", "Ôn lại sau 10 phút", "medium", R.color.amber_50, R.color.amber_soft, R.color.amber_700, card);
-        rateButton(vi, "🟢 Đã thuộc (Dễ)", "Ôn lại sau 4 ngày", "easy", R.color.emerald_50, R.color.emerald_soft, R.color.emerald_700, card);
-        Ui.add(root, viewer, 16);
+        if (card == null) {
+            TextView none = Ui.text(c, "Chưa có thẻ nào. Bấm \"Tạo 10–12 thẻ bằng AI\" để AI soạn thẻ.", 16, R.color.text_muted, false);
+            none.setGravity(Gravity.CENTER);
+            Ui.add(face, none, 40);
+        } else if (!flipped) {
+            TextView q = Ui.text(c, card.front, 20, R.color.text, true);
+            q.setLineSpacing(0, 1.35f);
+            q.setGravity(Gravity.CENTER);
+            q.setPadding(Ui.dp(c, 8), Ui.dp(c, 28), Ui.dp(c, 8), Ui.dp(c, 28));
+            Ui.add(face, q, 10);
+        } else {
+            String[] parts = card.back.split("\\n+|(?<=[.;])\\s+(?=\\p{Lu})");
+            LinearLayout box = Ui.vertical(c);
+            box.setBackground(Ui.rounded(c, R.color.m3_surface_low, 18, 0));
+            box.setPadding(Ui.dp(c, 16), Ui.dp(c, 14), Ui.dp(c, 16), Ui.dp(c, 14));
+            if (parts.length <= 1) {
+                TextView t = Ui.text(c, card.back, 16, R.color.text, false);
+                t.setLineSpacing(0, 1.35f);
+                box.addView(t);
+            } else {
+                for (int i = 0; i < parts.length; i++) {
+                    if (parts[i].trim().isEmpty()) continue;
+                    LinearLayout li = Ui.horizontal(c);
+                    li.setGravity(Gravity.TOP);
+                    TextView n = Ui.text(c, String.valueOf(i + 1), 12, android.R.color.white, true);
+                    n.setTextColor(0xFFFFFFFF);
+                    n.setGravity(Gravity.CENTER);
+                    n.setBackground(Ui.gradient(c, 999, 0xFF005C55, 0xFF005C55));
+                    LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(Ui.dp(c, 24), Ui.dp(c, 24));
+                    nl.topMargin = Ui.dp(c, 1);
+                    li.addView(n, nl);
+                    TextView t = Ui.text(c, parts[i].trim(), 16, R.color.text, false);
+                    t.setLineSpacing(0, 1.3f);
+                    LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                    tl.setMarginStart(Ui.dp(c, 12));
+                    li.addView(t, tl);
+                    Ui.add(box, li, box.getChildCount() > 0 ? 12 : 0);
+                }
+            }
+            Ui.add(face, box, 14);
+            if (card.difficulty != null) {
+                LinearLayout tip = Ui.iconText(c, R.drawable.ic_lightbulb, "Mẹo: đọc to đáp án và tự giải thích lại bằng lời của bạn để nhớ lâu hơn.", 13, Ui.color(c, R.color.brand_dark), true);
+                ((TextView) tip.getChildAt(1)).setMaxLines(3);
+                tip.setBackground(Ui.rounded(c, R.color.teal_50, 18, 0));
+                tip.setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12));
+                Ui.add(face, tip, 12);
+            }
+        }
+        LinearLayout hint = Ui.iconText(c, R.drawable.ic_flip, flipped ? "Chạm vào thẻ để lật xem câu hỏi" : "Chạm vào thẻ để lật xem đáp án", 13, Ui.color(c, R.color.text_secondary), false);
+        hint.setGravity(Gravity.CENTER);
+        Ui.add(face, hint, 18);
+        Ui.add(vi, face, 4);
+        Ui.add(root, viewer, 20);
+
+        // ---- Rating ----
+        LinearLayout rh = Ui.horizontal(c);
+        TextView rl = Ui.text(c, "ĐÁNH GIÁ MỨC ĐỘ NHỚ", 13, R.color.text_secondary, true);
+        rl.setLetterSpacing(0.06f);
+        Ui.addWeighted(rh, rl, 0);
+        rh.addView(Ui.text(c, "Khoảng cách lặp kế tiếp", 13, R.color.text_secondary, false));
+        Ui.add(root, rh, 20);
+        LinearLayout rates = Ui.horizontal(c);
+        rateButton(rates, R.drawable.ic_close, "Chưa thuộc", "Sau 1 phút", "hard", R.color.rose_soft, 0xFFBA1A1A, card);
+        rateButton(rates, R.drawable.ic_refresh, "Tương đối", "Sau 10 phút", "medium", R.color.orange_100, 0xFF734700, card);
+        rateButton(rates, R.drawable.ic_check_circle, "Đã thuộc", "Sau 4 ngày", "easy", R.color.teal_200, 0xFF005C55, card);
+        Ui.add(root, rates, 10);
 
         // ---- Deck list ----
-        LinearLayout decks = Ui.section(root, "Danh sách các bộ thẻ của bạn", null, null, 20);
+        LinearLayout dh = Ui.horizontal(c);
+        LinearLayout dt = Ui.iconText(c, R.drawable.ic_layers, "Các bộ thẻ ghi nhớ của bạn", 18, Ui.color(c, R.color.text), true);
+        Ui.addWeighted(dh, dt, 0);
+        TextView newDeck = Ui.text(c, "+ Tạo bộ mới", 14, R.color.brand, true);
+        newDeck.setOnClickListener(v -> state.navigate(Screen.IMPORT));
+        dh.addView(newDeck);
+        Ui.add(root, dh, 28);
         boolean any = false;
+        boolean alt = false;
         for (DocumentItem d : state.history()) {
-            int n = new StudyPack(d.studyPack).flashcards().size();
+            List<Flashcard> fl = new StudyPack(d.studyPack).flashcards();
+            int n = fl.size();
             if (n == 0) continue;
             any = true;
+            int mastered = 0;
+            for (Flashcard f : fl) if ("easy".equals(f.difficulty)) mastered++;
+            int pct = mastered * 100 / n;
             boolean active = d.id.equals(a.document.id);
-            LinearLayout row = Ui.horizontal(c);
-            row.setBackground(Ui.rounded(c, active ? R.color.teal_50 : R.color.surface, 12, active ? R.color.brand_soft : R.color.border));
-            row.setPadding(Ui.dp(c, 16), Ui.dp(c, 14), Ui.dp(c, 16), Ui.dp(c, 14));
-            LinearLayout t = Ui.vertical(c);
-            t.addView(Ui.text(c, d.title, 13, active ? R.color.brand : R.color.text, true));
-            t.addView(Ui.text(c, "Tiến độ: " + n + " thẻ", 11, active ? R.color.brand : R.color.slate_400, false));
-            Ui.addWeighted(row, t, 0);
-            View play = Ui.iconBox(c, R.drawable.ic_play, active ? R.color.brand : R.color.slate_100, active ? android.R.color.white : R.color.text_muted, 32, 16, 999);
-            Ui.addWrap(row, play, 8);
-            if (!active) row.setOnClickListener(v -> state.openDocument(d.id, Screen.FLASHCARD));
-            Ui.add(decks, row, decks.getChildCount() > 0 ? 10 : 0);
+            int accent = alt ? 0xFF734700 : 0xFF005C55;
+            boolean teal = !alt;
+            alt = !alt;
+            LinearLayout deck = Ui.vertical(c);
+            deck.setBackground(Ui.rounded(c, active ? R.color.m3_surface_container : R.color.m3_surface_low, 22, 0));
+            deck.setPadding(Ui.dp(c, 18), Ui.dp(c, 16), Ui.dp(c, 18), Ui.dp(c, 16));
+            LinearLayout top = Ui.horizontal(c);
+            top.setGravity(Gravity.TOP);
+            View ddot = new View(c);
+            android.graphics.drawable.GradientDrawable dd = new android.graphics.drawable.GradientDrawable();
+            dd.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+            dd.setColor(accent);
+            ddot.setBackground(dd);
+            LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Ui.dp(c, 8), Ui.dp(c, 8));
+            dl.topMargin = Ui.dp(c, 10);
+            top.addView(ddot, dl);
+            LinearLayout tx = Ui.vertical(c);
+            tx.addView(Ui.text(c, d.title, 18, R.color.text, true));
+            String subj = null;
+            if (d.tags != null) for (String t : d.tags) if (!t.contains("Engine") && !t.contains("Speech") && !t.contains("Extractor")) { subj = t; break; }
+            Ui.add(tx, Ui.text(c, n + " thẻ ghi nhớ • " + (subj != null ? subj : "Tự động xếp lịch ôn"), 14, R.color.text_secondary, false), 4);
+            LinearLayout.LayoutParams txl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            txl.setMarginStart(Ui.dp(c, 12));
+            top.addView(tx, txl);
+            top.addView(Ui.pill(c, pct + "%", teal ? R.color.m3_primary_fixed : R.color.m3_tertiary_fixed, teal ? R.color.brand_dark : R.color.m3_on_tertiary_fixed));
+            deck.addView(top);
+            View track = Ui.track(c, pct, teal ? R.color.brand_dark : R.color.m3_tertiary, 10);
+            Ui.add(deck, track, 14);
+            LinearLayout foot = Ui.horizontal(c);
+            Ui.addWeighted(foot, Ui.iconText(c, R.drawable.ic_timer, "Hôm nay: " + (n - mastered) + " thẻ cần lặp lại", 13, Ui.color(c, R.color.text_secondary), false), 0);
+            LinearLayout go = Ui.iconText(c, 0, active ? "Đang ôn" : "Ôn tập ngay", 14, accent, true);
+            go.addView(Ui.icon(c, R.drawable.ic_arrow_right, 16, accent));
+            foot.addView(go);
+            Ui.add(deck, foot, 12);
+            if (!active) deck.setOnClickListener(v -> state.openDocument(d.id, Screen.FLASHCARD));
+            Ui.add(root, deck, 12);
         }
-        if (!any) decks.addView(Ui.text(c, "Chưa có bộ thẻ nào. Bấm \"Tạo 10-12 Thẻ ghi nhớ\" để AI soạn thẻ.", 12, R.color.text_muted, false));
+        if (!any) Ui.add(root, Ui.text(c, "Chưa có bộ thẻ nào. Bấm \"Tạo 10–12 thẻ bằng AI\" để AI soạn thẻ.", 13, R.color.text_muted, false), 12);
+    }
+
+    private void rateButton(LinearLayout row, int icon, String label, String sub, String rating, int bg, int fg, Flashcard card) {
+        Context c = requireContext();
+        LinearLayout b = Ui.vertical(c);
+        b.setGravity(Gravity.CENTER);
+        b.setBackground(Ui.rounded(c, bg, 18, 0));
+        b.setPadding(Ui.dp(c, 6), Ui.dp(c, 12), Ui.dp(c, 6), Ui.dp(c, 12));
+        b.addView(Ui.icon(c, icon, 24, fg));
+        TextView l = Ui.text(c, label, 15, R.color.text, true);
+        l.setTextColor(fg);
+        Ui.add(b, l, 4).setGravity(Gravity.CENTER);
+        TextView s = Ui.text(c, sub, 13, R.color.text, false);
+        s.setTextColor(fg);
+        s.setAlpha(0.85f);
+        s.setGravity(Gravity.CENTER);
+        b.addView(s);
+        b.setAlpha(card == null ? 0.5f : 1f);
+        b.setOnClickListener(v -> {
+            if (card == null) return;
+            flipped = false;
+            index = index + 1; // next card, wraps in render
+            state.reviewFlashcard(card.id, rating);
+        });
+        Ui.addWeighted(row, b, row.getChildCount() > 0 ? 10 : 0);
     }
 
     private View rule(Context c, int top) {
@@ -175,24 +304,6 @@ public class FlashcardFragment extends BaseFragment {
         return v;
     }
 
-    private void rateButton(LinearLayout parent, String label, String sub, String rating, int bg, int stroke, int fg, Flashcard card) {
-        Context c = requireContext();
-        LinearLayout b = Ui.vertical(c);
-        b.setGravity(Gravity.CENTER);
-        b.setBackground(Ui.rounded(c, bg, 12, stroke));
-        b.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
-        b.addView(Ui.text(c, label, 12, fg, true));
-        TextView s = Ui.text(c, sub, 10, fg, false);
-        s.setAlpha(0.8f);
-        b.addView(s);
-        b.setOnClickListener(v -> {
-            if (card == null) return;
-            flipped = false;
-            index = index + 1; // next card, wraps in render
-            state.reviewFlashcard(card.id, rating);
-        });
-        Ui.add(parent, b, 10);
-    }
 
     private void speak(String text) {
         if (speaking) {

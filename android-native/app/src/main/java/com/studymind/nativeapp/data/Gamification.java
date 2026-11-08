@@ -36,6 +36,31 @@ public final class Gamification {
         public int cardsReviewed;
         public int perfectQuizzes;
         public List<String> unlockedBadgeIds = new ArrayList<>();
+        /** Day protected by "Đóng băng chuỗi ngày" (yyyy-MM-dd), and the week it was used in (yyyy-ww) */
+        public String frozenDate;
+        public String freezeWeek;
+    }
+
+    private static String week() {
+        Calendar cal = Calendar.getInstance();
+        return cal.get(Calendar.YEAR) + "-" + cal.get(Calendar.WEEK_OF_YEAR);
+    }
+
+    /** One streak freeze per calendar week; it protects tomorrow */
+    public static boolean canFreeze() {
+        Data d = load();
+        return !week().equals(d.freezeWeek);
+    }
+
+    public static boolean isTomorrowFrozen() { return day(1).equals(load().frozenDate); }
+
+    public static boolean freezeTomorrow() {
+        Data d = load();
+        if (week().equals(d.freezeWeek)) return false;
+        d.freezeWeek = week();
+        d.frozenDate = day(1);
+        save(d);
+        return true;
     }
 
     public static final Badge[] ALL_BADGES = {
@@ -83,7 +108,8 @@ public final class Gamification {
         Data d = load();
         String today = today();
         if (!today.equals(d.lastActiveDate)) {
-            d.streak = day(-1).equals(d.lastActiveDate) ? d.streak + 1 : 1;
+            boolean keptByFreeze = day(-2).equals(d.lastActiveDate) && day(-1).equals(d.frozenDate);
+            d.streak = day(-1).equals(d.lastActiveDate) || keptByFreeze ? d.streak + 1 : 1;
             d.lastActiveDate = today;
         }
         return commit(d);

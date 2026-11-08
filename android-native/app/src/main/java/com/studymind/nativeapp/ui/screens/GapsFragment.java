@@ -64,40 +64,28 @@ public class GapsFragment extends BaseFragment {
         for (RootGap r : an.roots) if (r.node.id.equals(selectedId)) exists = true;
         if (!exists) selectedId = an.roots.isEmpty() ? null : an.roots.get(0).node.id;
 
-        // ---- Header ----
-        MaterialCardView head = Ui.card(c);
-        LinearLayout hi = Ui.inner(head);
-        hi.setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20));
-        LinearLayout title = Ui.horizontal(c);
-        title.addView(Ui.iconBox(c, R.drawable.ic_network, R.color.rose, android.R.color.white, 40, 20, 12));
-        LinearLayout tt = Ui.vertical(c);
-        tt.addView(Ui.text(c, "Bản đồ lỗ hổng kiến thức", 17, R.color.text, true));
-        TextView sub = Ui.text(c, a.document.title, 12, R.color.text_muted, false);
-        sub.setSingleLine(true);
-        sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        tt.addView(sub);
-        LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        tl.setMarginStart(Ui.dp(c, 12));
-        title.addView(tt, tl);
-        hi.addView(title);
-        SpannableStringBuilder intro = new SpannableStringBuilder("Mỗi câu sai được lần ngược theo chuỗi kiến thức phụ thuộc để tìm ");
-        int st = intro.length();
-        intro.append("chỗ hổng gốc");
-        intro.setSpan(new StyleSpan(Typeface.BOLD), st, intro.length(), 0);
-        intro.append(", phần mà nếu lấp lại sẽ sửa được nhiều lỗi cùng lúc. Kiến thức bạn đã chứng minh là nắm vững được loại khỏi danh sách nghi vấn.");
-        Ui.add(hi, Ui.text(c, intro, 12, R.color.text_secondary, false), 12);
-        if (an.evidenceCount > 0) {
-            int weak = 0;
-            for (GapNode n : an.nodes.values()) if ("weak".equals(n.status)) weak++;
-            LinearLayout pills = Ui.horizontal(c);
-            pill(pills, an.evidenceCount + " lượt luyện tập được phân tích", R.color.slate_100, R.color.text_secondary, R.color.border);
-            pill(pills, weak + " phần đang yếu", R.color.amber_50, R.color.amber_700, R.color.amber_soft);
-            pill(pills, an.roots.size() + " lỗ hổng gốc", R.color.rose_50, R.color.rose, R.color.rose_soft);
-            HorizontalScrollView hs = new HorizontalScrollView(c);
-            hs.setHorizontalScrollBarEnabled(false);
-            hs.addView(pills);
-            Ui.add(hi, hs, 12);
-        }
+        // ---- Header: AI DeepScan ----
+        LinearLayout head = Ui.vertical(c);
+        head.setBackground(Ui.gradient(c, 22, 0xFFEFF4FF, 0xFFE6F6F3));
+        head.setPadding(Ui.dp(c, 16), Ui.dp(c, 14), Ui.dp(c, 16), Ui.dp(c, 16));
+        LinearLayout chips = Ui.horizontal(c);
+        LinearLayout ds = Ui.iconText(c, R.drawable.ic_brain, "AI DeepScan™", 12, 0xFFFFFFFF, true);
+        ds.setBackground(Ui.gradient(c, 999, 0xFF005C55, 0xFF005C55));
+        ds.setPadding(Ui.dp(c, 10), Ui.dp(c, 4), Ui.dp(c, 12), Ui.dp(c, 4));
+        chips.addView(ds);
+        TextView doc = Ui.pill(c, a.document.title, R.color.m3_secondary_container, R.color.m3_on_secondary_container);
+        doc.setMaxLines(1);
+        doc.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        doc.setMaxWidth(Ui.dp(c, 200));
+        Ui.addWrap(chips, doc, 8);
+        head.addView(chips);
+        SpannableStringBuilder intro = new SpannableStringBuilder("Cơ chế AI truy nguyên nguồn gốc: ");
+        intro.setSpan(new StyleSpan(Typeface.BOLD), 0, intro.length(), 0);
+        intro.setSpan(new android.text.style.ForegroundColorSpan(Ui.color(c, R.color.brand_dark)), 0, intro.length(), 0);
+        intro.append("Không chỉ nhận diện câu trả lời sai, StudyMind truy vết chính xác khái niệm gốc rễ gây ra lỗi sai liên hoàn trong chuỗi kiến thức của bạn.");
+        TextView it = Ui.text(c, intro, 15, R.color.text, false);
+        it.setLineSpacing(0, 1.3f);
+        Ui.add(head, it, 10);
         root.addView(head);
 
         if (an.nodes.isEmpty()) {
@@ -105,17 +93,23 @@ public class GapsFragment extends BaseFragment {
                     "Hãy chuyển hóa lại tài liệu để hệ thống phân tích các khái niệm và quan hệ phụ thuộc giữa chúng.", R.color.surface, R.color.border));
             return;
         }
+
+        int weak = 0;
+        for (GapNode n : an.nodes.values()) if ("weak".equals(n.status)) weak++;
+        LinearLayout stats = Ui.horizontal(c);
+        stats.setBaselineAligned(false);
+        statTile(stats, R.drawable.ic_clipboard, R.color.m3_secondary_container, R.color.brand, R.color.surface, an.evidenceCount, "Lượt AI bóc tách", R.color.text, 0);
+        statTile(stats, R.drawable.ic_alert_tri, R.color.m3_tertiary_fixed, R.color.m3_tertiary, R.color.amber_50, weak, "Khái niệm đang yếu", R.color.m3_tertiary, 8);
+        statTile(stats, R.drawable.ic_target, R.color.rose_soft, R.color.m3_error, R.color.rose_50, an.roots.size(), "Lỗ hổng gốc then chốt", R.color.m3_error, 8);
+        Ui.add(root, stats, 16);
+
         if (an.evidenceCount == 0) {
             View card = centerCard(c, R.drawable.ic_target, R.color.brand, "Chưa có dữ liệu luyện tập để phân tích",
                     "Làm trắc nghiệm, ôn thẻ ghi nhớ (đánh giá Khó/Dễ) hoặc làm bài test chẩn đoán. Bản đồ sẽ tự cập nhật theo kết quả của bạn.", R.color.surface, R.color.border);
             LinearLayout in = Ui.inner((MaterialCardView) card);
             Object[][] practice = {{Screen.QUIZ, R.drawable.ic_quiz, "Làm trắc nghiệm"}, {Screen.FLASHCARD, R.drawable.ic_layers, "Ôn thẻ ghi nhớ"},
                     {Screen.PREREQUISITE, R.drawable.ic_clipboard, "Làm bài test chẩn đoán"}};
-            for (Object[] p : practice) {
-                LinearLayout b = Ui.pillButton(c, (int) p[1], (String) p[2], R.color.surface, R.color.text_secondary, R.color.border, v -> state.navigate((Screen) p[0]));
-                ((android.widget.ImageView) b.getChildAt(0)).setColorFilter(Ui.color(c, R.color.brand));
-                Ui.add(in, b, 8);
-            }
+            for (Object[] p : practice) Ui.add(in, actionBtn(c, (int) p[1], (String) p[2], false, v -> state.navigate((Screen) p[0])), 8);
             root.addView(card);
             return;
         }
@@ -128,10 +122,15 @@ public class GapsFragment extends BaseFragment {
         RootGap selected = null;
         for (RootGap r : an.roots) if (r.node.id.equals(selectedId)) selected = r;
 
-        // ---- Dependency graph (first on a phone so the selection is visible while scrolling cards) ----
-        Ui.add(root, Ui.iconText(c, R.drawable.ic_book, "CHUỖI PHỤ THUỘC: KIẾN THỨC NỀN → KIẾN THỨC DỰA TRÊN NÓ", 11, Ui.color(c, R.color.brand), true), 20);
+        // ---- Dependency graph card ----
+        MaterialCardView gc = Ui.card(c);
+        LinearLayout gi = Ui.inner(gc);
+        LinearLayout gh = Ui.horizontal(c);
+        Ui.addWeighted(gh, Ui.iconText(c, R.drawable.ic_network, "Đồ thị chuỗi phụ thuộc", 17, Ui.color(c, R.color.text), true), 0);
+        gh.addView(Ui.pill(c, "Cây phân cấp", R.color.m3_secondary_container, R.color.m3_on_secondary_container));
+        gi.addView(gh);
         FrameLayout graphBox = new FrameLayout(c);
-        graphBox.setBackground(Ui.rounded(c, R.color.surface, 16, R.color.border));
+        graphBox.setBackground(Ui.rounded(c, R.color.m3_surface_low, 18, 0));
         graphBox.setClipToOutline(true);
         GraphView graph = new GraphView(c);
         graph.setGraph(buildNodes(an, selected), buildEdges(an, selected), false);
@@ -140,32 +139,80 @@ public class GapsFragment extends BaseFragment {
         });
         graphBox.addView(graph, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         LinearLayout zoom = Ui.vertical(c);
-        zoom.setBackground(Ui.rounded(c, R.color.surface, 8, R.color.border));
-        for (String[] z : new String[][]{{"+", "1.25"}, {"−", "0.8"}, {"⤢", "fit"}}) {
-            TextView b = Ui.text(c, z[0], 16, R.color.text_secondary, true);
-            b.setGravity(Gravity.CENTER);
-            b.setOnClickListener(v -> { if (z[1].equals("fit")) graph.fit(); else graph.zoom(Float.parseFloat(z[1])); });
-            zoom.addView(b, new LinearLayout.LayoutParams(Ui.dp(c, 32), Ui.dp(c, 32)));
+        Object[][] zs = {{R.drawable.ic_plus, "1.25"}, {R.drawable.ic_minus, "0.8"}, {R.drawable.ic_fit, "fit"}};
+        for (Object[] z : zs) {
+            FrameLayout b = Ui.iconBox(c, (int) z[0], R.color.surface, R.color.text, 36, 18, 10);
+            String act = (String) z[1];
+            b.setOnClickListener(v -> { if (act.equals("fit")) graph.fit(); else graph.zoom(Float.parseFloat(act)); });
+            LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36));
+            bl.bottomMargin = Ui.dp(c, 6);
+            zoom.addView(b, bl);
         }
-        FrameLayout.LayoutParams zl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);
-        zl.setMargins(Ui.dp(c, 10), 0, 0, Ui.dp(c, 10));
+        FrameLayout.LayoutParams zl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
+        zl.setMargins(0, Ui.dp(c, 8), Ui.dp(c, 8), 0);
         graphBox.addView(zoom, zl);
-        graphBox.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 360)));
-        Ui.add(root, graphBox, 8);
+        graphBox.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 300)));
+        Ui.add(gi, graphBox, 12);
+        com.google.android.material.chip.ChipGroup legend = new com.google.android.material.chip.ChipGroup(c);
+        legend.setChipSpacingHorizontal(Ui.dp(c, 14));
+        legend.addView(legendDot(c, 0xFFBA1A1A, "Lỗ hổng gốc"));
+        legend.addView(legendDot(c, 0xFF945D00, "Đang yếu"));
+        legend.addView(legendDot(c, 0xFF005C55, "Đã vững"));
+        legend.addView(legendDot(c, 0xFFBDC9C6, "Chưa test"));
+        Ui.add(gi, legend, 10);
+        Ui.add(root, gc, 16);
 
-        LinearLayout legend = Ui.horizontal(c);
-        legend.addView(legendBox(c, 0xFFFFF1F2, 0xFFE11D48, false, "Lỗ hổng gốc"));
-        Ui.addWrap(legend, legendBox(c, 0xFFFFFBEB, 0xFFF59E0B, false, "Đang yếu"), 10);
-        Ui.addWrap(legend, legendBox(c, 0xFFECFDF5, 0xFF10B981, false, "Đã nắm"), 10);
-        Ui.addWrap(legend, legendBox(c, 0xFFF8FAFC, 0xFF94A3B8, true, "Chưa kiểm tra"), 10);
-        HorizontalScrollView ls = new HorizontalScrollView(c);
-        ls.setHorizontalScrollBarEnabled(false);
-        ls.addView(legend);
-        Ui.add(root, ls, 8);
-
-        // ---- Ranked root-gap cards ----
-        Ui.add(root, Ui.iconText(c, R.drawable.ic_target, "LỖ HỔNG GỐC, XẾP THEO MỨC ẢNH HƯỞNG", 11, Ui.color(c, R.color.rose), true), 22);
+        // ---- Ranked root gaps ----
+        LinearLayout rh = Ui.horizontal(c);
+        Ui.addWeighted(rh, Ui.text(c, "Lỗ hổng gốc (Ưu tiên cao nhất)", 18, R.color.text, true), 0);
+        rh.addView(Ui.pill(c, "Cần xử lý ngay", R.color.rose_soft, R.color.m3_error));
+        Ui.add(root, rh, 22);
         for (int i = 0; i < an.roots.size(); i++) Ui.add(root, gapCard(c, an.roots.get(i), i + 1, an), 12);
+
+        LinearLayout note = Ui.horizontal(c);
+        note.setGravity(Gravity.TOP);
+        note.setBackground(Ui.rounded(c, R.color.m3_surface_low, 20, 0));
+        note.setPadding(Ui.dp(c, 16), Ui.dp(c, 14), Ui.dp(c, 16), Ui.dp(c, 14));
+        note.addView(Ui.icon(c, R.drawable.ic_refresh, 20, Ui.color(c, R.color.brand_dark)));
+        TextView nt = Ui.text(c, "Hệ thống AI tự động cập nhật bản đồ tri thức sau mỗi bài kiểm tra, lượt ôn thẻ hoặc bài test chẩn đoán. Điểm khuyết sẽ tự chuyển sang xanh khi bạn làm đúng.", 13, R.color.text_secondary, false);
+        LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        nl.setMarginStart(Ui.dp(c, 12));
+        note.addView(nt, nl);
+        Ui.add(root, note, 16);
+    }
+
+    private void statTile(LinearLayout row, int icon, int iconBg, int iconFg, int bg, int value, String label, int valueColor, int start) {
+        Context c = requireContext();
+        LinearLayout t = Ui.vertical(c);
+        t.setBackground(Ui.rounded(c, bg, 20, bg == R.color.surface ? R.color.border : 0));
+        t.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
+        t.addView(Ui.iconBox(c, icon, iconBg, iconFg, 34, 18, 10));
+        Ui.add(t, Ui.text(c, String.valueOf(value), 24, valueColor, true), 8);
+        Ui.add(t, Ui.text(c, label, 12, valueColor == R.color.text ? R.color.text_secondary : valueColor, false), 2);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        lp.setMarginStart(Ui.dp(c, start));
+        row.addView(t, lp);
+    }
+
+    private View legendDot(Context c, int argb, String label) {
+        LinearLayout row = Ui.horizontal(c);
+        View dot = new View(c);
+        android.graphics.drawable.GradientDrawable d = new android.graphics.drawable.GradientDrawable();
+        d.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        d.setColor(argb);
+        dot.setBackground(d);
+        row.addView(dot, new LinearLayout.LayoutParams(Ui.dp(c, 9), Ui.dp(c, 9)));
+        Ui.addWrap(row, Ui.text(c, label, 12, R.color.text_secondary, false), 6);
+        return row;
+    }
+
+    private View actionBtn(Context c, int icon, String label, boolean primary, View.OnClickListener l) {
+        LinearLayout b = Ui.iconText(c, icon, label, 15, primary ? 0xFFFFFFFF : Ui.color(c, R.color.text_secondary), primary);
+        b.setGravity(Gravity.CENTER);
+        b.setBackground(primary ? Ui.gradient(c, 16, 0xFF005C55, 0xFF005C55) : Ui.rounded(c, R.color.m3_surface_high, 16, 0));
+        b.setMinimumHeight(Ui.dp(c, 50));
+        b.setOnClickListener(l);
+        return b;
     }
 
     // ---------- root gap card ----------
@@ -174,71 +221,65 @@ public class GapsFragment extends BaseFragment {
         boolean sel = gap.node.id.equals(selectedId);
         MaterialCardView card = Ui.card(c);
         if (sel) {
-            card.setStrokeColor(0xFFFB7185);
+            card.setStrokeColor(Ui.color(c, R.color.m3_error));
             card.setStrokeWidth(Ui.dp(c, 2));
         }
         card.setOnClickListener(v -> { selectedId = gap.node.id; rerender(); scroll.post(() -> scroll.smoothScrollTo(0, 0)); });
         LinearLayout in = Ui.inner(card);
+        in.setPadding(Ui.dp(c, 16), Ui.dp(c, 16), Ui.dp(c, 16), Ui.dp(c, 16));
 
         LinearLayout top = Ui.horizontal(c);
         top.setGravity(Gravity.TOP);
-        TextView num = Ui.text(c, String.valueOf(rank), 12, android.R.color.white, true);
-        num.setGravity(Gravity.CENTER);
-        num.setBackground(Ui.rounded(c, R.color.rose, 999, 0));
-        top.addView(num, new LinearLayout.LayoutParams(Ui.dp(c, 28), Ui.dp(c, 28)));
-        LinearLayout body = Ui.vertical(c);
-        body.addView(Ui.text(c, kindLabel(gap.node).toUpperCase(new java.util.Locale("vi")), 10, R.color.rose, true));
-        body.addView(Ui.text(c, gap.node.label, 14, R.color.text, true));
+        Ui.addWeighted(top, Ui.text(c, "Lỗ hổng #" + rank + ": " + gap.node.label, 19, R.color.text, true), 0);
+        TextView lvl = Ui.pill(c, "prerequisite".equals(gap.node.kind) ? "Kiến thức nền" : "Cấp độ " + rank, R.color.m3_error, android.R.color.white);
+        lvl.setTextColor(0xFFFFFFFF);
+        Ui.addWrap(top, lvl, 8);
+        in.addView(top);
+
         List<String> others = new ArrayList<>();
         boolean failedItself = false;
         for (GapNode n : gap.explains) { if (n.id.equals(gap.node.id)) failedItself = true; else others.add(n.label); }
-        SpannableStringBuilder sb = new SpannableStringBuilder();
-        if (!others.isEmpty()) {
-            sb.append("Là nguyên nhân gốc của lỗi ở ");
-            int s0 = sb.length();
-            sb.append(others.size() + " khái niệm");
-            sb.setSpan(new StyleSpan(Typeface.BOLD), s0, sb.length(), 0);
-            sb.append(": " + String.join(", ", others) + ".");
-            if (failedItself) sb.append(" Bạn cũng trả lời sai trực tiếp phần này.");
-        } else {
-            sb.append("Bạn trả lời sai trực tiếp phần này (" + gap.node.wrong + " sai / " + gap.node.right + " đúng) và chưa có dấu hiệu yếu ở kiến thức nền.");
-        }
-        Ui.add(body, Ui.text(c, sb, 12, R.color.text_secondary, false), 2);
-        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        bl.setMarginStart(Ui.dp(c, 12));
-        top.addView(body, bl);
-        in.addView(top);
+        String cause = !others.isEmpty() ? "Nguyên nhân gốc của lỗi ở " + others.size() + " khái niệm liên hoàn" + (failedItself ? " • sai trực tiếp" : "")
+                : "Sai trực tiếp: " + gap.node.wrong + " sai / " + gap.node.right + " đúng";
+        LinearLayout cp = Ui.iconText(c, R.drawable.ic_fork, cause, 13, Ui.color(c, R.color.m3_error), false);
+        cp.setBackground(Ui.rounded(c, R.color.rose_50, 999, 0));
+        cp.setPadding(Ui.dp(c, 10), Ui.dp(c, 5), Ui.dp(c, 12), Ui.dp(c, 5));
+        Ui.addInline(in, cp, 8);
 
+        // Trace path
         List<List<String>> traced = new ArrayList<>();
         for (List<String> p : gap.paths) if (p.size() > 1) traced.add(p);
-        if (!traced.isEmpty()) {
-            Ui.add(in, Ui.text(c, "ĐƯỜNG TRUY NGUYÊN", 10, R.color.slate_400, true), 12);
-            for (List<String> p : traced) {
-                LinearLayout chain = Ui.horizontal(c);
-                for (int i = 0; i < p.size(); i++) {
-                    GapNode n = an.nodes.get(p.get(i));
-                    boolean isRoot = i == p.size() - 1;
-                    if (i > 0) Ui.addWrap(chain, Ui.text(c, " cần › ", 11, R.color.slate_400, false), 0);
-                    int bg = isRoot ? R.color.rose_50 : "weak".equals(n.status) ? R.color.amber_50 : R.color.slate_50;
-                    int fg = isRoot ? R.color.rose : "weak".equals(n.status) ? R.color.amber_700 : R.color.text_secondary;
-                    int stroke = isRoot ? R.color.rose_soft : "weak".equals(n.status) ? R.color.amber_soft : R.color.border;
-                    TextView chip = Ui.text(c, n.label, 11, fg, true);
-                    chip.setBackground(Ui.rounded(c, bg, 6, stroke));
-                    chip.setPadding(Ui.dp(c, 8), Ui.dp(c, 3), Ui.dp(c, 8), Ui.dp(c, 3));
-                    chain.addView(chip);
-                }
-                HorizontalScrollView hs = new HorizontalScrollView(c);
-                hs.setHorizontalScrollBarEnabled(false);
-                hs.addView(chain);
-                Ui.add(in, hs, 6);
-            }
+        LinearLayout trace = Ui.vertical(c);
+        trace.setBackground(Ui.rounded(c, R.color.m3_surface_low, 16, 0));
+        trace.setPadding(Ui.dp(c, 14), Ui.dp(c, 12), Ui.dp(c, 14), Ui.dp(c, 12));
+        TextView tl = Ui.text(c, "CHUỖI TRUY NGUYÊN LỖI SAI (TRACE PATH)", 12, R.color.text_secondary, true);
+        tl.setLetterSpacing(0.04f);
+        trace.addView(tl);
+        LinearLayout rootLine = Ui.horizontal(c);
+        View rd = new View(c);
+        rd.setBackground(Ui.rounded(c, R.color.m3_error, 999, 0));
+        rootLine.addView(rd, new LinearLayout.LayoutParams(Ui.dp(c, 7), Ui.dp(c, 7)));
+        Ui.addWeighted(rootLine, Ui.text(c, "Gốc lỗi: " + gap.node.label, 14, R.color.m3_error, true), 8);
+        Ui.add(trace, rootLine, 8);
+        Set<String> listed = new LinkedHashSet<>();
+        for (List<String> p : traced) for (int i = p.size() - 2; i >= 0; i--) listed.add(p.get(i));
+        if (listed.isEmpty()) for (String o : others) listed.add(o);
+        for (String id : listed) {
+            GapNode n = an.nodes.get(id);
+            String label = n != null ? n.label : id;
+            LinearLayout r = Ui.horizontal(c);
+            r.setGravity(Gravity.TOP);
+            r.addView(Ui.icon(c, R.drawable.ic_chevron_down, 16, Ui.color(c, R.color.text_muted)));
+            Ui.addWeighted(r, Ui.text(c, "Dẫn tới sai " + label, 13, R.color.text_secondary, false), 8);
+            Ui.add(trace, r, 6);
         }
+        Ui.add(in, trace, 12);
 
         if (!gap.misconceptions.isEmpty()) {
             LinearLayout box = Ui.vertical(c);
-            box.setBackground(Ui.rounded(c, R.color.amber_50, 12, R.color.amber_soft));
-            box.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-            box.addView(Ui.iconText(c, R.drawable.ic_alert_tri, "HIỂU SAI THƯỜNG GẶP", 10, Ui.color(c, R.color.amber_700), true));
+            box.setBackground(Ui.rounded(c, R.color.m3_surface_container, 16, 0));
+            box.setPadding(Ui.dp(c, 14), Ui.dp(c, 12), Ui.dp(c, 14), Ui.dp(c, 12));
+            box.addView(Ui.iconText(c, R.drawable.ic_info, "Hiểu sai thường gặp (AI chẩn đoán)", 13, Ui.color(c, R.color.m3_tertiary), true));
             for (KbMisconception m : gap.misconceptions) {
                 SpannableStringBuilder mb = new SpannableStringBuilder(m.misconception);
                 mb.setSpan(new StrikethroughSpan(), 0, mb.length(), 0);
@@ -248,48 +289,46 @@ public class GapsFragment extends BaseFragment {
                     mb.append(m.correction);
                     mb.setSpan(new StyleSpan(Typeface.BOLD), s1, mb.length(), 0);
                 }
-                TextView t = Ui.text(c, mb, 12, R.color.text, false);
-                t.setTextColor(0xFF451A03);
-                Ui.add(box, t, 4);
+                Ui.add(box, Ui.text(c, mb, 13, R.color.text, false), 6);
             }
             Ui.add(in, box, 12);
         }
 
-        if (gap.bridge != null && !gap.bridge.isEmpty()) {
-            LinearLayout box = Ui.vertical(c);
-            box.setBackground(Ui.rounded(c, R.color.teal_50, 12, R.color.brand_soft));
-            box.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-            box.addView(Ui.text(c, "ÔN NHANH 2 PHÚT", 10, R.color.brand, true));
-            Ui.add(box, Ui.text(c, gap.bridge, 12, R.color.text_secondary, false), 2);
+        String quick = gap.bridge != null && !gap.bridge.isEmpty() ? gap.bridge : gap.node.description;
+        if (quick != null && !quick.isEmpty()) {
+            LinearLayout box = Ui.horizontal(c);
+            box.setGravity(Gravity.TOP);
+            box.setBackground(Ui.rounded(c, R.color.teal_50, 16, 0));
+            box.setPadding(Ui.dp(c, 14), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
+            box.addView(Ui.icon(c, R.drawable.ic_zap, 20, Ui.color(c, R.color.brand_dark)));
+            LinearLayout bt = Ui.vertical(c);
+            bt.addView(Ui.text(c, "Ôn nhanh 2 phút", 14, R.color.brand_dark, true));
+            Ui.add(bt, Ui.text(c, quick, 13, R.color.text_secondary, false), 2);
+            LinearLayout.LayoutParams btl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            btl.setMarginStart(Ui.dp(c, 10));
+            box.addView(bt, btl);
             Ui.add(in, box, 12);
-        } else if (gap.node.description != null && !gap.node.description.isEmpty()) {
-            TextView d = Ui.text(c, gap.node.description, 12, R.color.text_secondary, false);
-            d.setBackground(Ui.rounded(c, R.color.slate_50, 12, R.color.slate_100));
-            d.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-            Ui.add(in, d, 12);
         }
 
         if (!gap.suspects.isEmpty()) {
             List<String> s = new ArrayList<>();
             for (GapNode n : gap.suspects) s.add(n.label);
-            Ui.add(in, Ui.text(c, "◌ Kiến thức nền chưa được kiểm tra, nên kiểm tra thêm: " + String.join(", ", s), 11, R.color.text_muted, false), 10);
+            Ui.add(in, Ui.text(c, "◌ Kiến thức nền chưa được kiểm tra, nên kiểm tra thêm: " + String.join(", ", s), 12, R.color.text_muted, false), 10);
         }
 
-        LinearLayout actions = Ui.horizontal(c);
         if ("prerequisite".equals(gap.node.kind)) {
-            LinearLayout b = Ui.pillButton(c, R.drawable.ic_clipboard, "Làm lại bài test chẩn đoán", R.color.brand, android.R.color.white, 0, v -> state.navigate(Screen.PREREQUISITE));
-            b.setBackground(Ui.rounded(c, R.color.brand, 8, 0));
-            actions.addView(b);
+            Ui.add(in, actionBtn(c, R.drawable.ic_clipboard, "Làm lại bài test chẩn đoán", true, v -> state.navigate(Screen.PREREQUISITE)), 14);
         } else {
-            LinearLayout f = Ui.pillButton(c, R.drawable.ic_layers, "Ôn bằng thẻ ghi nhớ", R.color.brand, android.R.color.white, 0, v -> state.navigate(Screen.FLASHCARD));
-            f.setBackground(Ui.rounded(c, R.color.brand, 8, 0));
-            actions.addView(f);
-            Ui.addWrap(actions, Ui.pillButton(c, R.drawable.ic_quiz, "Làm lại trắc nghiệm", R.color.surface, R.color.text_secondary, R.color.border, v -> state.navigate(Screen.QUIZ)), 8);
+            Ui.add(in, actionBtn(c, R.drawable.ic_layers, "Ôn bằng Flashcard", true, v -> state.navigate(Screen.FLASHCARD)), 14);
+            int wrongQ = gap.node.wrong;
+            Ui.add(in, actionBtn(c, R.drawable.ic_quiz, wrongQ > 0 ? "Làm lại " + wrongQ + " câu trắc nghiệm sai" : "Làm lại trắc nghiệm", false, v -> state.navigate(Screen.QUIZ)), 8);
         }
-        HorizontalScrollView as = new HorizontalScrollView(c);
-        as.setHorizontalScrollBarEnabled(false);
-        as.addView(actions);
-        Ui.add(in, as, 12);
+        TextView ask = Ui.text(c, "Hỏi gia sư Socrates: Vì sao hay nhầm \"" + gap.node.label + "\"?", 14, R.color.brand_dark, true);
+        ask.setGravity(Gravity.CENTER);
+        ask.setBackground(Ui.rounded(c, R.color.m3_surface_low, 16, 0));
+        ask.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
+        ask.setOnClickListener(v -> { WorkspaceFragment.openInSocraticMode = true; state.navigate(Screen.WORKSPACE); });
+        Ui.add(in, ask, 8);
         return card;
     }
 
@@ -300,9 +339,9 @@ public class GapsFragment extends BaseFragment {
     // ---------- graph (layoutGraph in the web) ----------
 
     private static final int[][] STATUS = {
-            {0xFFFFFBEB, 0xFFF59E0B, 0xFF78350F}, // weak
-            {0xFFECFDF5, 0xFF10B981, 0xFF064E3B}, // mastered
-            {0xFFF8FAFC, 0xFF94A3B8, 0xFF334155}  // untested
+            {0xFFFFDDB8, 0xFF945D00, 0xFF2A1700}, // weak
+            {0xFF9CF2E8, 0xFF005C55, 0xFF00201D}, // mastered
+            {0xFFEFF4FF, 0xFFBDC9C6, 0xFF3E4947}  // untested
     };
 
     private Set<String> shown(KnowledgeGaps.Analysis an) {
@@ -347,7 +386,7 @@ public class GapsFragment extends BaseFragment {
             g.x = col * (200 + 90);
             g.y = row * (64 + 30);
             boolean isRoot = rootIds.contains(id);
-            int[] s = isRoot ? new int[]{0xFFFFF1F2, 0xFFE11D48, 0xFF881337}
+            int[] s = isRoot ? new int[]{0xFFFFDAD6, 0xFFBA1A1A, 0xFF93000A}
                     : STATUS["weak".equals(n.status) ? 0 : "mastered".equals(n.status) ? 1 : 2];
             g.fill = s[0];
             g.stroke = s[1];
@@ -379,7 +418,7 @@ public class GapsFragment extends BaseFragment {
             if (!shown.contains(e[0]) || !shown.contains(e[1])) continue;
             GraphView.Edge g = new GraphView.Edge(e[1], e[0]); // prerequisite → dependent
             boolean onPath = selected != null && hl.contains(e[0]) && hl.contains(e[1]);
-            g.color = onPath ? 0xFFE11D48 : 0xFF94A3B8;
+            g.color = onPath ? 0xFFBA1A1A : 0xFF6E7977;
             g.width = onPath ? 2.5f : 1.5f;
             g.alpha = selected != null && !onPath ? 0.35f : 1f;
             out.add(g);

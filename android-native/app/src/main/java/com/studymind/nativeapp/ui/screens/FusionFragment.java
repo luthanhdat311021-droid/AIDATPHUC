@@ -40,6 +40,8 @@ public class FusionFragment extends BaseFragment {
     @Override
     protected Object watchKey() { return state.history() + ":" + state.fusionResult() + ":" + state.isPro(); }
 
+    private boolean showMerged;
+
     @Override
     protected void render(LinearLayout root) {
         Context c = requireContext();
@@ -49,195 +51,270 @@ public class FusionFragment extends BaseFragment {
             selected.add(docs.get(0).id);
             selected.add(docs.get(1).id);
         }
+        FusionResult r = state.fusionResult();
 
-        // ---- Hero: from-[#0B4F48] to-[#0F766E] ----
-        LinearLayout hero = Ui.vertical(c);
-        hero.setBackground(Ui.gradient(c, 24, 0xFF0B4F48, 0xFF0F766E));
-        hero.setPadding(Ui.dp(c, 24), Ui.dp(c, 24), Ui.dp(c, 24), Ui.dp(c, 24));
-        hero.setElevation(Ui.dp(c, 3));
-        LinearLayout kicker = Ui.iconText(c, R.drawable.ic_compare, "Tính năng Nâng cao (AI Fusion)" + (state.isPro() ? "" : " · 🔒 Pro"), 12, 0xFFCCFBF1, true);
-        android.graphics.drawable.GradientDrawable kb = new android.graphics.drawable.GradientDrawable();
-        kb.setColor(0x26FFFFFF);
-        kb.setStroke(Ui.dp(c, 1), 0x4DFFFFFF);
-        kb.setCornerRadius(Ui.dp(c, 999));
-        kicker.setBackground(kb);
-        kicker.setPadding(Ui.dp(c, 12), Ui.dp(c, 4), Ui.dp(c, 12), Ui.dp(c, 4));
-        Ui.addInline(hero, kicker, 0);
-        TextView h = Ui.text(c, "Hợp nhất & Đối chiếu Kiến thức Đa Tài liệu", 22, R.color.text, true);
-        h.setTextColor(Color.WHITE);
-        Ui.add(hero, h, 12);
-        TextView p = Ui.text(c, "Chọn từ 2 bài học trở lên để AI tự động gộp các khái niệm trùng lặp, phân tách chi tiết độc quyền và phát hiện cờ cảnh báo ⚠️ mâu thuẫn số liệu giữa các tài liệu.", 13, R.color.text, false);
-        p.setTextColor(0xE6CCFBF1);
-        Ui.add(hero, p, 8);
-        boolean ready = selected.size() >= 2 && !loading;
-        LinearLayout go = Ui.pillButton(c, R.drawable.ic_sparkles, loading ? "Đang phân tích đối chiếu..." : "Bắt đầu Hợp nhất AI (" + selected.size() + " tài liệu)",
-                android.R.color.white, R.color.brand, 0, v -> start());
-        go.setBackground(ready ? Ui.rounded(c, android.R.color.white, 16, 0) : glass(c));
-        ((TextView) go.getChildAt(1)).setTextColor(ready ? 0xFF0F766E : 0x99CCFBF1);
-        ((ImageView) go.getChildAt(0)).setColorFilter(ready ? 0xFF0F766E : 0x99CCFBF1);
-        go.setPadding(Ui.dp(c, 20), Ui.dp(c, 14), Ui.dp(c, 20), Ui.dp(c, 14));
-        Ui.add(hero, go, 18);
-        root.addView(hero);
+        // ---- Header ----
+        LinearLayout top = Ui.horizontal(c);
+        LinearLayout pro = Ui.iconText(c, R.drawable.ic_crown, "TÍNH NĂNG PRO ⭐", 12, Ui.color(c, R.color.m3_on_tertiary_fixed), true);
+        pro.setBackground(Ui.rounded(c, R.color.m3_tertiary_fixed, 999, 0));
+        pro.setPadding(Ui.dp(c, 10), Ui.dp(c, 5), Ui.dp(c, 12), Ui.dp(c, 5));
+        top.addView(pro);
+        top.addView(new View(c), new LinearLayout.LayoutParams(0, 1, 1f));
+        android.widget.FrameLayout share = Ui.iconBox(c, R.drawable.ic_network, R.color.m3_surface_container, R.color.text_secondary, 40, 20, 999);
+        share.setContentDescription("Chia sẻ báo cáo hợp nhất");
+        share.setOnClickListener(v -> {
+            if (r == null) { toast("Hãy chạy Hợp nhất AI trước khi chia sẻ báo cáo."); return; }
+            android.content.Intent send = new android.content.Intent(android.content.Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(android.content.Intent.EXTRA_TEXT, reportText(r));
+            startActivity(android.content.Intent.createChooser(send, "Chia sẻ báo cáo hợp nhất"));
+        });
+        top.addView(share);
+        root.addView(top);
+        Ui.add(root, Ui.text(c, "Hợp nhất kiến thức", 24, R.color.text, true), 12);
+        Ui.add(root, Ui.text(c, "Hợp nhất đa giáo trình, slide bài giảng và ghi chú rời rạc thành một bức tranh kiến thức thống nhất, tự động phát hiện mâu thuẫn học thuật.", 15, R.color.text_secondary, false), 6);
 
-        // ---- Document selection ----
+        // ---- Selection ----
         MaterialCardView pick = Ui.card(c);
-        pick.setRadius(Ui.dp(c, 24));
         LinearLayout pi = Ui.inner(pick);
-        pi.setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20));
-        LinearLayout ph = Ui.iconText(c, R.drawable.ic_book, "Chọn các bài học cần đối chiếu:", 14, Ui.color(c, R.color.text), true);
-        ((ImageView) ph.getChildAt(0)).setColorFilter(Ui.color(c, R.color.brand));
+        LinearLayout ph = Ui.horizontal(c);
+        View dot = new View(c);
+        dot.setBackground(Ui.rounded(c, R.color.brand_dark, 999, 0));
+        ph.addView(dot, new LinearLayout.LayoutParams(Ui.dp(c, 8), Ui.dp(c, 8)));
+        Ui.addWeighted(ph, Ui.text(c, "Đã chọn " + selected.size() + " tài liệu để hợp nhất", 15, R.color.text, true), 8);
+        ph.addView(Ui.pill(c, selected.size() >= 2 ? "Sẵn sàng AI" : "Chọn ≥ 2", selected.size() >= 2 ? R.color.m3_primary_fixed : R.color.m3_tertiary_fixed,
+                selected.size() >= 2 ? R.color.brand_dark : R.color.m3_on_tertiary_fixed));
         pi.addView(ph);
-        Ui.add(pi, Ui.text(c, "(Đã chọn " + selected.size() + " tệp)", 12, R.color.text_muted, false), 2);
-        if (selected.size() < 2) {
-            TextView warn = Ui.text(c, "Vui lòng chọn ít nhất 2 bài học", 12, R.color.amber_700, true);
-            warn.setBackground(Ui.rounded(c, R.color.amber_50, 8, R.color.amber_soft));
-            warn.setPadding(Ui.dp(c, 10), Ui.dp(c, 4), Ui.dp(c, 10), Ui.dp(c, 4));
-            Ui.addInline(pi, warn, 8);
-        }
+        boolean alt = false;
         for (DocumentItem d : docs) {
             boolean on = selected.contains(d.id);
+            String type = d.fileType != null ? d.fileType.toUpperCase() : "";
+            int icon = type.contains("VIDEO") ? R.drawable.ic_video : type.contains("URL") ? R.drawable.ic_link : type.contains("PPT") ? R.drawable.ic_play : R.drawable.ic_file;
             LinearLayout row = Ui.horizontal(c);
-            row.setGravity(Gravity.TOP);
-            row.setBackground(Ui.rounded(c, on ? R.color.teal_50 : R.color.surface, 16, on ? R.color.brand : R.color.border));
-            row.setPadding(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14));
-            TextView box = Ui.text(c, on ? "✓" : "", 13, android.R.color.white, true);
-            box.setGravity(Gravity.CENTER);
-            box.setBackground(Ui.rounded(c, on ? R.color.brand : R.color.surface, 4, on ? R.color.brand : R.color.slate_300));
-            row.addView(box, new LinearLayout.LayoutParams(Ui.dp(c, 20), Ui.dp(c, 20)));
+            row.setBackground(Ui.rounded(c, on ? R.color.m3_surface_low : R.color.surface, 18, on ? 0 : R.color.border));
+            row.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 14), Ui.dp(c, 12));
+            row.addView(Ui.iconBox(c, icon, alt ? R.color.m3_tertiary_fixed : R.color.rose_soft, alt ? R.color.m3_tertiary : R.color.m3_error, 44, 22, 12));
+            alt = !alt;
             LinearLayout t = Ui.vertical(c);
-            TextView title = Ui.text(c, d.title, 12, R.color.text, true);
+            TextView title = Ui.text(c, d.title, 16, R.color.text, true);
             title.setSingleLine(true);
             title.setEllipsize(android.text.TextUtils.TruncateAt.END);
             t.addView(title);
-            LinearLayout meta = Ui.horizontal(c);
-            TextView ft = Ui.text(c, d.fileType, 10, R.color.text_secondary, true);
-            ft.setBackground(Ui.rounded(c, R.color.slate_100, 4, 0));
-            ft.setPadding(Ui.dp(c, 6), Ui.dp(c, 2), Ui.dp(c, 6), Ui.dp(c, 2));
-            meta.addView(ft);
-            Ui.addWrap(meta, Ui.text(c, Ui.dateTime(d.updatedAt), 11, R.color.text_muted, false), 8);
-            Ui.add(t, meta, 4);
+            String subject = null;
+            if (d.tags != null) for (String tg : d.tags) if (!tg.contains("Engine") && !tg.contains("Speech") && !tg.contains("Extractor")) { subject = tg; break; }
+            String meta = (d.pageCount != null && d.pageCount > 0 ? d.pageCount + " trang" : d.fileType) + (subject != null ? "  •  " + subject : "  •  " + Ui.date(d.updatedAt));
+            Ui.add(t, Ui.text(c, meta, 12, R.color.text_secondary, false), 2);
             LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
             tl.setMarginStart(Ui.dp(c, 12));
             row.addView(t, tl);
+            row.addView(Ui.icon(c, on ? R.drawable.ic_check_circle : R.drawable.ic_plus_circle, 22, Ui.color(c, on ? R.color.brand_dark : R.color.slate_400)));
             row.setOnClickListener(v -> {
-                if (on) { if (selected.size() > 2) selected.remove(d.id); } else selected.add(d.id);
+                if (on) { if (selected.size() > 2) selected.remove(d.id); else toast("Cần giữ ít nhất 2 tài liệu để hợp nhất."); }
+                else selected.add(d.id);
                 rerender();
             });
             Ui.add(pi, row, 10);
         }
-        if (docs.size() < 2) Ui.add(pi, Ui.text(c, "Cần ít nhất 2 bài học trong lịch sử để hợp nhất.", 12, R.color.text_muted, false), 10);
+        if (docs.size() < 2) Ui.add(pi, Ui.text(c, "Cần ít nhất 2 bài học trong lịch sử để hợp nhất.", 13, R.color.text_muted, false), 10);
+        boolean ready = selected.size() >= 2 && !loading;
+        LinearLayout go = Ui.iconText(c, R.drawable.ic_sparkles, loading ? "Đang phân tích đối chiếu..." : "✨ Bắt đầu Hợp nhất AI (" + selected.size() + " tài liệu)", 15, 0xFFFFFFFF, true);
+        go.setGravity(Gravity.CENTER);
+        go.setBackground(Ui.gradient(c, 16, 0xFF005C55, 0xFF945D00));
+        go.setMinimumHeight(Ui.dp(c, 54));
+        go.setAlpha(ready ? 1f : 0.55f);
+        go.setOnClickListener(v -> start());
+        Ui.add(pi, go, 14);
         Ui.add(root, pick, 18);
 
-        FusionResult r = state.fusionResult();
         if (r == null) {
-            MaterialCardView empty = Ui.card(c);
-            empty.setRadius(Ui.dp(c, 24));
-            LinearLayout ei = Ui.inner(empty);
-            ei.setGravity(Gravity.CENTER_HORIZONTAL);
-            ei.setPadding(Ui.dp(c, 24), Ui.dp(c, 36), Ui.dp(c, 24), Ui.dp(c, 36));
-            ei.addView(Ui.iconBox(c, R.drawable.ic_compare, R.color.teal_50, R.color.brand, 64, 32, 24));
-            Ui.addInline(ei, Ui.text(c, "Sẵn sàng Hợp nhất Kiến thức", 16, R.color.text, true), 14);
-            TextView m = Ui.text(c, "Chọn ít nhất 2 bài học ở danh sách phía trên và nhấn nút \"Bắt đầu Hợp nhất AI\" để kích hoạt công cụ phân tích đối chiếu.", 12, R.color.text_muted, false);
+            LinearLayout empty = Ui.vertical(c);
+            empty.setGravity(Gravity.CENTER_HORIZONTAL);
+            empty.setBackground(Ui.rounded(c, R.color.m3_surface_low, 22, 0));
+            empty.setPadding(Ui.dp(c, 22), Ui.dp(c, 28), Ui.dp(c, 22), Ui.dp(c, 28));
+            empty.addView(Ui.iconBox(c, R.drawable.ic_compare, R.color.teal_200, R.color.brand_dark, 60, 30, 999));
+            Ui.addInline(empty, Ui.text(c, "Sẵn sàng Hợp nhất Kiến thức", 17, R.color.text, true), 14);
+            TextView m = Ui.text(c, "Chọn ít nhất 2 bài học ở danh sách phía trên và nhấn \"Bắt đầu Hợp nhất AI\" để kích hoạt công cụ phân tích đối chiếu.", 13, R.color.text_secondary, false);
             m.setGravity(Gravity.CENTER);
-            Ui.add(ei, m, 6);
-            Ui.add(root, empty, 18);
+            Ui.add(empty, m, 6);
+            Ui.add(root, empty, 16);
             return;
         }
 
-        // ---- KPI metrics ----
-        kpi(root, R.drawable.ic_folder, R.color.teal_50, R.color.brand, "Tài liệu đã hợp nhất", r.comparedDocs.size() + " tệp");
-        kpi(root, R.drawable.ic_check_circle, R.color.emerald_50, R.color.emerald, "Khái niệm gộp chung", r.commonConcepts.size() + " nhóm");
-        kpi(root, R.drawable.ic_shield, R.color.amber_50, R.color.amber, "Mâu thuẫn phát hiện", r.conflicts.size() + " cờ cảnh báo");
+        // ---- KPI tiles ----
+        LinearLayout kpis = Ui.horizontal(c);
+        kpis.setBaselineAligned(false);
+        kpiTile(kpis, R.drawable.ic_file, R.color.m3_secondary_container, R.color.m3_secondary, R.color.surface, r.comparedDocs.size(), "Tài liệu đã hợp nhất", R.color.text, 0);
+        kpiTile(kpis, R.drawable.ic_network, R.color.teal_200, R.color.brand_dark, R.color.surface, r.commonConcepts.size(), "Khái niệm gộp chung", R.color.text, 8);
+        kpiTile(kpis, R.drawable.ic_alert_tri, R.color.m3_error, android.R.color.white, R.color.rose_soft, r.conflicts.size(), "Mâu thuẫn phát hiện", R.color.m3_error, 8);
+        Ui.add(root, kpis, 4);
 
-        // ---- Sub tabs ----
-        String[] labels = {"1. Tổng quan Hợp nhất", "2. So sánh Chi tiết", "3. Radar Cảnh báo Mâu thuẫn (" + r.conflicts.size() + ")"};
-        int[] icons = {R.drawable.ic_layers, R.drawable.ic_compare, R.drawable.ic_alert_tri};
-        View[] tabViews = new View[labels.length];
+        // ---- Segmented tabs ----
+        LinearLayout seg = Ui.horizontal(c);
+        seg.setBackground(Ui.rounded(c, R.color.m3_surface_container, 18, 0));
+        seg.setPadding(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4));
+        String[] labels = {"Tổng quan", "So sánh nguồn", "Radar mâu thuẫn"};
         for (int i = 0; i < labels.length; i++) {
             int idx = i;
-            tabViews[i] = Ui.underlineTab(c, icons[i], labels[i], tab == i, i == 2 ? 0xFFB45309 : Ui.color(c, R.color.brand), v -> { tab = idx; rerender(); });
+            boolean on = tab == i;
+            LinearLayout t = Ui.horizontal(c);
+            t.setGravity(Gravity.CENTER);
+            t.addView(Ui.text(c, labels[i], 14, on ? R.color.brand_dark : R.color.text_secondary, on));
+            if (i == 2 && !r.conflicts.isEmpty()) {
+                View rd = new View(c);
+                rd.setBackground(Ui.rounded(c, R.color.m3_error, 999, 0));
+                LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(Ui.dp(c, 7), Ui.dp(c, 7));
+                rl.setMarginStart(Ui.dp(c, 6));
+                t.addView(rd, rl);
+            }
+            t.setPadding(Ui.dp(c, 4), Ui.dp(c, 11), Ui.dp(c, 4), Ui.dp(c, 11));
+            if (on) t.setBackground(Ui.rounded(c, R.color.surface, 14, 0));
+            t.setOnClickListener(v -> { tab = idx; rerender(); });
+            Ui.addWeighted(seg, t, i == 0 ? 0 : 4);
         }
-        Ui.add(root, Ui.tabBar(c, tabViews), 20);
+        Ui.add(root, seg, 16);
 
         if (tab == 0) renderUnified(root, r);
         else if (tab == 1) renderCompare(root, r);
         else renderConflicts(root, r);
+
+        // ---- Export ----
+        LinearLayout copy = Ui.iconText(c, copied ? R.drawable.ic_check_circle : R.drawable.ic_copy, copied ? "Đã sao chép báo cáo!" : "📋 Sao chép toàn bộ báo cáo hợp nhất", 15, Ui.color(c, R.color.text), false);
+        copy.setGravity(Gravity.CENTER);
+        copy.setBackground(Ui.rounded(c, R.color.m3_secondary_container, 18, 0));
+        copy.setMinimumHeight(Ui.dp(c, 54));
+        copy.setOnClickListener(v -> copyReport(r));
+        Ui.add(root, copy, 22);
+        LinearLayout export = Ui.iconText(c, R.drawable.ic_download, "Xuất file PDF / Markdown tổng hợp", 15, 0xFFFFFFFF, true);
+        export.setGravity(Gravity.CENTER);
+        export.setBackground(Ui.gradient(c, 18, 0xFF005C55, 0xFF005C55));
+        export.setMinimumHeight(Ui.dp(c, 54));
+        export.setOnClickListener(v -> exportMarkdown(r));
+        Ui.add(root, export, 10);
+    }
+
+    private void kpiTile(LinearLayout row, int icon, int iconBg, int iconFg, int bg, int value, String label, int valueColor, int start) {
+        Context c = requireContext();
+        LinearLayout t = Ui.vertical(c);
+        t.setGravity(Gravity.CENTER_HORIZONTAL);
+        t.setBackground(Ui.rounded(c, bg, 20, bg == R.color.surface ? R.color.border : 0));
+        t.setPadding(Ui.dp(c, 8), Ui.dp(c, 14), Ui.dp(c, 8), Ui.dp(c, 14));
+        t.addView(Ui.iconBox(c, icon, iconBg, iconFg, 36, 20, 999));
+        TextView v = Ui.text(c, String.valueOf(value), 22, valueColor, true);
+        v.setGravity(Gravity.CENTER);
+        Ui.add(t, v, 6);
+        TextView l = Ui.text(c, label, 12, valueColor == R.color.text ? R.color.text_secondary : valueColor, false);
+        l.setGravity(Gravity.CENTER);
+        l.setMaxLines(2);
+        Ui.add(t, l, 2);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        lp.setMarginStart(Ui.dp(c, start));
+        row.addView(t, lp);
     }
 
     private void renderUnified(LinearLayout root, FusionResult r) {
         Context c = requireContext();
-        LinearLayout sum = Ui.vertical(c);
-        android.graphics.drawable.GradientDrawable sb = Ui.gradient(c, 24, Ui.color(c, R.color.teal_50), Ui.color(c, R.color.surface), Ui.color(c, R.color.slate_50));
-        sb.setStroke(Ui.dp(c, 1), Ui.color(c, R.color.brand_soft));
-        sum.setBackground(sb);
-        sum.setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20));
-        sum.addView(Ui.iconText(c, R.drawable.ic_sparkles, "BÁO CÁO TÓM TẮT HỢP NHẤT DỮ LIỆU", 12, Ui.color(c, R.color.brand), true));
-        LinearLayout copy = Ui.pillButton(c, copied ? R.drawable.ic_check_circle : R.drawable.ic_copy, copied ? "Đã sao chép báo cáo!" : "Sao chép toàn bộ báo cáo",
-                R.color.surface, R.color.brand, R.color.brand_soft, v -> copyReport(r));
-        copy.setPadding(Ui.dp(c, 12), Ui.dp(c, 6), Ui.dp(c, 12), Ui.dp(c, 6));
-        Ui.addInline(sum, copy, 10);
-        Ui.add(sum, Ui.text(c, r.unifiedSummary.isEmpty() ? "Đã tổng hợp thành công nội dung giữa các bài học." : r.unifiedSummary, 13, R.color.text_secondary, false), 12);
-        Ui.add(root, sum, 18);
+        MaterialCardView sum = Ui.card(c);
+        LinearLayout si = Ui.inner(sum);
+        si.addView(Ui.iconText(c, R.drawable.ic_brain, "Báo cáo tóm tắt cấu trúc", 17, Ui.color(c, R.color.brand_dark), true));
+        TextView st = Ui.text(c, r.unifiedSummary.isEmpty() ? "Đã tổng hợp thành công nội dung giữa các bài học." : r.unifiedSummary, 15, R.color.text, false);
+        st.setLineSpacing(0, 1.35f);
+        Ui.add(si, st, 10);
+        Ui.add(root, sum, 4);
 
-        LinearLayout ch = Ui.iconText(c, R.drawable.ic_check_circle, "Các Khái niệm dùng chung (Đã gộp chuẩn hóa)", 14, Ui.color(c, R.color.text), true);
-        ((ImageView) ch.getChildAt(0)).setColorFilter(Ui.color(c, R.color.brand));
-        Ui.add(root, ch, 20);
+        MaterialCardView mc = Ui.card(c);
+        LinearLayout mi = Ui.inner(mc);
+        LinearLayout mh = Ui.horizontal(c);
+        Ui.addWeighted(mh, Ui.text(c, "Cấu trúc sơ đồ tư duy hợp nhất", 16, R.color.text, true), 0);
+        mh.addView(Ui.pill(c, "Trích dẫn kép", R.color.m3_tertiary_fixed, R.color.m3_on_tertiary_fixed));
+        mi.addView(mh);
         for (CommonConcept cc : r.commonConcepts) {
-            MaterialCardView card = Ui.card(c);
-            LinearLayout in = Ui.inner(card);
-            LinearLayout head = Ui.horizontal(c);
-            Ui.addWeighted(head, Ui.text(c, cc.concept, 13, R.color.text, true), 0);
-            TextView n = Ui.text(c, cc.sources.size() + " Nguồn", 10, R.color.brand, true);
-            n.setBackground(Ui.rounded(c, R.color.teal_50, 6, 0));
-            n.setPadding(Ui.dp(c, 8), Ui.dp(c, 2), Ui.dp(c, 8), Ui.dp(c, 2));
-            Ui.addWrap(head, n, 8);
-            in.addView(head);
-            Ui.add(in, Ui.text(c, cc.definition, 12, R.color.text_secondary, false), 8);
+            LinearLayout item = Ui.vertical(c);
+            item.setBackground(Ui.rounded(c, R.color.m3_surface_low, 18, 0));
+            item.setPadding(Ui.dp(c, 14), Ui.dp(c, 12), Ui.dp(c, 14), Ui.dp(c, 12));
+            LinearLayout ih = Ui.horizontal(c);
+            ih.setGravity(Gravity.TOP);
+            Ui.addWeighted(ih, Ui.text(c, "Khái niệm: " + cc.concept, 17, R.color.text, true), 0);
+            Ui.addWrap(ih, Ui.pill(c, cc.sources.size() >= 2 ? "Cốt lõi" : "Bổ trợ", R.color.teal_200, R.color.brand_dark), 6);
+            item.addView(ih);
+            Ui.add(item, Ui.text(c, cc.definition, 13, R.color.text_secondary, false), 6);
             if (!cc.sources.isEmpty()) {
-                LinearLayout srcs = Ui.horizontal(c);
+                com.google.android.material.chip.ChipGroup srcs = new com.google.android.material.chip.ChipGroup(c);
+                srcs.setChipSpacingHorizontal(Ui.dp(c, 6));
+                srcs.setChipSpacingVertical(Ui.dp(c, 6));
                 for (String s : cc.sources) {
-                    TextView t = Ui.text(c, "📌 " + s, 10, R.color.text_secondary, true);
-                    t.setBackground(Ui.rounded(c, R.color.slate_100, 6, 0));
-                    t.setPadding(Ui.dp(c, 8), Ui.dp(c, 2), Ui.dp(c, 8), Ui.dp(c, 2));
-                    Ui.addWrap(srcs, t, srcs.getChildCount() > 0 ? 6 : 0);
+                    LinearLayout t = Ui.iconText(c, R.drawable.ic_book, s, 12, Ui.color(c, R.color.text_secondary), false);
+                    t.setBackground(Ui.rounded(c, R.color.surface, 999, 0));
+                    t.setPadding(Ui.dp(c, 10), Ui.dp(c, 4), Ui.dp(c, 12), Ui.dp(c, 4));
+                    srcs.addView(t);
                 }
-                HorizontalScrollView hs = new HorizontalScrollView(c);
-                hs.setHorizontalScrollBarEnabled(false);
-                hs.addView(srcs);
-                Ui.add(in, hs, 10);
+                Ui.add(item, srcs, 10);
             }
-            Ui.add(root, card, 12);
+            Ui.add(mi, item, 12);
         }
-
         List<MindmapNode> merged = r.mergedMindmap != null ? r.mergedMindmap.nodes : new ArrayList<>();
-        if (!merged.isEmpty()) {
-            MaterialCardView card = Ui.card(c);
-            card.setRadius(Ui.dp(c, 24));
-            LinearLayout in = Ui.inner(card);
-            in.setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20));
-            LinearLayout mh = Ui.iconText(c, R.drawable.ic_layers, "Cấu trúc Sơ đồ Tư duy Hợp nhất", 14, Ui.color(c, R.color.text), true);
-            ((ImageView) mh.getChildAt(0)).setColorFilter(Ui.color(c, R.color.brand));
-            in.addView(mh);
+        if (showMerged && !merged.isEmpty()) {
             LinearLayout list = Ui.vertical(c);
-            list.setBackground(Ui.rounded(c, R.color.slate_50, 16, R.color.border));
-            list.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
             for (MindmapNode n : merged) {
                 int lvl = n.level != null ? n.level : 1;
                 boolean warn = "warning".equals(n.type);
-                LinearLayout row = Ui.horizontal(c);
-                row.setPadding(Ui.dp(c, 10), Ui.dp(c, 9), Ui.dp(c, 10), Ui.dp(c, 9));
-                int bg = warn ? R.color.amber_50 : lvl == 0 ? R.color.brand : lvl == 1 ? R.color.surface : R.color.slate_100;
-                int fg = warn ? R.color.amber_700 : lvl == 0 ? android.R.color.white : lvl == 1 ? R.color.text : R.color.text_secondary;
-                row.setBackground(Ui.rounded(c, bg, 12, warn ? R.color.amber_soft : lvl == 1 ? R.color.border : 0));
-                Ui.addWeighted(row, Ui.text(c, "•  " + n.label + (n.detail != null && !n.detail.isEmpty() ? "  (" + n.detail + ")" : ""), 12, fg, lvl <= 1), 0);
+                TextView row = Ui.text(c, "•  " + n.label + (n.detail != null && !n.detail.isEmpty() ? "  (" + n.detail + ")" : ""), 13,
+                        warn ? R.color.m3_tertiary : lvl == 0 ? android.R.color.white : R.color.text, lvl <= 1);
+                if (lvl == 0) row.setTextColor(0xFFFFFFFF);
+                row.setBackground(lvl == 0 ? Ui.gradient(c, 12, 0xFF005C55, 0xFF005C55) : Ui.rounded(c, warn ? R.color.amber_50 : lvl == 1 ? R.color.surface : R.color.m3_surface_low, 12, lvl == 1 ? R.color.border : 0));
+                row.setPadding(Ui.dp(c, 12), Ui.dp(c, 9), Ui.dp(c, 12), Ui.dp(c, 9));
                 LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                rl.topMargin = list.getChildCount() > 0 ? Ui.dp(c, 8) : 0;
+                rl.topMargin = Ui.dp(c, 8);
                 if (lvl >= 2) rl.setMarginStart(Ui.dp(c, 16));
                 list.addView(row, rl);
             }
-            Ui.add(in, list, 14);
-            Ui.add(root, card, 18);
+            Ui.add(mi, list, 6);
         }
+        if (!merged.isEmpty()) {
+            LinearLayout view = Ui.iconText(c, 0, showMerged ? "Thu gọn sơ đồ Mindmap hợp nhất" : "Xem sơ đồ Mindmap hợp nhất", 15, Ui.color(c, R.color.text_secondary), false);
+            view.addView(Ui.icon(c, R.drawable.ic_arrow_right, 18, Ui.color(c, R.color.text_secondary)));
+            view.setGravity(Gravity.CENTER);
+            view.setBackground(Ui.rounded(c, R.color.m3_surface_high, 16, 0));
+            view.setMinimumHeight(Ui.dp(c, 50));
+            view.setOnClickListener(v -> { showMerged = !showMerged; rerender(); });
+            Ui.add(mi, view, 14);
+        }
+        Ui.add(root, mc, 14);
+
+        String tipText = !r.conflicts.isEmpty() && !r.conflicts.get(0).recommendation.isEmpty() ? r.conflicts.get(0).recommendation
+                : "Học lý thuyết định nghĩa từ giáo trình trước, sau đó luyện các dạng bài áp dụng từ slide bài giảng để đạt điểm tối đa.";
+        LinearLayout tip = Ui.horizontal(c);
+        tip.setGravity(Gravity.TOP);
+        tip.setBackground(Ui.rounded(c, R.color.teal_50, 20, 0));
+        tip.setPadding(Ui.dp(c, 16), Ui.dp(c, 14), Ui.dp(c, 16), Ui.dp(c, 14));
+        tip.addView(Ui.icon(c, R.drawable.ic_lightbulb, 22, Ui.color(c, R.color.brand_dark)));
+        TextView tt = Ui.text(c, "Mẹo PRO: " + tipText, 13, R.color.text_secondary, false);
+        LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        tl.setMarginStart(Ui.dp(c, 12));
+        tip.addView(tt, tl);
+        Ui.add(root, tip, 14);
+    }
+
+    private void exportMarkdown(FusionResult r) {
+        String title = r.fusionTitle.isEmpty() ? "Bao_cao_hop_nhat" : r.fusionTitle;
+        StringBuilder md = new StringBuilder("# ").append(r.fusionTitle.isEmpty() ? "Báo cáo hợp nhất kiến thức" : r.fusionTitle).append("\n\n");
+        md.append("## Tóm tắt tổng quan\n\n").append(r.unifiedSummary).append("\n\n## Khái niệm dùng chung\n\n");
+        for (CommonConcept cc : r.commonConcepts) md.append("- **").append(cc.concept).append(":** ").append(cc.definition).append(" _(Nguồn: ").append(String.join(", ", cc.sources)).append(")_\n");
+        md.append("\n## Chi tiết độc quyền từng tài liệu\n\n");
+        for (UniqueInsight u : r.uniqueInsights) {
+            md.append("### ").append(u.docTitle).append("\n\n");
+            for (String s : u.insights) md.append("- ").append(s).append('\n');
+            md.append('\n');
+        }
+        md.append("## Radar mâu thuẫn\n\n");
+        for (KnowledgeConflict k : r.conflicts) {
+            md.append("### ").append(k.topic).append("\n\n- **").append(k.docA.title).append(":** ").append(k.docA.statement)
+                    .append("\n- **").append(k.docB.title).append(":** ").append(k.docB.statement)
+                    .append("\n- **Giải thích:** ").append(k.explanation).append("\n- **Khuyến nghị:** ").append(k.recommendation).append("\n\n");
+        }
+        md.append("---\n*Xuất từ StudyMind AI*\n");
+        if (com.studymind.nativeapp.ui.Share.textFile(requireContext(), com.studymind.nativeapp.ui.Share.safeName(title, 40) + ".md", "text/markdown", md.toString(), "Xuất báo cáo hợp nhất"))
+            toast("📄 Đã xuất báo cáo hợp nhất ra file Markdown (.md)! Có thể in ra PDF từ ứng dụng đọc file.");
+        else toast("Không thể xuất báo cáo, vui lòng thử lại.");
     }
 
     private void renderCompare(LinearLayout root, FusionResult r) {
@@ -376,7 +453,7 @@ public class FusionFragment extends BaseFragment {
     }
 
     /** Same plain-text report as handleCopyReport on the web */
-    private void copyReport(FusionResult r) {
+    private String reportText(FusionResult r) {
         StringBuilder sb = new StringBuilder("=== ").append(r.fusionTitle.isEmpty() ? "BÁO CÁO HỢP NHẤT KIẾN THỨC" : r.fusionTitle).append(" ===\n\n");
         sb.append("[TÓM TẮT TỔNG QUAN]\n").append(r.unifiedSummary).append("\n\n[CÁC KHÁI NIỆM DÙNG CHUNG / GIAO THOA TRI THỨC]\n");
         for (int i = 0; i < r.commonConcepts.size(); i++) {
@@ -396,8 +473,12 @@ public class FusionFragment extends BaseFragment {
             sb.append(i + 1).append(". ").append(k.topic).append("\n   - Nguồn A: ").append(k.docA.statement)
                     .append("\n   - Nguồn B: ").append(k.docB.statement).append("\n   - Lời khuyên: ").append(k.recommendation).append("\n\n");
         }
+        return sb.toString();
+    }
+
+    private void copyReport(FusionResult r) {
         ClipboardManager cm = (ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
-        cm.setPrimaryClip(ClipData.newPlainText("StudyMind Fusion", sb.toString()));
+        cm.setPrimaryClip(ClipData.newPlainText("StudyMind Fusion", reportText(r)));
         copied = true;
         rerender();
         Async.mainDelayed(() -> { copied = false; if (isAdded()) rerender(); }, 3000);

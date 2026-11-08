@@ -60,13 +60,16 @@ public class AuthFragment extends Fragment {
 
         TextView brand = v.findViewById(R.id.brandName);
         SpannableString name = new SpannableString("StudyMind AI");
-        name.setSpan(new ForegroundColorSpan(0xFF99F6E4), 10, 12, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        name.setSpan(new ForegroundColorSpan(TEAL), 10, 12, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         brand.setText(name);
 
         LinearLayout features = v.findViewById(R.id.features);
-        addFeature(features, R.drawable.ic_zap, "Xử lý siêu tốc với Groq LPU & Gemini 3.6", "Phân tích chuyên sâu văn bản & đa phương tiện chỉ trong vài giây.");
-        addFeature(features, R.drawable.ic_fork, "Tự động dựng Sơ đồ tư duy & Flashcards", "Dễ dàng ôn tập theo phương pháp Spaced Repetition khoa học.");
-        addFeature(features, R.drawable.ic_shield_check, "Đồng bộ đám mây với Supabase", "Lưu trữ dữ liệu học tập an toàn, truy cập mọi lúc mọi nơi.");
+        addFeature(features, R.drawable.ic_zap, "AI phân tích siêu tốc", "Tóm tắt giáo trình, bài giảng và tài liệu học tập trong vài giây.");
+        addFeature(features, R.drawable.ic_mindmap, "Sơ đồ tư duy & Flashcard", "Tự động hóa chu trình Spaced Repetition khoa học.");
+        addFeature(features, R.drawable.ic_refresh, "Đồng bộ đám mây Supabase", "Lưu trữ an toàn, truy cập linh hoạt trên điện thoại và web.");
+
+        remember = v.findViewById(R.id.rememberMe);
+        remember.setChecked(requireContext().getSharedPreferences("studymind_prefs", android.content.Context.MODE_PRIVATE).getBoolean("remember_login", true));
 
         formTitle = v.findViewById(R.id.formTitle);
         formSubtitle = v.findViewById(R.id.formSubtitle);
@@ -117,29 +120,36 @@ public class AuthFragment extends Fragment {
         if (loading && !auth.isSignedIn()) setLoading(false);
     }
 
+    private android.widget.CheckBox remember;
+
     private void addFeature(LinearLayout parent, int icon, String title, String sub) {
         LinearLayout row = new LinearLayout(requireContext());
         row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setBackgroundResource(R.drawable.bg_feature_row);
+        int rp = Ui.dp(requireContext(), 12);
+        row.setPadding(rp, rp, rp, rp);
         ImageView iv = new ImageView(requireContext());
         iv.setImageResource(icon);
+        iv.setColorFilter(TEAL);
         iv.setBackgroundResource(R.drawable.bg_feature_icon);
-        int p = Ui.dp(requireContext(), 6);
+        int p = Ui.dp(requireContext(), 10);
         iv.setPadding(p, p, p, p);
-        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(Ui.dp(requireContext(), 28), Ui.dp(requireContext(), 28));
-        ilp.topMargin = Ui.dp(requireContext(), 2);
+        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(Ui.dp(requireContext(), 44), Ui.dp(requireContext(), 44));
         row.addView(iv, ilp);
 
         LinearLayout texts = new LinearLayout(requireContext());
         texts.setOrientation(LinearLayout.VERTICAL);
         TextView t = new TextView(requireContext());
         t.setText(title);
-        t.setTextColor(0xFFFFFFFF);
-        t.setTextSize(12);
+        t.setTextColor(Ui.color(requireContext(), R.color.text));
+        t.setTextSize(16);
         t.setTypeface(Typeface.DEFAULT_BOLD);
         TextView s = new TextView(requireContext());
         s.setText(sub);
-        s.setTextColor(0xCCCCFBF1);
-        s.setTextSize(11);
+        s.setTextColor(Ui.color(requireContext(), R.color.text_secondary));
+        s.setTextSize(13);
+        s.setMaxLines(2);
         texts.addView(t);
         texts.addView(s);
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
@@ -147,7 +157,7 @@ public class AuthFragment extends Fragment {
         row.addView(texts, tlp);
 
         LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        if (parent.getChildCount() > 0) rlp.topMargin = Ui.dp(requireContext(), 14);
+        if (parent.getChildCount() > 0) rlp.topMargin = Ui.dp(requireContext(), 10);
         parent.addView(row, rlp);
     }
 
@@ -162,15 +172,16 @@ public class AuthFragment extends Fragment {
         styleTab(tabSignup, signup);
         nameGroup.setVisibility(signup ? View.VISIBLE : View.GONE);
         forgot.setVisibility(signup ? View.GONE : View.VISIBLE);
-        submitText.setText(signup ? "Đăng ký tài khoản ngay" : "Đăng nhập vào tài khoản");
+        submitText.setText(signup ? "Tạo tài khoản StudyMind" : "Đăng nhập vào StudyMind");
+        if (remember != null) remember.setVisibility(signup ? View.INVISIBLE : View.VISIBLE);
     }
 
     /** Active segment: white pill, teal heavy text; inactive: slate text on the grey track */
     private void styleTab(TextView tab, boolean active) {
         tab.setBackgroundResource(active ? R.drawable.bg_segment_active : 0);
         tab.setElevation(active ? Ui.dp(requireContext(), 2) : 0);
-        tab.setTextColor(active ? TEAL : SLATE_500);
-        tab.setTypeface(active ? Typeface.create("sans-serif-black", Typeface.NORMAL) : Typeface.DEFAULT_BOLD);
+        tab.setTextColor(active ? TEAL : Ui.color(requireContext(), R.color.text_secondary));
+        tab.setTypeface(active ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
     }
 
     private void showError(String message) {
@@ -199,6 +210,9 @@ public class AuthFragment extends Fragment {
 
         setLoading(true);
         boolean isSignup = signup;
+        // "Ghi nhớ đăng nhập": when off, MainActivity signs out on the next cold start
+        requireContext().getSharedPreferences("studymind_prefs", android.content.Context.MODE_PRIVATE).edit()
+                .putBoolean("remember_login", isSignup || remember == null || remember.isChecked()).apply();
         Async.run(() -> {
             if (isSignup) return auth.signUp(name, mail, pass);
             auth.signIn(mail, pass);

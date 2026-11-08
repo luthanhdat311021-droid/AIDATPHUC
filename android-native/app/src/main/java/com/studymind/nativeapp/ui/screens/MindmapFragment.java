@@ -81,6 +81,9 @@ public class MindmapFragment extends BaseFragment {
     @Override
     protected Object watchKey() { return state.activeDoc(); }
 
+    private static final String[][] CHIP_FILTERS = {{"all", "Tất cả"}, {"definition", "Định nghĩa"}, {"formula", "Công thức"}, {"process", "Quy trình"},
+            {"example", "Ví dụ"}, {"concept", "Khái niệm"}, {"subtopic", "Chủ đề con"}, {"important", "Quan trọng"}};
+
     @Override
     protected void render(LinearLayout root) {
         if (!requireDocument(root, "xem sơ đồ tư duy")) return;
@@ -103,114 +106,136 @@ public class MindmapFragment extends BaseFragment {
             selectedId = first.isEmpty() ? ROOT : first.get(0);
         }
         if (!byId.containsKey(selectedId)) selectedId = ROOT;
-        root.setPadding(0, 0, 0, Ui.dp(c, 24));
+        root.setPadding(0, 0, 0, 0);
 
         // ---- Toolbar ----
         LinearLayout bar = Ui.vertical(c);
-        bar.setBackgroundColor(Ui.color(c, R.color.surface));
-        bar.setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12));
+        bar.setBackgroundColor(Ui.color(c, R.color.m3_surface_low));
+        bar.setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 10));
         LinearLayout title = Ui.horizontal(c);
-        title.addView(Ui.iconBox(c, R.drawable.ic_mindmap, R.color.brand, android.R.color.white, 32, 16, 12));
-        LinearLayout tt = Ui.vertical(c);
-        LinearLayout tl = Ui.horizontal(c);
-        tl.addView(Ui.text(c, "Deep Knowledge Mindmap AI", 14, R.color.text, true));
-        TextView count = Ui.text(c, (byId.size() - 1) + " Nút phân cấp", 10, R.color.brand, true);
-        count.setBackground(Ui.rounded(c, R.color.brand_soft, 999, R.color.brand_soft));
-        count.setPadding(Ui.dp(c, 8), Ui.dp(c, 2), Ui.dp(c, 8), Ui.dp(c, 2));
-        Ui.addWrap(tl, count, 6);
-        tt.addView(tl);
-        String depthLabel = mm != null && mm.metadata != null ? mm.metadata.depthLabel : null;
-        tt.addView(Ui.text(c, (depthLabel != null ? "Chế độ " + depthLabel + " • " : "") + maxLevel + " tầng kiến thức • AI đào sâu nhánh • Căn đối xứng Trái-Phải", 11, R.color.text_muted, false));
+        title.addView(Ui.icon(c, R.drawable.ic_mindmap, 22, Ui.color(c, R.color.text_secondary)));
+        TextView tt = Ui.text(c, "Bản đồ: " + rootLabel, 17, R.color.text, true);
+        tt.setMaxLines(1);
+        tt.setEllipsize(android.text.TextUtils.TruncateAt.END);
         LinearLayout.LayoutParams ttl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        ttl.setMarginStart(Ui.dp(c, 10));
+        ttl.setMarginStart(Ui.dp(c, 8));
         title.addView(tt, ttl);
+        LinearLayout export = Ui.iconText(c, R.drawable.ic_download, "Xuất PNG", 14, 0xFFFFFFFF, true);
+        export.setBackground(Ui.gradient(c, 999, 0xFF0F766E, 0xFF0F766E));
+        export.setPadding(Ui.dp(c, 14), Ui.dp(c, 9), Ui.dp(c, 16), Ui.dp(c, 9));
+        export.setOnClickListener(v -> exportImage(rootLabel));
+        Ui.addWrap(title, export, 8);
         bar.addView(title);
 
         LinearLayout tools = Ui.horizontal(c);
-        EditText searchField = Ui.field(c, "Tìm nút (VD: ATP...)...", false);
-        searchField.setTextSize(12);
-        searchField.setPadding(Ui.dp(c, 10), Ui.dp(c, 7), Ui.dp(c, 10), Ui.dp(c, 7));
-        searchField.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_search, 0, 0, 0);
-        searchField.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(Ui.color(c, R.color.slate_400)));
-        searchField.setCompoundDrawablePadding(Ui.dp(c, 6));
+        LinearLayout sbox = Ui.horizontal(c);
+        sbox.setBackground(Ui.rounded(c, R.color.m3_surface_high, 999, 0));
+        sbox.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 10), 0);
+        sbox.addView(Ui.icon(c, R.drawable.ic_search, 18, Ui.color(c, R.color.text_secondary)));
+        EditText searchField = new EditText(c);
+        searchField.setHint("Tìm nút, định lý, công thức...");
+        searchField.setTextSize(13);
+        searchField.setSingleLine(true);
+        searchField.setBackground(null);
+        searchField.setTextColor(Ui.color(c, R.color.text));
+        searchField.setHintTextColor(Ui.color(c, R.color.text_muted));
         searchField.setText(search);
         searchField.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a1, int b, int d) {}
             @Override public void onTextChanged(CharSequence s, int a1, int b, int d) {}
             @Override public void afterTextChanged(Editable s) { search = s.toString(); refreshGraph(true); }
         });
-        tools.addView(searchField, new LinearLayout.LayoutParams(Ui.dp(c, 180), ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams sfl = new LinearLayout.LayoutParams(0, Ui.dp(c, 42), 1f);
+        sfl.setMarginStart(Ui.dp(c, 6));
+        sbox.addView(searchField, sfl);
+        Ui.addWeighted(tools, sbox, 0);
+        LinearLayout add = Ui.iconText(c, R.drawable.ic_plus, "Nhánh", 14, 0xFFFFFFFF, true);
+        add.setBackground(Ui.gradient(c, 999, 0xFF005C55, 0xFF005C55));
+        add.setPadding(Ui.dp(c, 14), Ui.dp(c, 10), Ui.dp(c, 16), Ui.dp(c, 10));
+        add.setOnClickListener(v -> nodeDialog(null, selectedId));
+        Ui.addWrap(tools, add, 10);
+        Ui.add(bar, tools, 10);
+
+        LinearLayout chips = Ui.horizontal(c);
+        for (String[] f : CHIP_FILTERS) {
+            boolean on = filter.equals(f[0]);
+            TextView t = Ui.text(c, f[1], 13, on ? android.R.color.white : R.color.text_secondary, on);
+            if (on) t.setTextColor(0xFFFFFFFF);
+            t.setBackground(on ? Ui.gradient(c, 999, 0xFF005C55, 0xFF005C55) : Ui.rounded(c, R.color.m3_surface_container, 999, 0));
+            t.setPadding(Ui.dp(c, 14), Ui.dp(c, 6), Ui.dp(c, 14), Ui.dp(c, 6));
+            t.setOnClickListener(v -> { filter = f[0]; keepView = false; rerender(); });
+            Ui.addWrap(chips, t, chips.getChildCount() > 0 ? 8 : 0);
+        }
         if (maxLevel > 1) {
-            LinearLayout tiers = Ui.horizontal(c);
-            tiers.setBackground(Ui.rounded(c, R.color.slate_50, 8, R.color.border));
-            tiers.setPadding(Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
+            View sep = new View(c);
+            sep.setBackgroundColor(Ui.color(c, R.color.m3_outline_variant));
+            LinearLayout.LayoutParams spl = new LinearLayout.LayoutParams(Ui.dp(c, 1), Ui.dp(c, 20));
+            spl.setMargins(Ui.dp(c, 10), 0, Ui.dp(c, 2), 0);
+            chips.addView(sep, spl);
             List<Integer> lv = new ArrayList<>();
             for (int i = 1; i <= Math.min(maxLevel - 1, 5); i++) lv.add(i);
             lv.add(-1);
             for (int l : lv) {
                 boolean on = visibleLevel == l;
-                TextView t = Ui.text(c, l == -1 ? "Tất cả" : "Tầng " + l, 11, on ? android.R.color.white : R.color.text_secondary, true);
-                t.setPadding(Ui.dp(c, 8), Ui.dp(c, 5), Ui.dp(c, 8), Ui.dp(c, 5));
-                if (on) t.setBackground(Ui.rounded(c, R.color.brand, 6, 0));
+                TextView t = Ui.text(c, l == -1 ? "Mọi tầng" : "Tầng " + l, 13, on ? R.color.brand : R.color.text_secondary, on);
+                t.setBackground(Ui.rounded(c, on ? R.color.m3_primary_fixed : R.color.surface, 999, on ? 0 : R.color.border));
+                t.setPadding(Ui.dp(c, 12), Ui.dp(c, 6), Ui.dp(c, 12), Ui.dp(c, 6));
                 t.setOnClickListener(v -> { visibleLevel = l; applyTier(); keepView = false; rerender(); });
-                tiers.addView(t);
+                Ui.addWrap(chips, t, 8);
             }
-            Ui.addWrap(tools, tiers, 8);
         }
-        String[] filterLabels = new String[FILTERS.length];
-        int fsel = 0;
-        for (int i = 0; i < FILTERS.length; i++) { filterLabels[i] = FILTERS[i][1]; if (FILTERS[i][0].equals(filter)) fsel = i; }
-        android.widget.Spinner fs = Ui.select(c, filterLabels, fsel, i -> { filter = FILTERS[i][0]; keepView = false; rerender(); });
-        Ui.addWrap(tools, fs, 8);
-        LinearLayout add = Ui.pillButton(c, R.drawable.ic_plus, "Thêm nhánh", R.color.brand, android.R.color.white, 0, v -> nodeDialog(null, selectedId));
-        add.setBackground(Ui.rounded(c, R.color.brand, 8, 0));
-        add.setPadding(Ui.dp(c, 12), Ui.dp(c, 7), Ui.dp(c, 12), Ui.dp(c, 7));
-        Ui.addWrap(tools, add, 8);
-        LinearLayout export = Ui.pillButton(c, R.drawable.ic_download, "Xuất ảnh", R.color.surface, R.color.text_secondary, R.color.border, v -> exportImage(rootLabel));
-        export.setPadding(Ui.dp(c, 10), Ui.dp(c, 7), Ui.dp(c, 10), Ui.dp(c, 7));
-        Ui.addWrap(tools, export, 8);
-        HorizontalScrollView ts = new HorizontalScrollView(c);
-        ts.setHorizontalScrollBarEnabled(false);
-        ts.addView(tools);
-        Ui.add(bar, ts, 10);
+        HorizontalScrollView cs = new HorizontalScrollView(c);
+        cs.setHorizontalScrollBarEnabled(false);
+        cs.addView(chips);
+        Ui.add(bar, cs, 10);
         root.addView(bar);
-        View rule = new View(c);
-        rule.setBackgroundColor(Ui.color(c, R.color.border));
-        root.addView(rule, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 1)));
+
+        LinearLayout info = Ui.horizontal(c);
+        info.setBackgroundColor(Ui.color(c, R.color.surface));
+        info.setPadding(Ui.dp(c, 16), Ui.dp(c, 8), Ui.dp(c, 16), Ui.dp(c, 8));
+        View dot = new View(c);
+        dot.setBackground(Ui.rounded(c, R.color.brand_dark, 999, 0));
+        info.addView(dot, new LinearLayout.LayoutParams(Ui.dp(c, 7), Ui.dp(c, 7)));
+        String depthLabel = mm != null && mm.metadata != null ? mm.metadata.depthLabel : null;
+        TextView it = Ui.text(c, (byId.size() - 1) + " nút phân cấp • " + maxLevel + " tầng chi tiết" + (depthLabel != null ? " • " + depthLabel : ""), 13, R.color.text_secondary, false);
+        LinearLayout.LayoutParams itl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        itl.setMarginStart(Ui.dp(c, 8));
+        info.addView(it, itl);
+        info.addView(Ui.iconText(c, R.drawable.ic_sparkles, "Đồng bộ AI", 13, Ui.color(c, R.color.brand), false));
+        root.addView(info);
 
         // ---- Canvas ----
         FrameLayout canvas = new FrameLayout(c);
         canvas.setBackgroundColor(Ui.color(c, R.color.bg));
         graph = new GraphView(c);
-        graph.setDotColor(0xFFCBD5E1);
+        graph.setDotColor(Ui.color(c, R.color.m3_outline_variant));
         graph.setOnNodeClick(n -> { selectedId = n.id; keepView = true; rerender(); });
         canvas.addView(graph, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        LinearLayout hintBox = Ui.iconText(c, R.drawable.ic_sparkles, "Chạm nút để xem chi tiết • 1 ngón kéo • 2 ngón phóng to", 11, Ui.color(c, R.color.text_muted), false);
-        ((ImageView) hintBox.getChildAt(0)).setColorFilter(Ui.color(c, R.color.brand));
-        hintBox.setBackground(Ui.rounded(c, R.color.surface, 12, R.color.border));
-        hintBox.setPadding(Ui.dp(c, 8), Ui.dp(c, 6), Ui.dp(c, 8), Ui.dp(c, 6));
-        FrameLayout.LayoutParams hl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
-        hl.setMargins(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), 0);
+        LinearLayout hintBox = Ui.iconText(c, R.drawable.ic_target, "1 ngón kéo • 2 ngón zoom • Chạm nút xem", 12, 0xFFEAF1FF, false);
+        hintBox.setBackground(Ui.gradient(c, 999, 0xCC213145, 0xCC213145));
+        hintBox.setPadding(Ui.dp(c, 12), Ui.dp(c, 7), Ui.dp(c, 14), Ui.dp(c, 7));
+        FrameLayout.LayoutParams hl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);
+        hl.setMargins(Ui.dp(c, 12), 0, 0, Ui.dp(c, 12));
         canvas.addView(hintBox, hl);
         LinearLayout zoom = Ui.vertical(c);
-        zoom.setBackground(Ui.rounded(c, R.color.surface, 12, R.color.border));
-        for (String[] z : new String[][]{{"+", "1.25"}, {"−", "0.8"}, {"⤢", "fit"}}) {
-            TextView b = Ui.text(c, z[0], 16, R.color.text_secondary, true);
-            b.setGravity(Gravity.CENTER);
-            b.setOnClickListener(v -> { if (z[1].equals("fit")) graph.fit(); else graph.zoom(Float.parseFloat(z[1])); });
-            zoom.addView(b, new LinearLayout.LayoutParams(Ui.dp(c, 34), Ui.dp(c, 34)));
+        Object[][] zs = {{R.drawable.ic_plus, "1.25"}, {R.drawable.ic_minus, "0.8"}, {R.drawable.ic_fit, "fit"}};
+        for (Object[] z : zs) {
+            FrameLayout b = Ui.iconBox(c, (int) z[0], R.color.surface, R.color.text, 44, 22, 14);
+            b.setElevation(Ui.dp(c, 3));
+            String act = (String) z[1];
+            b.setOnClickListener(v -> { if (act.equals("fit")) graph.fit(); else graph.zoom(Float.parseFloat(act)); });
+            LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44));
+            bl.bottomMargin = Ui.dp(c, 10);
+            zoom.addView(b, bl);
         }
-        FrameLayout.LayoutParams zl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);
-        zl.setMargins(Ui.dp(c, 10), 0, 0, Ui.dp(c, 10));
+        FrameLayout.LayoutParams zl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
+        zl.setMargins(0, Ui.dp(c, 12), Ui.dp(c, 12), 0);
         canvas.addView(zoom, zl);
-        int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.58);
+        int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.5);
         root.addView(canvas, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height));
         refreshGraph(keepView);
         keepView = false;
 
-        View rule2 = new View(c);
-        rule2.setBackgroundColor(Ui.color(c, R.color.border));
-        root.addView(rule2, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 1)));
         renderInspector(root, rootLabel);
     }
 
@@ -287,13 +312,13 @@ public class MindmapFragment extends BaseFragment {
         r.h = RH;
         r.x = -RW / 2;
         r.y = -RH / 2;
-        r.fill = 0xFF0F766E;
-        r.stroke = 0x995EEAD4;
-        r.strokeWidth = 4;
+        r.fill = 0xFF005C55;
+        r.stroke = 0xFF0F766E;
+        r.strokeWidth = 3;
         r.text = 0xFFFFFFFF;
-        r.title = byId.get(ROOT).label.toUpperCase(new Locale("vi"));
-        r.subtitle = "NÚT GỐC TRUNG TÂM (ROOT)";
-        r.titleSp = 13;
+        r.title = byId.get(ROOT).label;
+        r.subtitle = "GỐC • " + children.getOrDefault(ROOT, new ArrayList<>()).size() + " phân nhánh";
+        r.titleSp = 14;
         nodes.add(r);
         placed.put(ROOT, r);
 
@@ -314,10 +339,10 @@ public class MindmapFragment extends BaseFragment {
             MindmapNode n = byId.get(g.id);
             boolean match = !q.isEmpty() && n.label.toLowerCase(Locale.ROOT).contains(q);
             boolean sel = g.id.equals(selectedId);
-            g.fill = match ? 0xFFFFFBEB : Ui.color(c, R.color.surface);
-            g.stroke = match ? 0xFFF59E0B : sel ? 0xFF0F766E : Ui.color(c, R.color.slate_200);
-            g.strokeWidth = match || sel ? 2.5f : 2f;
-            g.text = Ui.color(c, R.color.text);
+            g.fill = match ? 0xFFFFFBEB : sel ? 0xFF0F766E : Ui.color(c, R.color.surface);
+            g.stroke = match ? 0xFFF59E0B : sel ? 0xFF005C55 : Ui.color(c, R.color.border);
+            g.strokeWidth = match || sel ? 2.5f : 1.5f;
+            g.text = sel && !match ? 0xFFFFFFFF : Ui.color(c, R.color.text);
             g.title = n.label;
             int imp = n.importance != null ? n.importance : 3;
             int hidden = collapsed.contains(g.id) ? countDescendants(g.id) : 0;
@@ -417,95 +442,136 @@ public class MindmapFragment extends BaseFragment {
     }
 
     // ---------- inspector ----------
+    // ---------- inspector (Stitch node bottom sheet) ----------
 
     private void renderInspector(LinearLayout root, String rootLabel) {
         Context c = requireContext();
         MindmapNode n = byId.get(selectedId);
         LinearLayout panel = Ui.vertical(c);
-        panel.setBackgroundColor(Ui.color(c, R.color.surface));
-        panel.setPadding(Ui.dp(c, 18), Ui.dp(c, 18), Ui.dp(c, 18), Ui.dp(c, 18));
-        root.addView(panel);
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setColor(Ui.color(c, R.color.surface));
+        float r = Ui.dp(c, 28);
+        bg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+        panel.setBackground(bg);
+        panel.setElevation(Ui.dp(c, 8));
+        panel.setPadding(Ui.dp(c, 18), Ui.dp(c, 10), Ui.dp(c, 18), Ui.dp(c, 24));
+        LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        pl.topMargin = -Ui.dp(c, 20);
+        root.addView(panel, pl);
 
+        View handle = new View(c);
+        handle.setBackground(Ui.rounded(c, R.color.m3_outline_variant, 999, 0));
+        LinearLayout.LayoutParams hdl = new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 4));
+        hdl.gravity = Gravity.CENTER_HORIZONTAL;
+        panel.addView(handle, hdl);
+
+        int imp = n.importance != null ? n.importance : 3;
         LinearLayout head = Ui.horizontal(c);
-        LinearLayout ht = Ui.vertical(c);
-        ht.addView(Ui.text(c, "NÚT ĐANG CHỌN TRÊN SƠ ĐỒ", 10, R.color.slate_400, true));
-        ht.addView(Ui.text(c, n.label, 15, R.color.text, true));
-        Ui.addWeighted(head, ht, 0);
-        View edit = Ui.iconBox(c, R.drawable.ic_edit, R.color.slate_100, R.color.text_secondary, 30, 14, 8);
-        edit.setOnClickListener(v -> nodeDialog(n, null));
-        Ui.addWrap(head, edit, 6);
-        View del = Ui.iconBox(c, R.drawable.ic_trash, R.color.rose_50, R.color.rose, 30, 14, 8);
+        head.setGravity(Gravity.TOP);
+        LinearLayout pills = Ui.vertical(c);
+        Ui.addInline(pills, Ui.pill(c, TYPE_LABEL.getOrDefault(n.type != null ? n.type : "concept", "Khái niệm"), R.color.m3_primary_fixed, R.color.brand_dark), 0);
+        int lv = level.getOrDefault(n.id, 0);
+        Ui.addInline(pills, Ui.pill(c, n.id.equals(ROOT) ? "Nút gốc trung tâm" : "Cấp độ " + imp + " / Tầng " + lv, R.color.m3_surface_container, R.color.text_secondary), 6);
+        Ui.addWeighted(head, pills, 0);
+        LinearLayout stars = Ui.vertical(c);
+        stars.setGravity(Gravity.END);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 5; i++) sb.append(i < imp ? "★" : "☆");
+        stars.addView(Ui.text(c, sb.toString(), 18, R.color.m3_tertiary, false));
+        stars.addView(Ui.text(c, "Trọng tâm thi cử " + (imp * 20 - (imp == 5 ? 5 : 0)) + "%", 12, R.color.m3_tertiary, false));
+        head.addView(stars);
+        Ui.add(panel, head, 14);
+
+        Ui.add(panel, Ui.text(c, n.label, 22, R.color.text, true), 10);
+
+        LinearLayout desc = Ui.vertical(c);
+        desc.setBackground(Ui.rounded(c, R.color.m3_surface_low, 20, 0));
+        desc.setPadding(Ui.dp(c, 16), Ui.dp(c, 14), Ui.dp(c, 16), Ui.dp(c, 14));
+        LinearLayout dh = Ui.horizontal(c);
+        Ui.addWeighted(dh, Ui.iconText(c, R.drawable.ic_brain, "Mô tả & Giải thích AI", 14, Ui.color(c, R.color.brand_dark), true), 0);
+        dh.addView(Ui.text(c, "Cập nhật bởi StudyMind AI", 11, R.color.text_muted, false));
+        desc.addView(dh);
+        String d = n.summary != null && !n.summary.isEmpty() ? n.summary : n.detail != null && !n.detail.isEmpty() ? n.detail : "Không có mô tả bổ sung cho nút này.";
+        TextView dt = Ui.text(c, d, 15, R.color.text, false);
+        dt.setLineSpacing(0, 1.35f);
+        Ui.add(desc, dt, 10);
+        if (n.detail != null && !n.detail.isEmpty() && n.summary != null && !n.summary.isEmpty() && !n.detail.equals(n.summary)) {
+            TextView formula = Ui.text(c, n.detail, 13, R.color.text, false);
+            formula.setTypeface(android.graphics.Typeface.MONOSPACE);
+            formula.setGravity(Gravity.CENTER);
+            formula.setBackground(Ui.rounded(c, R.color.surface, 12, 0));
+            formula.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
+            Ui.add(desc, formula, 10);
+        }
+        Ui.add(panel, desc, 14);
+
+        if (n.subDetails != null && !n.subDetails.isEmpty()) {
+            com.google.android.material.chip.ChipGroup kw = new com.google.android.material.chip.ChipGroup(c);
+            kw.setChipSpacingHorizontal(Ui.dp(c, 6));
+            kw.setChipSpacingVertical(Ui.dp(c, 6));
+            TextView kl = Ui.text(c, "Từ khóa:", 13, R.color.text_muted, false);
+            kl.setPadding(0, Ui.dp(c, 4), Ui.dp(c, 4), 0);
+            kw.addView(kl);
+            for (String s : n.subDetails) {
+                TextView t = Ui.text(c, "#" + s.replace(" ", ""), 13, R.color.text, false);
+                t.setBackground(Ui.rounded(c, R.color.m3_surface_low, 8, 0));
+                t.setPadding(Ui.dp(c, 10), Ui.dp(c, 4), Ui.dp(c, 10), Ui.dp(c, 4));
+                kw.addView(t);
+            }
+            Ui.add(panel, kw, 12);
+        }
+
+        LinearLayout expand = Ui.iconText(c, R.drawable.ic_sparkles, "Mở rộng & Đào sâu bằng AI", 15, 0xFFFFFFFF, true);
+        TextView gem = Ui.pill(c, "GEMINI", R.color.m3_tertiary_fixed, R.color.m3_on_tertiary_fixed);
+        Ui.addWrap(expand, gem, 8);
+        expand.setGravity(Gravity.CENTER);
+        expand.setBackground(Ui.gradient(c, 18, 0xFF005C55, 0xFF0F766E));
+        expand.setMinimumHeight(Ui.dp(c, 54));
+        expand.setOnClickListener(v -> expand(n));
+        Ui.add(panel, expand, 16);
+
+        LinearLayout row1 = Ui.horizontal(c);
+        Ui.addWeighted(row1, gridBtn(c, R.drawable.ic_layers, "Tạo Flashcard", v -> state.navigate(Screen.FLASHCARD)), 0);
+        Ui.addWeighted(row1, gridBtn(c, R.drawable.ic_quiz, "Tạo trắc nghiệm", v -> state.navigate(Screen.QUIZ)), 10);
+        Ui.add(panel, row1, 10);
+        LinearLayout row2 = Ui.horizontal(c);
+        if (children.containsKey(n.id) && !n.id.equals(ROOT)) {
+            boolean folded = collapsed.contains(n.id);
+            int kids = children.get(n.id).size();
+            Ui.addWeighted(row2, gridBtn(c, folded ? R.drawable.ic_chevron_down : R.drawable.ic_chevron_right,
+                    folded ? "Mở rộng " + kids + " nút con" : "Thu gọn " + kids + " nút con",
+                    v -> { if (folded) collapsed.remove(n.id); else collapsed.add(n.id); keepView = true; rerender(); }), 0);
+        } else {
+            Ui.addWeighted(row2, gridBtn(c, R.drawable.ic_plus, "Thêm nút con", v -> nodeDialog(null, n.id)), 0);
+        }
+        Ui.addWeighted(row2, gridBtn(c, R.drawable.ic_edit, "Sửa nội dung", v -> nodeDialog(n, null)), 10);
+        Ui.add(panel, row2, 10);
+
+        LinearLayout foot = Ui.horizontal(c);
+        if (children.containsKey(n.id) && !n.id.equals(ROOT)) {
+            TextView addChild = Ui.text(c, "+ Thêm nút con", 13, R.color.brand, true);
+            addChild.setOnClickListener(v -> nodeDialog(null, n.id));
+            foot.addView(addChild);
+        }
+        foot.addView(new View(c), new LinearLayout.LayoutParams(0, 1, 1f));
+        LinearLayout del = Ui.iconText(c, R.drawable.ic_trash, "Xóa nhánh này khỏi sơ đồ", 13, Ui.color(c, R.color.m3_error), false);
         del.setOnClickListener(v -> {
             if (n.id.equals(ROOT)) { toast("Không thể xóa nút gốc trung tâm!"); return; }
             new MaterialAlertDialogBuilder(c).setMessage("Xóa nút \"" + n.label + "\" khỏi sơ đồ tư duy?")
-                    .setNegativeButton("Hủy", null).setPositiveButton("Xóa", (d, w) -> state.deleteMindmapNode(n.id)).show();
+                    .setNegativeButton("Hủy", null).setPositiveButton("Xóa", (dd, w) -> state.deleteMindmapNode(n.id)).show();
         });
-        Ui.addWrap(head, del, 6);
-        panel.addView(head);
-        View hr = new View(c);
-        hr.setBackgroundColor(Ui.color(c, R.color.slate_100));
-        LinearLayout.LayoutParams hrl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 1));
-        hrl.topMargin = Ui.dp(c, 12);
-        panel.addView(hr, hrl);
+        foot.addView(del);
+        Ui.add(panel, foot, 16);
+    }
 
-        LinearLayout chips = Ui.horizontal(c);
-        TextView type = Ui.text(c, "Loại: " + TYPE_LABEL.getOrDefault(n.type != null ? n.type : "concept", "Khái niệm"), 11, R.color.brand, true);
-        type.setBackground(Ui.rounded(c, R.color.teal_50, 999, R.color.brand_soft));
-        type.setPadding(Ui.dp(c, 10), Ui.dp(c, 3), Ui.dp(c, 10), Ui.dp(c, 3));
-        chips.addView(type);
-        TextView imp = Ui.text(c, "Tầm quan trọng: " + (n.importance != null ? n.importance : 3) + "/5", 11, R.color.amber_700, true);
-        imp.setBackground(Ui.rounded(c, R.color.amber_50, 999, R.color.amber_soft));
-        imp.setPadding(Ui.dp(c, 10), Ui.dp(c, 3), Ui.dp(c, 10), Ui.dp(c, 3));
-        Ui.addWrap(chips, imp, 8);
-        Ui.add(panel, chips, 12);
-
-        Ui.add(panel, Ui.text(c, "MÔ TẢ & GIẢI THÍCH AI:", 10, R.color.slate_400, true), 14);
-        String desc = n.summary != null && !n.summary.isEmpty() ? n.summary : n.detail != null && !n.detail.isEmpty() ? n.detail : "Không có mô tả bổ sung cho nút này.";
-        TextView d = Ui.text(c, desc, 12, R.color.text_secondary, false);
-        d.setBackground(Ui.rounded(c, R.color.teal_50, 12, R.color.brand_soft));
-        d.setPadding(Ui.dp(c, 14), Ui.dp(c, 12), Ui.dp(c, 14), Ui.dp(c, 12));
-        Ui.add(panel, d, 6);
-
-        if (n.subDetails != null && !n.subDetails.isEmpty()) {
-            Ui.add(panel, Ui.text(c, "TỪ KHÓA & Ý PHỤ:", 10, R.color.slate_400, true), 14);
-            LinearLayout subs = Ui.horizontal(c);
-            for (String s : n.subDetails) {
-                TextView t = Ui.text(c, s, 11, R.color.text_secondary, false);
-                t.setBackground(Ui.rounded(c, R.color.slate_100, 6, R.color.border));
-                t.setPadding(Ui.dp(c, 10), Ui.dp(c, 3), Ui.dp(c, 10), Ui.dp(c, 3));
-                Ui.addWrap(subs, t, subs.getChildCount() > 0 ? 6 : 0);
-            }
-            HorizontalScrollView hs = new HorizontalScrollView(c);
-            hs.setHorizontalScrollBarEnabled(false);
-            hs.addView(subs);
-            Ui.add(panel, hs, 6);
-        }
-
-        View hr2 = new View(c);
-        hr2.setBackgroundColor(Ui.color(c, R.color.slate_100));
-        LinearLayout.LayoutParams hr2l = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 1));
-        hr2l.topMargin = Ui.dp(c, 16);
-        panel.addView(hr2, hr2l);
-        LinearLayout expand = Ui.pillButton(c, 0, "Mở rộng & Đào sâu nút này", R.color.brand, android.R.color.white, 0, v -> expand(n));
-        expand.setBackground(Ui.rounded(c, R.color.brand, 12, 0));
-        Ui.add(panel, expand, 12);
-        if (children.containsKey(n.id) && !n.id.equals(ROOT)) {
-            boolean folded = collapsed.contains(n.id);
-            LinearLayout fold = Ui.pillButton(c, folded ? R.drawable.ic_chevron_right : R.drawable.ic_chevron_down,
-                    folded ? "Mở rộng " + children.get(n.id).size() + " nút con" : "Thu gọn các nút con", R.color.surface, R.color.text_secondary, R.color.border,
-                    v -> { if (folded) collapsed.remove(n.id); else collapsed.add(n.id); keepView = true; rerender(); });
-            Ui.add(panel, fold, 8);
-        }
-        LinearLayout row = Ui.horizontal(c);
-        LinearLayout fc = Ui.pillButton(c, R.drawable.ic_layers, "Tạo Flashcard", R.color.brand_soft, R.color.brand, 0, v -> state.navigate(Screen.FLASHCARD));
-        fc.setBackground(Ui.rounded(c, R.color.brand_soft, 12, 0));
-        Ui.addWeighted(row, fc, 0);
-        LinearLayout qz = Ui.pillButton(c, R.drawable.ic_quiz, "Tạo Trắc nghiệm", R.color.surface, R.color.text_secondary, R.color.border, v -> state.navigate(Screen.QUIZ));
-        ((ImageView) qz.getChildAt(0)).setColorFilter(Ui.color(c, R.color.brand));
-        Ui.addWeighted(row, qz, 8);
-        Ui.add(panel, row, 8);
-        LinearLayout child = Ui.pillButton(c, R.drawable.ic_plus, "Thêm nút con từ nhánh này", R.color.surface, R.color.brand, R.color.brand, v -> nodeDialog(null, n.id));
-        Ui.add(panel, child, 8);
+    private View gridBtn(Context c, int icon, String label, View.OnClickListener l) {
+        LinearLayout b = Ui.iconText(c, icon, label, 14, Ui.color(c, R.color.text), false);
+        ((ImageView) b.getChildAt(0)).setColorFilter(Ui.color(c, R.color.text_secondary));
+        b.setGravity(Gravity.CENTER);
+        b.setBackground(Ui.rounded(c, R.color.m3_surface_container, 16, 0));
+        b.setMinimumHeight(Ui.dp(c, 50));
+        b.setOnClickListener(l);
+        return b;
     }
 
     private void expand(MindmapNode n) {

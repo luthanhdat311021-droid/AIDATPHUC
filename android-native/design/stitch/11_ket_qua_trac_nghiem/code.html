@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;font-family:'Be Vietnam Pro',sans-serif;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb95f", "tertiary": "#734700", "tertiary-container": "#945d00", "surface-container-high": "#dce9ff", "background": "#f8f9ff", "primary-fixed-dim": "#80d5cb", "on-secondary": "#ffffff", "on-surface": "#0b1c30", "inverse-surface": "#213145", "secondary": "#515f74", "tertiary-fixed": "#ffddb8", "secondary-fixed": "#d5e3fc", "on-primary-fixed": "#00201d", "on-secondary-container": "#57657a", "surface-container-low": "#eff4ff", "primary": "#005c55", "surface-container-highest": "#d3e4fe", "error-container": "#ffdad6", "on-error-container": "#93000a", "on-tertiary-fixed-variant": "#653e00", "surface-tint": "#006a63", "surface": "#f8f9ff", "on-background": "#0b1c30", "primary-fixed": "#9cf2e8", "primary-container": "#0f766e", "on-secondary-fixed": "#0d1c2e", "error": "#ba1a1a", "on-tertiary-fixed": "#2a1700", "inverse-on-surface": "#eaf1ff", "outline": "#6e7977", "on-primary": "#ffffff", "secondary-fixed-dim": "#b9c7df", "surface-dim": "#cbdbf5", "surface-variant": "#d3e4fe", "secondary-container": "#d5e3fc", "surface-container-lowest": "#ffffff", "on-primary-fixed-variant": "#00504a", "inverse-primary": "#80d5cb", "on-secondary-fixed-variant": "#3a485b", "on-tertiary": "#ffffff", "surface-bright": "#f8f9ff", "surface-container": "#e5eeff", "on-surface-variant": "#3e4947", "outline-variant": "#bdc9c6", "on-primary-container": "#a3faef", "on-tertiary-container": "#ffe6cc" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "margin": "1rem", "space-xl": "1.5rem", "gutter": "1rem", "space-md": "1rem", "gutter-tablet": "1.5rem", "margin-tablet": "1.5rem", "space-sm": "0.5rem", "margin-desktop": "2rem", "space-lg": "1.25rem", "gutter-desktop": "1.5rem", "space-xs": "0.25rem" }, fontFamily: { "title-lg": ["Be Vietnam Pro"], "body-lg": ["Be Vietnam Pro"], "label-sm": ["Be Vietnam Pro"], "body-sm": ["Be Vietnam Pro"], "headline-lg": ["Be Vietnam Pro"], "label-lg": ["Be Vietnam Pro"], "title-md": ["Be Vietnam Pro"], "body-md": ["Be Vietnam Pro"], "headline-lg-mobile": ["Be Vietnam Pro"], "headline-sm": ["Be Vietnam Pro"], "display-lg": ["Be Vietnam Pro"], "headline-md": ["Be Vietnam Pro"], "label-md": ["Be Vietnam Pro"] }, fontSize: { "title-lg": ["18px", { "lineHeight": "26px", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "500" }], "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "display-lg": ["40px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><button aria-label="Quay lại" class="w-11 h-11 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container active:bg-surface-container-high transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><h1 class="font-title-md text-title-md text-on-surface truncate">Kết Quả Phân Tích Ai</h1></div><div class="flex items-center gap-space-sm"><div class="flex items-center gap-space-xs bg-tertiary-fixed text-on-tertiary-fixed px-space-sm py-1 rounded-full"><span class="material-symbols-outlined text-[16px] text-tertiary-container">local_fire_department</span><span class="font-label-sm text-label-sm font-bold">7 Ngày</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full pb-10 px-margin space-y-space-lg">
+<!-- Top Navigation & Context Bar -->
+<div class="flex items-center justify-between pt-space-sm">
+<div class="flex items-center gap-space-xs text-secondary">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="font-label-md text-label-md">Toán học 12 • Chuyên đề Giải Tích</span>
+</div>
+<button class="h-10 px-space-md rounded-full bg-surface-container flex items-center gap-space-xs text-on-surface hover:bg-surface-container-high transition-colors active:scale-95" onclick="window.location.href='#home'">
+<span class="material-symbols-outlined text-[18px]">home</span>
+<span class="font-label-md text-label-md font-semibold">Về trang chủ</span>
+</button>
+</div>
+<!-- Score Hero Card -->
+<div class="relative overflow-hidden rounded-[24px] bg-gradient-to-b from-surface-container-lowest to-surface-container-low p-space-lg shadow-md">
+<!-- Ambient celebratory gradient halo -->
+<div class="absolute -top-12 -right-12 w-48 h-48 bg-primary-fixed opacity-40 rounded-full blur-2xl pointer-events-none"></div>
+<div class="absolute -bottom-10 -left-10 w-40 h-40 bg-tertiary-fixed opacity-30 rounded-full blur-2xl pointer-events-none"></div>
+<div class="relative flex flex-col items-center text-center">
+<!-- Circular Progress Gauge Component -->
+<div class="relative w-40 h-40 flex items-center justify-center my-space-xs">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 120 120">
+<circle class="text-surface-container-high" cx="60" cy="60" fill="transparent" r="50" stroke="currentColor" stroke-width="10"></circle>
+<circle class="text-primary transition-all duration-1000 ease-out" cx="60" cy="60" fill="transparent" r="50" stroke="currentColor" stroke-dasharray="314.16" stroke-dashoffset="47.12" stroke-linecap="round" stroke-width="10"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<div class="flex items-baseline">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary font-bold">8.5</span>
+<span class="font-label-md text-label-md text-secondary ml-0.5">/10</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold tracking-wide uppercase mt-0.5">Giỏi</span>
+</div>
+</div>
+<!-- Result Headline & Duration -->
+<h2 class="font-title-lg text-title-lg text-on-surface font-bold mt-space-xs">
+        Bạn trả lời đúng 8 / 10 câu
+      </h2>
+<p class="font-body-md text-body-md text-secondary mt-1">
+        Đạt độ chính xác 85% • Thời gian: <span class="font-semibold text-on-surface">09:45 / 15:00</span>
+</p>
+<!-- Reward Badge -->
+<div class="mt-space-md inline-flex items-center gap-space-xs px-space-md py-1.5 rounded-full bg-tertiary-fixed shadow-sm animate-bounce">
+<span class="material-symbols-outlined text-[18px] text-tertiary-container" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-label-md text-label-md text-on-tertiary-fixed font-bold">+30 StudyCoin 🔥 Thưởng phong độ</span>
+</div>
+<!-- Quick Metrics Pill Strip -->
+<div class="w-full grid grid-cols-3 gap-space-xs mt-space-lg pt-space-md bg-surface-container/60 rounded-2xl p-space-sm">
+<div class="flex flex-col items-center justify-center py-1">
+<div class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-primary-container"></span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">8</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Chính xác</span>
+</div>
+<div class="flex flex-col items-center justify-center py-1">
+<div class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">2</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Cần sửa</span>
+</div>
+<div class="flex flex-col items-center justify-center py-1">
+<div class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-outline-variant"></span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">0</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Bỏ qua</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Primary AI Action CTA -->
+<button class="w-full min-h-[56px] py-space-sm px-space-md rounded-2xl bg-gradient-to-r from-tertiary-container via-tertiary to-primary-container text-on-tertiary shadow-lg flex items-center justify-center gap-space-sm active:scale-[0.98] transition-transform" id="deepScanBtn">
+<span class="material-symbols-outlined text-[24px]">troubleshoot</span>
+<span class="font-label-lg text-label-lg font-bold">Tìm lỗ hổng gốc của 2 câu sai</span>
+<span class="text-tertiary-fixed font-label-sm text-label-sm bg-black/20 px-2 py-0.5 rounded-full">AI DeepScan</span>
+</button>
+<!-- Secondary Actions -->
+<div class="grid grid-cols-2 gap-space-sm">
+<button class="min-h-[48px] px-space-sm rounded-xl bg-secondary-container text-on-secondary-container font-label-lg text-label-lg flex items-center justify-center gap-1 active:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+<span>Xem lời giải</span>
+</button>
+<button class="min-h-[48px] px-space-sm rounded-xl bg-surface-container text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-1 active:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">replay</span>
+<span>Làm lại đề</span>
+</button>
+</div>
+<!-- AI Diagnosis Insights Box -->
+<div class="rounded-2xl bg-surface-container-lowest p-space-md shadow-sm space-y-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-xs">
+<div class="w-7 h-7 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface font-bold">Chẩn đoán từ StudyMind AI</h3>
+<p class="font-body-sm text-body-sm text-secondary">Phát hiện từ 2 phương án chọn sai</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-md bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-semibold">2 Điểm nghẽn</span>
+</div>
+<!-- Gap Item 1 -->
+<div class="rounded-xl bg-surface-container-low p-space-md flex flex-col space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="font-label-sm text-label-sm font-semibold text-secondary">Câu #4 • Đạo hàm nâng cao</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold">
+          Mức độ: Trung bình
+        </span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface font-semibold">
+        Quy tắc đạo hàm hàm hợp (Chuỗi đạo hàm)
+      </h4>
+<p class="font-body-sm text-body-sm text-secondary">
+        Bạn quên nhân hệ số đạo hàm của biểu thức bên trong $u'(x)$ khi tính đạo hàm của hàm lượng giác hợp $f(u(x))$.
+      </p>
+<div class="pt-1 flex items-center gap-space-xs text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[16px]">menu_book</span>
+<span>Kiến thức nền: Đạo hàm cơ bản Lớp 11</span>
+</div>
+</div>
+<!-- Gap Item 2 -->
+<div class="rounded-xl bg-surface-container-low p-space-md flex flex-col space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="font-label-sm text-label-sm font-semibold text-secondary">Câu #9 • Ứng dụng đạo hàm</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
+          Dễ nhầm lẫn
+        </span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface font-semibold">
+        Khảo sát cực trị tại điểm không xác định đạo hàm
+      </h4>
+<p class="font-body-sm text-body-sm text-secondary">
+        Hàm số vẫn có thể đạt cực trị tại $x_0$ nếu hàm số liên tục và đạo hàm đổi dấu khi qua điểm đó, dù $f'(x_0)$ không xác định.
+      </p>
+<div class="pt-1 flex items-center gap-space-xs text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[16px]">lightbulb</span>
+<span>Mẹo: Nhìn dấu hai phía thay vì chỉ tìm $f'(x)=0$</span>
+</div>
+</div>
+<!-- Remediation Action Trigger -->
+<div class="pt-space-xs">
+<button class="w-full min-h-[48px] py-space-sm px-space-md rounded-xl bg-primary text-on-primary flex items-center justify-center gap-space-xs font-label-lg text-label-lg shadow hover:opacity-95 active:scale-[0.99] transition-all" id="genFlashcardsBtn">
+<span class="material-symbols-outlined text-[20px]">style</span>
+<span>Tạo 5 Flashcard ôn tập ngay cho 2 phần này</span>
+</button>
+</div>
+</div>
+<!-- Study Mind Pro Tip Card -->
+<div class="rounded-2xl bg-surface-container-high/60 p-space-md flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container-lowest flex items-center justify-center text-tertiary-container shadow-sm shrink-0">
+<span class="material-symbols-outlined text-[26px]">school</span>
+</div>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md text-on-surface font-semibold">Ôn tập ngắt quãng (Spaced Repetition)</span>
+<span class="font-body-sm text-body-sm text-secondary">Được lập lịch xem lại vào 20:00 tối mai để củng cố trí nhớ dài hạn.</span>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interactions for instant feedback
+  document.getElementById('deepScanBtn')?.addEventListener('click', function() {
+    const btn = this;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[20px]">sync</span><span class="font-label-lg text-label-lg">Đang phân tích chuỗi tư duy...</span>`;
+    setTimeout(() => {
+      btn.innerHTML = `<span class="material-symbols-outlined text-[20px]">check_circle</span><span class="font-label-lg text-label-lg">Đã nhận diện 2 gốc sai lệch!</span>`;
+      setTimeout(() => { btn.innerHTML = originalText; }, 2500);
+    }, 900);
+  });
+
+  document.getElementById('genFlashcardsBtn')?.addEventListener('click', function() {
+    const btn = this;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[20px]">smart_toy</span><span class="font-label-lg text-label-lg">Đang tạo bộ Flashcard AI...</span>`;
+    setTimeout(() => {
+      btn.innerHTML = `<span class="material-symbols-outlined text-[20px]">style</span><span class="font-label-lg text-label-lg">Đã lưu vào Kho thẻ ghi nhớ (5 Thẻ) ✓</span>`;
+      btn.classList.add('bg-primary-container');
+    }, 1200);
+  });
+</script></main></body></html>

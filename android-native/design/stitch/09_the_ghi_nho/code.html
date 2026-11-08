@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;font-family:'Be Vietnam Pro',sans-serif;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"primary-fixed-dim":"#80d5cb","on-error-container":"#93000a","tertiary-fixed":"#ffddb8","on-tertiary-fixed":"#2a1700","tertiary":"#734700","outline-variant":"#bdc9c6","error":"#ba1a1a","on-tertiary-fixed-variant":"#653e00","on-primary":"#ffffff","on-secondary":"#ffffff","on-primary-fixed":"#00201d","surface-container-highest":"#d3e4fe","on-primary-container":"#a3faef","inverse-surface":"#213145","on-error":"#ffffff","tertiary-container":"#945d00","primary-container":"#0f766e","tertiary-fixed-dim":"#ffb95f","surface-variant":"#d3e4fe","error-container":"#ffdad6","surface-bright":"#f8f9ff","surface-dim":"#cbdbf5","on-secondary-fixed-variant":"#3a485b","secondary-fixed":"#d5e3fc","primary":"#005c55","background":"#f8f9ff","secondary-container":"#d5e3fc","primary-fixed":"#9cf2e8","on-background":"#0b1c30","inverse-on-surface":"#eaf1ff","inverse-primary":"#80d5cb","on-primary-fixed-variant":"#00504a","surface":"#f8f9ff","secondary":"#515f74","on-tertiary-container":"#ffe6cc","on-secondary-fixed":"#0d1c2e","on-secondary-container":"#57657a","surface-container-low":"#eff4ff","surface-container-lowest":"#ffffff","on-tertiary":"#ffffff","surface-container-high":"#dce9ff","secondary-fixed-dim":"#b9c7df","on-surface-variant":"#3e4947","surface-container":"#e5eeff","surface-tint":"#006a63","outline":"#6e7977","on-surface":"#0b1c30"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"space-sm":"0.5rem","gutter-desktop":"1.5rem","space-xs":"0.25rem","gutter-tablet":"1.5rem","space-lg":"1.25rem","gutter":"1rem","margin":"1rem","space-xl":"1.5rem","margin-desktop":"2rem","margin-tablet":"1.5rem","space-md":"1rem"},fontFamily:{"label-sm":["Be Vietnam Pro"],"body-lg":["Be Vietnam Pro"],"headline-lg-mobile":["Be Vietnam Pro"],"display-lg":["Be Vietnam Pro"],"body-sm":["Be Vietnam Pro"],"body-md":["Be Vietnam Pro"],"title-md":["Be Vietnam Pro"],"headline-md":["Be Vietnam Pro"],"headline-lg":["Be Vietnam Pro"],"label-md":["Be Vietnam Pro"],"headline-sm":["Be Vietnam Pro"],"label-lg":["Be Vietnam Pro"],"title-lg":["Be Vietnam Pro"]},fontSize:{"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.03em","fontWeight":"500"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"headline-lg-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.01em","fontWeight":"700"}],"display-lg":["40px",{"lineHeight":"52px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["12px",{"lineHeight":"18px","fontWeight":"400"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"title-md":["16px",{"lineHeight":"24px","fontWeight":"600"}],"headline-md":["24px",{"lineHeight":"32px","fontWeight":"600"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.01em","fontWeight":"700"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"600"}],"headline-sm":["20px",{"lineHeight":"28px","fontWeight":"600"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"title-lg":["18px",{"lineHeight":"26px","fontWeight":"600"}]}}}};</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md min-h-screen flex flex-col antialiased selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-3 flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><button aria-label="Quay lại" class="w-11 h-11 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container active:bg-surface-container-high transition-colors shrink-0" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><h1 class="font-title-lg text-title-lg text-on-surface font-bold truncate">The Ghi Nho</h1></div><div class="flex items-center gap-1.5 shrink-0"><button aria-label="Tùy chọn thao tác" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[20px]">more_vert</span></button><div class="relative shrink-0"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><span class="absolute -bottom-1 -right-1 px-1 py-[1px] bg-tertiary-container text-on-tertiary-container font-label-sm text-[9px] rounded-full font-bold uppercase tracking-wider scale-90">PRO</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-safe bg-surface"><div class="flex flex-col w-full px-4 pb-12 space-y-5">
+<!-- Topic Context & Focus Badge -->
+<div class="flex flex-col space-y-1.5 mt-2">
+<div class="flex items-center justify-between">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-primary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span>Giải tích 1: Đạo hàm &amp; Khảo sát</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px] text-tertiary" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span>Chuỗi 5 ngày</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<h2 class="font-title-lg text-title-lg font-bold text-on-surface">Học tập trung cùng Flashcard</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+        Thuật toán SM-2
+      </span>
+</div>
+</div>
+<!-- Primary AI Actions Toolbar -->
+<div class="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+<button class="h-11 px-4 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg flex items-center gap-2 shadow-sm shrink-0 active:scale-95 transition-transform" id="btnAiGenerate">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span>+ Tạo 10–12 thẻ bằng AI</span>
+</button>
+<button class="h-11 px-3.5 rounded-xl bg-surface-container-high text-on-surface font-label-lg text-label-lg flex items-center gap-1.5 shrink-0 active:scale-95 transition-transform" id="btnOpenNewCardModal">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Tạo thẻ mới</span>
+</button>
+<button class="h-11 px-3 rounded-xl bg-surface-container text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5 shrink-0 active:scale-95 transition-transform" id="btnExportMenu">
+<span class="material-symbols-outlined text-[18px]">ios_share</span>
+<span>Xuất Anki / CSV</span>
+</button>
+</div>
+<!-- Interactive 3D Card Stage -->
+<div class="relative w-full [perspective:1200px] select-none">
+<div class="relative w-full min-h-[330px] rounded-3xl p-5 shadow-md bg-surface-container-lowest transition-all duration-500 ease-out [transform-style:preserve-3d] cursor-pointer" id="flashcardElement">
+<!-- Top Card Meta -->
+<div class="flex items-center justify-between pb-3 pointer-events-auto">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">
+            Thẻ 3 / 12
+          </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+            Phiên ôn tập #4
+          </span>
+</div>
+<div class="flex items-center gap-1">
+<button aria-label="Đọc phát âm" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors" id="btnAudioSpeak">
+<span class="material-symbols-outlined text-[19px]">volume_up</span>
+</button>
+<button aria-label="Xóa thẻ" class="w-8 h-8 rounded-full flex items-center justify-center text-error hover:bg-error-container transition-colors" id="btnDeleteCard">
+<span class="material-symbols-outlined text-[19px]">delete_outline</span>
+</button>
+</div>
+</div>
+<!-- Front View (Question) -->
+<div class="hidden flex-col justify-between py-2 space-y-4" id="cardFrontView">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<span class="font-label-md text-label-md text-primary font-bold uppercase tracking-wider">Mặt trước: Câu hỏi</span>
+</div>
+<div class="py-4">
+<p class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">
+            Điều kiện cần và đủ để hàm số f(x) đạt cực trị tại x₀ là gì?
+          </p>
+</div>
+<div class="p-3 rounded-2xl bg-surface-container-low flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px] text-tertiary">lightbulb</span>
+<span>Gợi ý: Nhớ lại quy tắc xét dấu đạo hàm cấp 1 &amp; đạo hàm cấp 2.</span>
+</div>
+</div>
+<!-- Back View (Answer - Active State) -->
+<div class="flex flex-col justify-between py-2 space-y-3" id="cardBackView">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary-container"></span>
+<span class="font-label-md text-label-md text-primary-container font-bold uppercase tracking-wider">Mặt sau: Đáp án chính xác</span>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant font-medium">Độ khó: Vừa</span>
+</div>
+<div class="space-y-3 py-1">
+<div class="p-3 rounded-2xl bg-surface-container-low space-y-2">
+<div class="flex items-start gap-2.5">
+<span class="w-5 h-5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center shrink-0 font-bold mt-0.5">1</span>
+<p class="font-body-md text-body-md text-on-surface font-medium leading-relaxed">
+                f'(x₀) = 0 hoặc hàm số không có đạo hàm tại x₀.
+              </p>
+</div>
+<div class="flex items-start gap-2.5">
+<span class="w-5 h-5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center shrink-0 font-bold mt-0.5">2</span>
+<p class="font-body-md text-body-md text-on-surface font-medium leading-relaxed">
+                f'(x) đổi dấu khi qua điểm x₀.
+              </p>
+</div>
+</div>
+<div class="p-3 rounded-2xl bg-primary-fixed/30 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">functions</span>
+<p class="font-label-md text-label-md text-on-primary-fixed-variant leading-tight">
+              Quy tắc 2: Nếu f''(x₀) &lt; 0 là Cực đại; Nếu f''(x₀) &gt; 0 là Cực tiểu.
+            </p>
+</div>
+</div>
+</div>
+<!-- Hint to flip -->
+<div class="pt-4 flex items-center justify-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] animate-bounce">touch_app</span>
+<span class="font-label-sm text-label-sm" id="flipHintText">Chạm vào thẻ để lật xem câu hỏi</span>
+</div>
+</div>
+</div>
+<!-- Spaced Repetition (SM-2) Feedback Controls -->
+<div class="flex flex-col space-y-2">
+<div class="flex items-center justify-between px-1">
+<span class="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-secondary">Đánh giá mức độ nhớ</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Khoảng cách lặp kế tiếp</span>
+</div>
+<div class="grid grid-cols-3 gap-2.5">
+<!-- Hard / Again -->
+<button class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-error-container text-on-error-container active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px] text-error mb-0.5" style="font-variation-settings: 'FILL' 1;">cancel</span>
+<span class="font-label-md text-label-md font-bold text-error">Chưa thuộc</span>
+<span class="font-label-sm text-label-sm text-on-error-container opacity-90 mt-0.5">Sau 1 phút</span>
+</button>
+<!-- Good / Moderate -->
+<button class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-tertiary-fixed text-on-tertiary-fixed active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px] text-tertiary mb-0.5" style="font-variation-settings: 'FILL' 1;">change_circle</span>
+<span class="font-label-md text-label-md font-bold text-tertiary">Tương đối</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-fixed-variant opacity-90 mt-0.5">Sau 10 phút</span>
+</button>
+<!-- Easy / Mastered -->
+<button class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-primary-fixed text-on-primary-fixed active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px] text-primary mb-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-md text-label-md font-bold text-primary">Đã thuộc</span>
+<span class="font-label-sm text-label-sm text-on-primary-fixed-variant opacity-90 mt-0.5">Sau 4 ngày</span>
+</button>
+</div>
+</div>
+<!-- Study Mind Flashcard Decks Overview -->
+<div class="flex flex-col space-y-3 pt-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[20px]">collections_bookmark</span>
+<h3 class="font-title-md text-title-md font-bold text-on-surface">Các bộ thẻ ghi nhớ của bạn</h3>
+</div>
+<button class="font-label-md text-label-md text-primary font-bold flex items-center gap-0.5" id="btnCreateDeck">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Tạo bộ mới</span>
+</button>
+</div>
+<!-- Deck 1 -->
+<div class="p-4 rounded-2xl bg-surface-container-low shadow-sm flex flex-col space-y-3 active:bg-surface-container transition-colors">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5 pr-2">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<h4 class="font-title-md text-title-md font-bold text-on-surface">Công thức Đạo hàm cơ bản &amp; nâng cao</h4>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pl-4">12 thẻ ghi nhớ • Tự động xếp lịch ôn</p>
+</div>
+<span class="px-2 py-1 rounded-xl bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">
+          85%
+        </span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 85%;"></div>
+</div>
+<div class="flex items-center justify-between pt-1 font-label-sm text-label-sm text-secondary">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">schedule</span>
+          Hôm nay: 3 thẻ cần lặp lại
+        </span>
+<span class="text-primary font-semibold flex items-center gap-0.5">
+          Ôn tập ngay
+          <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+<!-- Deck 2 -->
+<div class="p-4 rounded-2xl bg-surface-container-low shadow-sm flex flex-col space-y-3 active:bg-surface-container transition-colors">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5 pr-2">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<h4 class="font-title-md text-title-md font-bold text-on-surface">Định lý Rolle, Lagrange &amp; Cauchy</h4>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pl-4">8 thẻ ghi nhớ • Lý thuyết &amp; hệ quả</p>
+</div>
+<span class="px-2 py-1 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold">
+          50%
+        </span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 50%;"></div>
+</div>
+<div class="flex items-center justify-between pt-1 font-label-sm text-label-sm text-secondary">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-tertiary">schedule</span>
+          Hôm nay: 5 thẻ cần củng cố
+        </span>
+<span class="text-tertiary font-semibold flex items-center gap-0.5">
+          Ôn tập ngay
+          <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+</div>
+<!-- Quick Add Card Modal / Bottom Sheet -->
+<div class="hidden fixed inset-0 z-50 flex items-end justify-center bg-inverse-surface/40 backdrop-blur-sm p-0 transition-opacity" id="quickCardModal">
+<div class="w-full max-w-lg bg-surface-container-lowest rounded-t-[28px] p-5 shadow-2xl flex flex-col space-y-4 max-h-[751px] overflow-y-auto">
+<div class="flex items-center justify-between pb-1">
+<div class="flex items-center gap-2">
+<div class="w-9 h-9 rounded-xl bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[20px]">post_add</span>
+</div>
+<div>
+<h4 class="font-title-md text-title-md font-bold text-on-surface">Tạo thẻ ghi nhớ nhanh</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Lưu trực tiếp vào bộ Giải tích 1</p>
+</div>
+</div>
+<button class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container" id="btnCloseModal">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Front Input -->
+<div class="space-y-1.5">
+<label class="font-label-md text-label-md text-on-surface font-semibold flex items-center justify-between">
+<span>Mặt trước (Câu hỏi / Khái niệm)</span>
+<span class="text-secondary font-normal font-label-sm text-label-sm">Bắt buộc</span>
+</label>
+<textarea class="w-full p-3 rounded-2xl bg-surface-container-low text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container font-body-md text-body-md resize-none" placeholder="Ví dụ: Đạo hàm của hàm hợp y = f(u(x)) tính như thế nào?" rows="2"></textarea>
+</div>
+<!-- Back Input -->
+<div class="space-y-1.5">
+<label class="font-label-md text-label-md text-on-surface font-semibold flex items-center justify-between">
+<span>Mặt sau (Đáp án chi tiết)</span>
+<span class="text-secondary font-normal font-label-sm text-label-sm">Bắt buộc</span>
+</label>
+<textarea class="w-full p-3 rounded-2xl bg-surface-container-low text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container font-body-md text-body-md resize-none" placeholder="Ví dụ: y' = f'(u) • u'(x)" rows="3"></textarea>
+</div>
+<!-- Difficulty Selector -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface font-semibold">Độ khó khởi đầu</label>
+<div class="grid grid-cols-3 gap-2" id="difficultyGroup">
+<button class="diff-btn py-2.5 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md font-semibold text-center transition-all" data-diff="easy" type="button">
+            Dễ
+          </button>
+<button class="diff-btn py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold text-center transition-all" data-diff="med" type="button">
+            Trung bình
+          </button>
+<button class="diff-btn py-2.5 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md font-semibold text-center transition-all" data-diff="hard" type="button">
+            Khó
+          </button>
+</div>
+</div>
+<!-- Save Actions -->
+<div class="pt-2 flex items-center gap-2">
+<button class="flex-1 h-12 rounded-2xl bg-surface-container text-on-surface font-label-lg text-label-lg font-bold" id="btnCancelModal">
+          Hủy bỏ
+        </button>
+<button class="flex-[2] h-12 rounded-2xl bg-primary text-on-primary font-label-lg text-label-lg font-bold shadow-sm flex items-center justify-center gap-1.5" id="btnSubmitCard">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>Lưu vào bộ thẻ</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Notification Toast -->
+<div class="fixed bottom-6 inset-x-4 max-w-sm mx-auto z-50 hidden items-center gap-2.5 p-3 rounded-2xl bg-inverse-surface text-inverse-on-surface shadow-xl" id="toastNotification">
+<span class="material-symbols-outlined text-primary-fixed-dim text-[20px]">check_circle</span>
+<span class="font-label-md text-label-md" id="toastMessage">Đã cập nhật tiến độ ôn tập!</span>
+</div>
+</div>
+<script>
+  (function() {
+    const flashcard = document.getElementById('flashcardElement');
+    const frontView = document.getElementById('cardFrontView');
+    const backView = document.getElementById('cardBackView');
+    const flipHint = document.getElementById('flipHintText');
+    const modal = document.getElementById('quickCardModal');
+    const btnOpen = document.getElementById('btnOpenNewCardModal');
+    const btnClose = document.getElementById('btnCloseModal');
+    const btnCancel = document.getElementById('btnCancelModal');
+    const btnSubmit = document.getElementById('btnSubmitCard');
+    const toast = document.getElementById('toastNotification');
+    const toastMsg = document.getElementById('toastMessage');
+    const btnAudio = document.getElementById('btnAudioSpeak');
+    const btnDelete = document.getElementById('btnDeleteCard');
+    const btnAi = document.getElementById('btnAiGenerate');
+    const btnExport = document.getElementById('btnExportMenu');
+    const diffButtons = document.querySelectorAll('.diff-btn');
+
+    let showingBack = true;
+
+    function showToast(msg) {
+      if (!toast) return;
+      toastMsg.innerText = msg;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 2600);
+    }
+
+    if (flashcard) {
+      flashcard.addEventListener('click', (e) => {
+        if (e.target.closest('#btnAudioSpeak') || e.target.closest('#btnDeleteCard')) {
+          return;
+        }
+        showingBack = !showingBack;
+        if (showingBack) {
+          frontView.classList.add('hidden');
+          frontView.classList.remove('flex');
+          backView.classList.remove('hidden');
+          backView.classList.add('flex');
+          flipHint.innerText = 'Chạm vào thẻ để lật xem câu hỏi';
+        } else {
+          backView.classList.add('hidden');
+          backView.classList.remove('flex');
+          frontView.classList.remove('hidden');
+          frontView.classList.add('flex');
+          flipHint.innerText = 'Chạm vào thẻ để lật xem đáp án';
+        }
+      });
+    }
+
+    if (btnAudio) {
+      btnAudio.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showToast('StudyMind AI đang đọc to nội dung thẻ...');
+      });
+    }
+
+    if (btnDelete) {
+      btnDelete.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showToast('Đã xóa thẻ này khỏi phiên ôn tập');
+      });
+    }
+
+    if (btnAi) {
+      btnAi.addEventListener('click', () => {
+        showToast('AI đang phân tích tài liệu và khởi tạo 12 thẻ...');
+      });
+    }
+
+    if (btnExport) {
+      btnExport.addEventListener('click', () => {
+        showToast('Đã chuẩn bị file .apkg / .csv xuất sang Anki');
+      });
+    }
+
+    function openModal() {
+      if (modal) modal.classList.remove('hidden');
+    }
+    function closeModal() {
+      if (modal) modal.classList.add('hidden');
+    }
+
+    if (btnOpen) btnOpen.addEventListener('click', openModal);
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+    if (btnSubmit) {
+      btnSubmit.addEventListener('click', () => {
+        closeModal();
+        showToast('Đã thêm thẻ mới thành công!');
+      });
+    }
+
+    diffButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        diffButtons.forEach(b => {
+          b.className = 'diff-btn py-2.5 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md font-semibold text-center transition-all';
+        });
+        btn.className = 'diff-btn py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold text-center transition-all';
+      });
+    });
+  })();
+</script></main></body></html>
